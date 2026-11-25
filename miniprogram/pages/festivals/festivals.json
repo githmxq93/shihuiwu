@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "中国传统节日 - 由来、习俗与历史 - 世慧屋",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  }
+}

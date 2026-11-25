@@ -1,0 +1,857 @@
+/* 底部五标签 dock：与详情页 / 世系页共用 templates/dock/dock.wxss（唯一来源，勿在本文件另写一份） */
+@import "../../../templates/dock/dock.wxss";
+
+/* [A 案 2026-11-10] 本页要求 dock 贴底且**不透明**：共享模板顶部是透明渐变，
+   地图 / 时间轴贴到底时会从渐变处透出内容。这里只在本页覆盖底色，不动共享模板
+   （其它页面的悬浮渐变观感保持原样）。 */
+page .dock {
+  background: #17110c;
+}
+
+page {
+  background: var(--bg-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== loading 遮罩 ===== */
+.loading-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: rgba(244, 237, 225, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loading-spinner-text {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* P1-4：原先 height:100vh + padding-bottom 在没有 box-sizing 时，padding 是**加在**
+   100vh 之外的 ⇒ 内容实际高 100vh + safeArea，超出被 page{overflow:hidden} 裁掉，
+   底部折叠态面板（54px）首当其冲。加 border-box 让 padding 落进 100vh 之内。
+   [2026-11-10 A 案] 底栏让位改为**运行时实测**：onReady 里量 .dock 的
+   boundingClientRect 高度写进 data.dockH，再用内联 style 覆盖这里的 padding-bottom。
+   812 屏 dock≈100px、667 屏≈66px；旧写法固定 200rpx(=100px) 在短屏会白留约 34px。
+   这里保留一个兜底值，避免首帧（实测尚未回来）地图贴到 dock 下面。 */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: 66px;
+}
+
+/* ===== 深色常驻头部（2026-11-08 统一顶部样式） =====
+   取值与详情页 .b2-mini-wrap / .b2-mini、世系页 .ln-head 完全一致。
+   本页是一屏固定布局（page 不滚动），头部天然常驻，不设 sticky；
+   flex-shrink: 0 保证它不被下方地图挤压，高度由内联 padding-top = navBarHeight 让出导航。 */
+.fp-head-wrap {
+  flex-shrink: 0;
+  background: var(--bg-primary);
+}
+.fp-head {
+  position: relative;
+  padding: 20rpx 32rpx 24rpx;
+  background:
+    radial-gradient(120% 90% at 84% 0%, rgba(207, 138, 75, 0.28), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+  box-shadow: 0 10rpx 24rpx -14rpx rgba(30, 20, 12, 0.7);
+  overflow: hidden;
+}
+/* 织物纹理：与详情页 .b2-mini::before 同一条，文字层抬到 z-index:1 之上 */
+.fp-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+}
+.fp-head-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.fp-head-nm {
+  flex: 1;
+  min-width: 0;
+}
+.fp-head-nameline {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+  flex-wrap: wrap;
+}
+.fp-head-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-38);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+.fp-head-era {
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: #e5b77f;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1rpx solid rgba(229, 183, 127, 0.38);
+  border-radius: 999rpx;
+  padding: 2rpx 14rpx;
+  white-space: nowrap;
+}
+.fp-head-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.52);
+}
+.fp-head-tag {
+  flex: none;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.5);
+}
+
+/* 头部右侧操作区：目前只放「足迹」标签（页内搜索入口已移除） */
+.fp-head-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+/* ===== 地图区域 ===== */
+.map-section {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.footprint-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* 图例：与 marker 的 5 种状态一一对应。
+   旧版只有 4 个色块（诞生/途经/终点/档案），而 marker 实际有 5 种（另外还有
+   「省级大区」的褐色点），且旧标签会带「≈」前缀，与图例对不上。
+   现改为 5 项、贴在左下角、极小号，不占流内高度。 */
+.map-legend {
+  position: absolute;
+  left: 8px;
+  /* 底部让出「单卡跟随 / 全部展开」胶囊（高约 26px + 6px 边距），
+     否则 375 宽的屏上两者会重叠。 */
+  bottom: 38px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 999rpx;
+  background: rgba(251, 247, 239, 0.9);
+  border: 1px solid rgba(181, 113, 58, 0.16);
+  box-shadow: 0 2rpx 8rpx -4rpx rgba(61, 46, 31, 0.3);
+}
+.lg-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.map-legend .legend-dot {
+  margin: 0;
+  width: 6px;
+  height: 6px;
+}
+.map-legend .legend-text {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+.map-empty {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(244, 237, 225, 0.9);
+}
+
+.map-empty-text {
+  font-size: 16px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.map-empty-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+/* ===== P1-7 热门人物 chips（空态引导） ===== */
+.hot-figures {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hot-figures-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  margin-bottom: 14rpx;
+}
+
+.hot-figures-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 0 24rpx;
+}
+
+.hot-figure-chip {
+  padding: 10rpx 30rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.35);
+  background: rgba(251, 247, 239, 0.92);
+  color: var(--accent-gold-ink);
+  font-size: var(--fs-26);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.hot-figure-chip:active {
+  background: rgba(181, 113, 58, 0.18);
+}
+
+/* 「只有档案位置」的说明条：贴着地图下沿，不能与时间轴抢视觉 */
+.fp-note {
+  margin: 8px 20px 0;
+  padding: 9px 12px;
+  background: rgba(111, 106, 92, 0.08);
+  border-left: 2px solid rgba(111, 106, 92, 0.45);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.fp-note-text {
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #6b6154;
+  letter-spacing: 0;
+}
+
+/* ===== 图例色（5 态，与 marker 一一对应） ===== */
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-start {
+  background: #6b8e4e;
+}
+
+.legend-mid {
+  background: var(--accent-gold);
+}
+
+.legend-end {
+  background: var(--accent-vermillion);
+}
+
+/* 档案所载（籍贯 / 生地 / 卒地）：墨灰 —— 与金色「途经」刻意拉开 */
+.legend-origin {
+  background: #6f6a5c;
+}
+
+/* 省级 / 大区精度的点：褪色金褐（旧版 marker 标签还带「≈」，与 4 色图例对不上，
+   现在标签只留编号，精度交给这个颜色 + 卡内文字说明） */
+.legend-coarse {
+  background: #9c8a72;
+}
+
+.legend-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-right: 6px;
+}
+
+/* ===== 贴当前站 marker 的浮动卡 =====
+   宽 64%（效果图 62–68%）、高 ≤ 地图区 40%；left/top 由 JS 计算，过渡 200ms。
+   尾巴三角：卡片在点上方时朝下、翻到下方时朝上，left 用内联值对准 marker。 */
+.marker-card {
+  position: absolute;
+  z-index: 22;
+  width: 64%;
+  /* [修复] 上限由 JS 按「地图区 40%」写成像素（内联 max-height），这里的百分比
+     只作首帧兜底：map-section 是 flex 子项，百分比上限在 WebView 里会解析成 none，
+     卡片于是能长到 330px（实测）并压到图例上。 */
+  max-height: 40%;
+  /* [修复] 没有它时，内部 scroll-view 拿不到高度会把内容画到卡框外 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--bg-card);
+  border: 1px solid rgba(181, 113, 58, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 14rpx 28rpx -16rpx rgba(40, 28, 16, 0.55);
+  /* 首帧还没算出 cardSide 时先隐藏，避免卡在左上角 (0,0) 闪一下 */
+  opacity: 0;
+  transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1), top 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+}
+.marker-card.above,
+.marker-card.below,
+.marker-card.side {
+  opacity: 1;
+}
+
+.mc-tail {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin-left: -7px;
+  border: 7px solid transparent;
+}
+.marker-card.above .mc-tail {
+  bottom: -14px;
+  border-top-color: var(--text-inverse);
+  border-bottom: 0;
+}
+.marker-card.below .mc-tail {
+  top: -14px;
+  border-bottom-color: var(--text-inverse);
+  border-top: 0;
+}
+
+.mc-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 0;
+  flex: none;
+}
+.mc-pos {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  /* [2026-11-10 三修] 站号行现在可能带「· N 件大事」，而卡宽只有 64%（375 屏约 220px），
+     徽标又是「1587—1641年」这种长串。给这一行允许收缩 + 省略号，
+     否则窄屏上会被 .marker-card 的 overflow:hidden 直接切掉半个字。 */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  text-align: right;
+}
+
+/* 年份徽标：缺失时灰标「无可定年」 */
+.ybadge {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #8a5a2c;
+  background: rgba(181, 113, 58, 0.1);
+  border: 1px solid rgba(181, 113, 58, 0.28);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+.ybadge-none {
+  color: #6f6a5c;
+  background: rgba(111, 106, 92, 0.1);
+  border-color: rgba(111, 106, 92, 0.3);
+}
+
+.mc-n {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px 6px;
+  flex: none;
+  min-width: 0;
+}
+.mc-nm {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #3a2c1e;
+}
+.mc-full {
+  flex: 1;
+  min-width: 0;
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 正文：卡内滚动（小程序必须用 scroll-view，普通 view 的 overflow-y 不生效） */
+.mc-ev {
+  /* [修复] 高度由内联 cardBodyH 决定，这里不再 flex:1 去抢空间：
+     flex 拉伸会绕过卡片的 max-height 判定，滚动区高度和卡片高度对不上。 */
+  flex: none;
+  padding: 0 10px 8px;
+  border-top: 1px dashed rgba(181, 113, 58, 0.22);
+  box-sizing: border-box;
+}
+
+/* 一站多件：逐条列全 */
+.evb {
+  position: relative;
+  padding: 7px 0;
+  border-bottom: 1px dotted rgba(139, 115, 85, 0.16);
+}
+.evb:last-child {
+  border-bottom: 0;
+}
+.et {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.ey {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a5a2c;
+}
+.en {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a2c1e;
+  line-height: 1.45;
+}
+.ed {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 1.62;
+  color: #5a4632;
+}
+.mc-empty,
+.mc-hint {
+  display: block;
+  padding: 8px 0 2px;
+  font-size: 10.5px;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+/* ===== 增值激励条（2026-11-10 二次调整）=====
+   [与旧版的区别] 旧版进页面即显示、且与 .scrub 互斥（二选一），所以「同位同高、
+   切换不跳动」。现在**进页面不显示**：只有播完免费 2 站 / 点增强控件后才点亮，
+   此时 .scrub 仍在上方、两条并存共 96px，map-section(flex:1) 自动让出 48px，
+   JS 在 setData 回调里调 _measureLayout() 重算 _mapRect 与贴点卡，不会错位。
+   仍是流内一条（非全屏遮罩、非页面唯一出口）：免费基础功能必须始终可触达。 */
+.unlock-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: #f6ead7;
+  border-top: 1px solid rgba(181, 113, 58, 0.22);
+  box-shadow: 0 -6rpx 16rpx -12rpx rgba(61, 46, 31, 0.4);
+}
+.ub-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ub-title {
+  font-size: var(--fs-24);
+  color: #6b5238;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ub-desc {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ub-btn {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: var(--accent-gold);
+  color: var(--bg-elevated);
+  font-size: var(--fs-24);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3rpx 8rpx -4rpx rgba(181, 113, 58, 0.8);
+}
+.ub-btn-on {
+  background: #9c5f2e;
+}
+
+/* ===== 时间轴条（48px，流内，不遮地图） ===== */
+.scrub {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: var(--bg-card);
+  border-top: 1px solid rgba(181, 113, 58, 0.14);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -6rpx 16rpx -12rpx rgba(61, 46, 31, 0.4);
+}
+
+/* [2026-11-10] 播放按钮已移到 .scrub 最右侧（见 wxml 同日注释）。
+   26px → 30px：原尺寸在拇指区偏小、且用户反馈「点播放不顺手」，
+   放大到 30px 仍远小于 48px 条高，不撑布局；图标同步等比微调。 */
+.play-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3rpx 8rpx -4rpx rgba(181, 113, 58, 0.8);
+}
+.play-btn-on {
+  background: var(--accent-vermillion);
+}
+.play-triangle {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 0 6px 9px;
+  border-color: transparent transparent transparent var(--bg-elevated);
+  margin-left: 2px;
+}
+.play-pause {
+  display: flex;
+  gap: 3px;
+}
+.play-pause-bar {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  background: var(--bg-elevated);
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 24px;
+}
+.rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 11px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(61, 46, 31, 0.13);
+}
+.fill {
+  position: absolute;
+  left: 0;
+  top: 11px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent-gold);
+  transition: width 0.2s;
+}
+.tick {
+  position: absolute;
+  top: 7px;
+  width: 1px;
+  height: 11px;
+  background: rgba(61, 46, 31, 0.2);
+}
+.tick-yr {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  line-height: 1;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.tick-first .tick-yr {
+  left: 0;
+  transform: none;
+}
+.tick-last .tick-yr {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.pin {
+  position: absolute;
+  top: 6px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 2rpx 5rpx rgba(61, 46, 31, 0.3);
+  transform: translateX(-50%);
+  transition: left 0.2s;
+}
+
+.steps {
+  flex: none;
+  display: flex;
+  gap: 4px;
+}
+.step {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid rgba(181, 113, 58, 0.22);
+  background: rgba(251, 247, 239, 0.85);
+  color: #8a5a2c;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+  padding-bottom: 1px;
+}
+
+.allbtn {
+  flex: none;
+  font-size: 9.5px;
+  color: #8a5a2c;
+  border: 1px solid rgba(181, 113, 58, 0.3);
+  border-radius: 999rpx;
+  padding: 4px 8px;
+  white-space: nowrap;
+  background: rgba(181, 113, 58, 0.06);
+}
+
+/* ===== 全部站点卡片：1→N 纵向卡片列表 ===== */
+.alllist {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+.al-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  background: var(--bg-card);
+  border-bottom: 1px solid rgba(139, 115, 85, 0.18);
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4rpx 10rpx -8rpx rgba(61, 46, 31, 0.6);
+}
+.al-head-t {
+  flex: 1;
+  min-width: 0;
+}
+.al-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  letter-spacing: 0;
+  color: #3a2c1e;
+}
+.al-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.al-close {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(181, 113, 58, 0.28);
+  color: #8a5a2c;
+  font-size: 14px;
+  line-height: 24px;
+  text-align: center;
+}
+
+.al-body {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 12px 16px;
+  box-sizing: border-box;
+}
+
+.al-c {
+  display: flex;
+  gap: 9px;
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  background: var(--bg-card);
+  border: 1px solid rgba(181, 113, 58, 0.2);
+  border-radius: 10px;
+}
+.al-c-on {
+  border-color: #8a3b2c;
+  box-shadow: 0 0 0 1px rgba(166, 59, 42, 0.35);
+}
+.al-n {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(181, 113, 58, 0.12);
+  color: #8a5a2c;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+}
+.al-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.al-t1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.al-nm {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: #3a2c1e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.al-arch {
+  flex: none;
+  font-size: 9px;
+  line-height: 1.5;
+  padding: 0 4px;
+  color: #6f6a5c;
+  border: 1px solid rgba(111, 106, 92, 0.4);
+  border-radius: 2px;
+  letter-spacing: 0;
+}
+.al-t3 {
+  font-size: 11.5px;
+  color: #5a4632;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.al-pos {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+.al-bottom {
+  height: 12px;
+}
+
+/* ===== 视图开关：单卡跟随 / 全部展开（效果图图三） =====
+   贴地图底部居中，时间轴在其下方（流内）。图例已上移到 38px 让位。 */
+.mode-switch {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  background: rgba(251, 247, 239, 0.96);
+  border: 1px solid rgba(181, 113, 58, 0.3);
+  border-radius: 999px;
+  box-shadow: 0 8rpx 18rpx -10rpx rgba(40, 28, 16, 0.5);
+}
+.ms-opt {
+  padding: 3px 12px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #7a6a56;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.ms-on {
+  background: #8a5a2c;
+  color: #fff;
+}
+
+/* ===== 全部展开：站点卡改由地图原生 callout 渲染 =====
+   位置与样式都在 marker.callout 里（见 footprint.js::CALLOUT_STYLE），
+   不再有 .mini-* 的 HTML 浮层，故此处无对应样式。 */
+
+/* ===== 短屏（iPhone SE / 667px 高）收紧头部下留白 =====
+   地图高度 = 屏高 - 头部 - 时间轴 48 - dock 实测高度；
+   667 屏上头部减 8px 后地图可到 431px 量级（812 屏不受影响）。 */
+@media (max-height: 700px) {
+  .fp-head {
+    padding-bottom: 8rpx;
+  }
+  .fp-head-sub {
+    margin-top: 2rpx;
+  }
+}

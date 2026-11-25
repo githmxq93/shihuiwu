@@ -1,0 +1,158 @@
+<view wx:if="{{visible}}" class="gl-root">
+  <!-- 透明拦截层：做题卡下方，阻止误触页面其他区域；不参与视觉 -->
+  <view class="gl-block" catchtouchmove="noop" catchtap="noop"></view>
+
+  <!-- 整屏压暗层：tabBar 步骤用它替代挖孔；下拉示意步没有孔，也靠它压暗页面 -->
+  <view wx:if="{{tabbarOn || dimOn}}" class="gl-dim"></view>
+
+  <!-- 挖孔：自身透明，靠超大 box-shadow 把四周压暗 -->
+  <view
+    wx:if="{{hole.on}}"
+    class="gl-hole"
+    style="left:{{hole.left}}px;top:{{hole.top}}px;width:{{hole.width}}px;height:{{hole.height}}px;"
+  ></view>
+
+  <!-- 子元素描边：挖孔是并集，内部要单独指出的局部再描一圈，不挖孔 -->
+  <view
+    wx:for="{{rings}}"
+    wx:for-index="ri"
+    wx:key="ri"
+    class="gl-ring"
+    style="left:{{item.left}}px;top:{{item.top}}px;width:{{item.width}}px;height:{{item.height}}px;"
+  ></view>
+
+  <!-- 静态复刻：需要展开 / 点开 / 切换才能看到的面板。
+       四种形态：filter = 首页搜索范围下拉（贴锚点下方）；
+       sheet = 底部半屏详情（贴屏幕底边）；
+       pulldown = 顶部下拉提示条（下拉刷新那一步，只示意手势方向）；
+       year = 平行时空的选年份态（纪年输入 + 对照 + 快捷年份，贴分段胶囊下方）。
+       只是示意，pointer-events 关闭，不触发页面真实交互，也不改变页面状态 -->
+  <view wx:if="{{mock.on}}" class="gl-mock gl-mock-{{mock.type}}" style="left:{{mock.left}}px;top:{{mock.top}}px;width:{{mock.width}}px;">
+    <block wx:if="{{mock.type === 'sheet'}}">
+      <view class="gl-ms-grab"></view>
+      <view class="gl-ms-head">
+        <view class="gl-ms-title">
+          <text class="gl-ms-name">夏朝</text>
+          <text class="gl-ms-span">前2070 — 前1600 · 470年</text>
+        </view>
+        <text class="gl-ms-close">收起</text>
+      </view>
+      <view class="gl-ms-cap">都城：阳城、斟鄩、安邑等</view>
+      <view class="gl-ms-text">约前2070年 – 约前1600年，中国史书记载的第一个世袭制王朝。共传十四代、十七王，后被商汤所灭。</view>
+    </block>
+    <block wx:elif="{{mock.type === 'year'}}">
+      <!-- 与页面选年份态同结构：纪年前缀 + 年份输入 + 对照按钮，下方是快捷锚点 -->
+      <view class="gl-my-field">
+        <text class="gl-my-prefix">纪年</text>
+        <text class="gl-my-input">输入年份，如 1101 / 前221</text>
+        <view class="gl-my-go">对照<text class="gl-my-arrow">›</text></view>
+      </view>
+      <view class="gl-my-label">
+        <view class="gl-my-bar"></view>
+        <text>快捷锚点</text>
+        <text class="gl-my-en">收录 前3000 — 2026</text>
+      </view>
+      <view class="gl-my-picks">
+        <view class="gl-my-pick" wx:for="{{mockPicks}}" wx:key="year">
+          <text class="gl-my-year">{{item.year}}</text>
+          <text class="gl-my-tag">{{item.tag}}</text>
+        </view>
+      </view>
+      <view class="gl-my-hint">共 9 个快捷年份，点一格直接进入</view>
+    </block>
+    <block wx:elif="{{mock.type === 'pulldown'}}">
+      <view class="gl-mp-bar"></view>
+      <view class="gl-mp-row">
+        <text class="gl-mp-text">往下拖一下</text>
+      </view>
+      <!-- 向下的长箭头：奶白填充 + 深棕描边 + 阴影，与卡片箭头同族；
+           长度由 JS 按「提示条底边到卡片顶边」的距离给出，动画只做 transform 平移 -->
+      <view class="gl-pd-arrow" style="height:{{mock.arrowH}}px;">
+        <view class="gl-pd-stem"></view>
+        <view class="gl-pd-head">
+          <view class="gl-pd-wing gl-pd-wing-l"></view>
+          <view class="gl-pd-wing gl-pd-wing-r"></view>
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="gl-mock-list">
+        <view class="gl-mock-item gl-mock-item-on">
+          <view class="gl-mock-badge">全</view>
+          <text class="gl-mock-label">全部</text>
+        </view>
+        <view class="gl-mock-item">
+          <view class="gl-mock-badge">帝</view>
+          <text class="gl-mock-label">帝王</text>
+        </view>
+        <view class="gl-mock-item">
+          <view class="gl-mock-badge">臣</view>
+          <text class="gl-mock-label">非帝王</text>
+        </view>
+      </view>
+      <view class="gl-mock-hint">输入关键词后，本筛选才生效</view>
+    </block>
+  </view>
+
+  <view class="gl-card" style="top:{{cardTop}}px;opacity:{{cardReady ? 1 : 0}};">
+    <!-- 指向目标的小三角：卡片在目标下方→朝上；翻到上方→朝下。
+         下拉示意步不圈目标，也不显示这个三角（方向交给上面那条长箭头） -->
+    <view wx:if="{{arrow.on && !dimOn}}" class="gl-arrow gl-arrow-{{arrow.dir}}" style="left:{{arrow.left}}px;"></view>
+
+    <view class="gl-meta">
+      <text class="gl-step">第 {{index + 1}} / {{total}} 步</text>
+      <view class="gl-dots">
+        <view wx:for="{{dots}}" wx:key="id" class="gl-dot {{item.on ? 'gl-dot-on' : ''}}"></view>
+      </view>
+    </view>
+
+    <view class="gl-title">{{step.title}}</view>
+    <view class="gl-body">{{step.body}}</view>
+    <view wx:if="{{step.tip}}" class="gl-tip">{{step.tip}}</view>
+
+    <view class="gl-actions">
+      <view class="gl-skip" catchtap="onSkip" hover-class="gl-hover">跳过</view>
+      <view class="gl-btns">
+        <view wx:if="{{index > 0}}" class="gl-btn" catchtap="onPrev" hover-class="gl-hover">上一步</view>
+        <view class="gl-btn gl-btn-main" catchtap="onNext" hover-class="gl-hover">
+          {{index === total - 1 ? '开始使用' : '下一步'}}
+        </view>
+      </view>
+    </view>
+
+    <view class="gl-foot">之后可在「我的 → 使用指南」重看</view>
+  </view>
+
+  <!-- 讲 tabBar 的步骤：真 tabBar 已被隐藏，这里画同尺寸静态复刻；
+       用一个大方框把四个 tab 一起框住（不是四个小框），表达“这四个是一组入口”。
+       矩形由 JS 按 屏幕高 - 10 - (50 + 安全区) 算出，四边完整落在屏幕内。 -->
+  <view
+    wx:if="{{tabbarOn && tabFrame.on}}"
+    class="gl-tabbar"
+    style="left:{{tabFrame.left}}px;top:{{tabFrame.top}}px;width:{{tabFrame.width}}px;height:{{tabFrame.height}}px;padding-bottom:{{safeBottom}}px;"
+  >
+    <view class="gl-tb">
+      <text class="gl-tb-glyph">◉</text>
+      <text class="gl-tb-t">首页</text>
+    </view>
+    <view class="gl-tb">
+      <text class="gl-tb-glyph">▤</text>
+      <text class="gl-tb-t">专题</text>
+    </view>
+    <view class="gl-tb">
+      <text class="gl-tb-glyph">⌕</text>
+      <text class="gl-tb-t">查询</text>
+    </view>
+    <view class="gl-tb">
+      <text class="gl-tb-glyph">◍</text>
+      <text class="gl-tb-t">我的</text>
+    </view>
+  </view>
+
+  <!-- 外框单独成层，且渲染在 .gl-tabbar 之后：压住 bar 自身背景，四条边都可见 -->
+  <view
+    wx:if="{{tabbarOn && tabFrame.on}}"
+    class="gl-tabframe"
+    style="left:{{tabFrame.left}}px;top:{{tabFrame.top}}px;width:{{tabFrame.width}}px;height:{{tabFrame.height}}px;"
+  ></view>
+</view>

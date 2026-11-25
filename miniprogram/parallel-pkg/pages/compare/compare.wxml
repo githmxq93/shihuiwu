@@ -1,0 +1,528 @@
+<wxs module="axis" src="./axis.wxs" />
+
+<!-- 往来条目卡：按设计页 interactions-rich 的 ix 卡结构重建；字段全部来自 interactions-data，原样展示 -->
+<template name="ix-card">
+  <view class="ix {{doubt ? 'is-doubt' : ''}}">
+    <view class="ix-bar" style="{{doubt ? '' : 'background:' + color + ';'}}"></view>
+    <view class="ix-top">
+      <text class="ix-type" style="color:#FBF7EF;background:{{color}};">{{label}}</text>
+      <text class="ix-year" style="color:{{color}};background:{{soft}};">{{yearText}}</text>
+      <text class="ix-cross" wx:if="{{cross}}">{{cross}}</text>
+      <text class="ix-grade {{doubt ? 'g-doubt' : 'g-ok'}}">{{doubt ? '存疑' : '确证'}}</text>
+    </view>
+    <text class="ix-name">{{foreignName}}</text>
+    <text class="ix-sub" wx:if="{{foreignRole || foreignPolity}}"><text class="ix-sub-b">{{foreignRole}}</text><text wx:if="{{foreignRole && foreignPolity}}"> · </text>{{foreignPolity}}</text>
+    <view class="ix-meta">
+      <view class="ix-meta-c">
+        <text class="ix-meta-k">时间</text><text class="ix-meta-v">{{timeText}}</text>
+      </view>
+      <view class="ix-meta-c">
+        <text class="ix-meta-k">地点</text><text class="ix-meta-v">{{place}}</text>
+      </view>
+      <view class="ix-meta-c">
+        <text class="ix-meta-k">对方</text><text class="ix-meta-v">{{foreignRole || foreignName}}</text>
+      </view>
+      <view class="ix-meta-c">
+        <text class="ix-meta-k">政权</text><text class="ix-meta-v">{{foreignPolity || '—'}}</text>
+      </view>
+    </view>
+    <view class="ix-rows">
+      <view class="ix-row" wx:if="{{howMet}}">
+        <text class="ix-row-k">怎么接触</text><text class="ix-row-v">{{howMet}}</text>
+      </view>
+      <view class="ix-row" wx:if="{{process}}">
+        <text class="ix-row-k">经过</text><text class="ix-row-v">{{process}}</text>
+      </view>
+      <view class="ix-row" wx:if="{{resultImpact}}">
+        <text class="ix-row-k">结果与影响</text><text class="ix-row-v">{{resultImpact}}</text>
+      </view>
+    </view>
+    <view class="ix-quote" style="border-left-color:{{color}};">
+      <view class="ix-quote-hd" data-k="{{k}}" bindtap="onToggleIxItem"
+            hover-class="ix-quote-hover" hover-stay-time="60">
+        <text class="qd-mark" style="color:{{color}};">原文</text>
+        <text class="qd-short">{{quoteShort}}</text>
+        <text class="qd-more">{{open ? '收起 ▴' : '展开 ▾'}}</text>
+      </view>
+      <view class="ix-quote-bd" wx:if="{{open}}">
+        <text class="qd-full">{{quote}}</text>
+        <text class="qd-cite">{{quoteSrc}}</text>
+        <view class="qd-why">
+          <text class="qd-why-b">等级 {{grade}}</text>
+          <text class="qd-why-t">　{{gradeWhy}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="ix-src">
+      <text class="ix-src-e">来源</text>
+      <text class="gchip g-{{grade}}">{{grade}} 级</text>
+      <view class="ix-src-hit" wx:for="{{sources}}" wx:for-item="s" wx:key="t">
+        <text class="ix-src-i">{{s.t}}</text>
+      </view>
+    </view>
+    <view class="ix-note" wx:if="{{note}}">{{note}}</view>
+  </view>
+</template>
+<view class="page">
+  <view class="bg-grain"></view>
+  <nav-bar title="中外对照" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <view class="cmp" style="padding-top: {{navBarHeight}}px;">
+    <!-- ── 可收起头部：深色统计卡 + 地区/搜索 + 年代段口径。
+         高度先由 JS 量成定值，收起时做 px→0 的高度过渡；列表与密度柱都不重渲染。 ── -->
+    <view class="head-main {{headStage ? 'is-folded' : ''}} {{regionOpen && !headStage ? 'is-dd' : ''}}"
+          style="{{headMainH ? 'height:' + (headStage ? 0 : headMainH) + 'px;' : ''}}">
+    <!-- ── 深色统计卡：英文小字已删除，从标题直接开始 ── -->
+    <view class="hero">
+      <view class="hero-mark">年</view>
+      <view class="hero-title">同一时间，两个世界</view>
+      <view class="hero-sub">{{meta.anchors ? '前4500 — 1949 · ' + meta.anchors + ' 个年代段' : '前4500 — 1949'}}</view>
+      <view class="hero-stats">
+        <view class="hs"><text class="hs-b">{{meta.chinaCount}}</text><text class="hs-t">中国</text></view>
+        <view class="hs"><text class="hs-b">{{meta.worldCount}}</text><text class="hs-t">域外</text></view>
+        <view class="hs"><text class="hs-b">{{regions.length > 1 ? regions.length - 1 : 0}}</text><text class="hs-t">地区</text></view>
+        <view class="hs"><text class="hs-b">{{meta.anchors}}</text><text class="hs-t">年代段</text></view>
+      </view>
+      <view class="hero-dist">
+        <view class="hd-seg" wx:for="{{dist}}" wx:key="key" style="flex: {{item.flex}}; background: {{item.color}};"></view>
+      </view>
+    </view>
+
+    <!-- ── 工具条：地区下拉 + 搜索（人物靠搜索承担）── -->
+    <view class="filters">
+      <view class="frow">
+        <view class="dd" id="guide-cmp-region" bindtap="onToggleRegion">
+          <text class="dd-t">{{regionLabel}}</text>
+          <text class="dd-c">{{regionCount}}</text>
+          <text class="dd-arrow {{regionOpen ? 'up' : ''}}">▾</text>
+        </view>
+        <view class="sbox {{searchFocus ? 'focus' : ''}}" id="guide-cmp-search">
+          <text class="sico">查</text>
+          <input class="sinput" value="{{query}}" placeholder="年份 / 事件 / 人物，如前221"
+                 placeholder-class="sph" confirm-type="search"
+                 bindinput="onSearchInput" bindconfirm="onSearchConfirm"
+                 bindfocus="onSearchFocus" bindblur="onSearchBlur" />
+          <view class="sclear" wx:if="{{query}}" bindtap="onClearSearch">×</view>
+        </view>
+      </view>
+
+      <view class="dd-mask" wx:if="{{regionOpen}}" bindtap="onCloseRegion"></view>
+      <view class="dd-panel" wx:if="{{regionOpen}}">
+        <scroll-view class="dd-scroll" scroll-y="{{true}}">
+          <view class="dd-item {{item.key === regionKey ? 'on' : ''}}"
+                wx:for="{{regions}}" wx:key="key"
+                data-key="{{item.key}}" bindtap="onPickRegion">
+            <view class="dd-dot" style="background: {{item.color}};"></view>
+            <text class="dd-name">{{item.label}}</text>
+            <text class="dd-n">{{item.count}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- ── 年代段口径：全部年代段 / 仅中外同段 ── -->
+      <view class="toolbar" wx:if="{{!loading && !loadError}}">
+        <view class="seg" id="guide-cmp-pair">
+          <view class="seg-b {{!pairOnly ? 'on' : ''}}" bindtap="onShowAll">全部年代段</view>
+          <view class="seg-b {{pairOnly ? 'on' : ''}}" bindtap="onTogglePair">仅中外同段</view>
+        </view>
+        <text class="tb-hint">{{hint}}</text>
+      </view>
+    </view>
+    </view>
+
+    <!-- ── 时间轴：纯 view 密度柱（不上 canvas，避免原生层压住下拉与引导卡）。
+         headStage=1 压缩成吸顶细条（保留游标 / 年份 / 第 x 段）；
+         headStage=2 收成 44px 摘要条（年份 · 第 x 段），点一下立即展开。 ── -->
+    <view class="tl {{headStage === 1 ? 'compact' : ''}}{{headStage === 2 ? 'mini' : ''}}"
+          id="guide-cmp-axis" wx:if="{{!loading && !loadError}}" bindtap="onHeadTap">
+      <view class="tl-head">
+        <text class="tl-cap">时间轴</text>
+        <view class="tl-right">
+          <text class="tl-idx">第 {{activeIndex + 1}} / {{meta.anchors}} 段</text>
+          <text class="tl-now">{{activeLabel}}</text>
+        </view>
+        <text class="tl-fold" wx:if="{{headStage === 2}}">点击展开 ▾</text>
+      </view>
+      <!-- 压缩时只纵向缩放这一层，密度柱与游标仍是同一份数据，不重渲染 -->
+      <view class="tl-zone">
+        <!-- 父层 catchtouchstart / catchtouchmove 锁住页面滚动；子层 WXS 逐帧移动游标 -->
+        <view class="tl-bars" catchtouchstart="onAxisStart" catchtouchmove="onAxisHold">
+          <view class="tl-b tl-b-cn" wx:for="{{barsCn}}" wx:key="i"
+                style="left: {{item.l}}%; width: {{barW}}%; height: {{item.h}}rpx;"></view>
+          <view class="tl-b tl-b-wd" wx:for="{{barsWd}}" wx:key="i"
+                style="left: {{item.l}}%; width: {{barW}}%; height: {{item.h}}rpx;"></view>
+          <!-- 游标：按下/拖动时由 WXS 直接改 left，不走 setData，保证逐帧跟手 -->
+          <view class="tl-thumb" id="tlThumb" style="left: {{thumbPct}}%;"></view>
+          <view class="tl-hit" data-left="{{trackLeft}}" data-width="{{trackWidth}}" data-total="{{meta.anchors}}"
+                bindtouchstart="{{axis.start}}" bindtouchmove="{{axis.move}}"
+                bindtouchend="onAxisEnd" catchtouchcancel="onAxisEnd"></view>
+        </view>
+      </view>
+      <view class="tl-ticks">
+        <text class="tk" wx:for="{{ticks}}" wx:key="pct" style="left: {{item.pct}}%;">{{item.label}}</text>
+      </view>
+      <view class="tl-legend">
+        <text class="lg lg-cn">中国</text>
+        <text class="lg lg-wd">域外</text>
+      </view>
+    </view>
+
+    <!-- ── 双栏年表 ── -->
+    <scroll-view class="cmp-body" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}"
+                 bounces="{{false}}" scroll-into-view="{{scrollInto}}" scroll-with-animation="{{scrollAnim}}"
+                 bindscroll="onBodyScroll" bindscrolltolower="onReachLower">
+      <view class="loading" wx:if="{{loading}}">
+        <view class="ld-dot"></view>
+        <text>正在载入 173 段年表…</text>
+      </view>
+      <view class="err" wx:elif="{{loadError}}">数据载入失败，请返回重试</view>
+      <block wx:else>
+        <!-- ── 人物结果：全部在本页看完。
+             ① 基本资料 ② 入口「中外来往」 ③ 底部按年升序的合并时间轴（本人 / 同期人物 / 事件 / 往来）。
+             同期只表示同一段时间，不代表认识或有往来。 ── -->
+        <view class="pp" id="person-top" wx:if="{{person.active}}">
+          <view class="pp-hd">
+            <text class="pp-name">{{person.name}}</text>
+            <text class="pp-life">{{person.lifeText}}</text>
+            <text class="pp-src">{{person.sourceLabel}}</text>
+          </view>
+          <view class="pp-meta" wx:if="{{person.identity || person.area || person.reignText}}">
+            <view class="pp-mrow" wx:if="{{person.identity}}">
+              <text class="pp-mk">身份</text>
+              <text class="pp-mv">{{person.identity}}</text>
+            </view>
+            <view class="pp-mrow" wx:if="{{person.area}}">
+              <text class="pp-mk">地域</text>
+              <text class="pp-mv">{{person.area}}</text>
+            </view>
+            <view class="pp-mrow" wx:if="{{person.reignText}}">
+              <text class="pp-mk">在位</text>
+              <text class="pp-mv">{{person.reignText}}</text>
+            </view>
+          </view>
+          <view class="pp-desc" wx:if="{{person.desc}}">{{person.desc}}</view>
+          <view class="pp-win">同期区间 {{person.windowLabel}} · 同期 ≠ 往来</view>
+
+          <!-- ── 唯一入口「中外来往」：同期人物与事件已全部并入下方时间轴 ── -->
+          <view class="pp-acts is-solo" id="person-acts">
+            <view class="pab" data-type="ix" bindtap="onOpenPanel"
+                  hover-class="pab-on" hover-stay-time="60">
+              <view class="pab-top">
+                <text class="pab-t">中外来往</text>
+                <text class="pab-c">{{person.ixTotal}}</text>
+              </view>
+              <text class="pab-s">有据 {{person.ixTotal - person.ixDoubt}} · 存疑 {{person.ixDoubt}}</text>
+              <text class="pab-go">{{person.ixTotal ? '查看往来' : '暂无条目'}} ›</text>
+            </view>
+          </view>
+
+          <!-- ── 合并时间轴：本人 / 同期人物 / 事件 / 往来 四类按年升序，节点卡左右交错 ── -->
+          <view class="ptl" id="person-tl">
+            <view class="ptl-hd">
+              <text class="ptl-t">人物 · 事件 · 往来</text>
+              <text class="ptl-s">按年升序 · 左右交错</text>
+            </view>
+            <text class="ptl-tip">同期人物取自域外人物库（中土人物库未随包）；事件含域外事件库与中国年表原书条目。</text>
+            <text class="ptl-meta" wx:if="{{person.tlMeta}}">{{person.tlMeta}}</text>
+            <!-- 图例 + 分段进度：四类节点一眼分清，并显示已渲染 / 总节点 -->
+            <view class="ptl-legend">
+              <text class="plg k-life">本人</text>
+              <text class="plg k-sync">同期人物</text>
+              <text class="plg k-event">事件</text>
+              <text class="plg k-ix">往来</text>
+              <text class="plg-n">已显示 {{person.tlShown}} / 共 {{person.tlTotal}}</text>
+            </view>
+
+            <!-- 同世对照：本人与同期人物的生卒条，按同一条年份尺摆放 -->
+            <view class="lvb" id="person-lives" wx:if="{{person.tlLives.rows.length > 1}}">
+              <view class="lvb-hd">
+                <text class="lvb-t">同世对照</text>
+                <text class="lvb-s">生卒条 · 按原样，不补缺</text>
+              </view>
+              <view class="lvb-row" wx:for="{{person.tlLives.rows}}" wx:key="name">
+                <view class="lvb-n">
+                  <text class="lvb-nm {{item.own ? 'own' : ''}}">{{item.name}}</text>
+                  <text class="lvb-y">{{item.sT}}—{{item.eT}}</text>
+                </view>
+                <view class="lvb-track">
+                  <view class="lvb-mk" wx:for="{{person.tlLives.marks}}" wx:for-item="mk" wx:key="k"
+                        style="left: {{mk.p}}%;"></view>
+                  <view class="lvb-bar {{item.own ? 'own' : ''}}"
+                        style="left: {{item.left}}%; width: {{item.w}}%;"></view>
+                </view>
+              </view>
+              <view class="lvb-row lvb-srow">
+                <view class="lvb-n"></view>
+                <view class="lvb-track">
+                  <text class="lvb-sc sc-l">{{person.tlLives.minT}}</text>
+                  <text class="lvb-sc sc-r">{{person.tlLives.maxT}}</text>
+                </view>
+              </view>
+              <text class="lvb-note">竖虚线为本人出生 / 卒年；此处只列最近的 7 位同期人物，其余见轴体。</text>
+            </view>
+
+            <!-- 轴体：年份按比例留距，同年合并成组；每十年一条刻度与分段底色带 -->
+            <view class="ptl-axis">
+              <view class="ptl-grp" wx:for="{{person.tlGroups}}" wx:key="key"
+                    style="padding-top: {{item.mt}}rpx; background: {{item.bg}};">
+                <view class="ptl-seg" wx:if="{{item.seg}}">
+                  <text class="ptl-seg-t">{{item.seg}}</text>
+                  <view class="ptl-seg-l"></view>
+                </view>
+                <view class="ptl-g {{item.here ? 'is-here' : ''}}">
+                  <view class="ptl-yr k-{{item.strong}} {{item.strong === 'life' || item.strong === 'ix' ? 'major' : ''}}">
+                    <text>{{item.yearText}}</text>
+                    <text class="ptl-yr-n" wx:if="{{item.count > 1}}">{{item.count}}</text>
+                  </view>
+                  <view class="ptl-here" wx:if="{{item.here}}">你在这里 · 卒</view>
+                  <view class="ptl-i {{n.side}}" wx:for="{{item.nodes}}" wx:for-item="n" wx:key="k"
+                        id="tl-{{n.k}}" data-k="{{n.k}}" bindtap="onOpenTlNode"
+                        hover-class="ptl-i-hover" hover-stay-time="60">
+                    <view class="ptl-card k-{{n.kind}}">
+                      <view class="ptl-c-hd">
+                        <text class="ptl-tag k-{{n.kind}}">{{n.tag}}</text>
+                        <text class="ptl-cm" wx:if="{{n.meta}}">{{n.meta}}</text>
+                      </view>
+                      <text class="ptl-t">{{n.title}}</text>
+                      <text class="ptl-b" wx:if="{{n.brief}}">{{n.brief}}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <!-- 续段入口：滚到轴尾会自动加载，这里同时给出可点兜底与进度 -->
+            <view class="ptl-load" wx:if="{{person.tlMore}}" bindtap="onTlMore"
+                  hover-class="ptl-load-hover" hover-stay-time="60">
+              <text class="ptl-load-t">继续下滑加载下一段</text>
+              <text class="ptl-load-n">已显示 {{person.tlShown}} / 共 {{person.tlTotal}} 节点</text>
+            </view>
+            <view class="ptl-note" wx:elif="{{person.timeline.length}}">已显示全部 {{person.tlTotal}} 个节点。</view>
+            <view class="ptl-note" wx:if="{{person.tlNote}}">{{person.tlNote}}</view>
+            <view class="ptl-note" wx:if="{{!person.timeline.length}}">暂无可定年的节点。</view>
+          </view>
+        </view>
+
+        <view class="go-card" wx:if="{{goText && goKind === 'year'}}" bindtap="onGoResult">
+          <view class="gc-main">
+            <text class="gc-t">{{goText}}</text>
+            <text class="gc-s">原有「同年中土与世界」结果页仍可进入</text>
+          </view>
+          <text class="gc-arrow">›</text>
+        </view>
+
+        <!-- 人物模式下年表已并入人物卡底部的时间轴，不再重复渲染双栏年表 -->
+        <block wx:if="{{!person.active}}">
+        <view class="none" wx:if="{{!bands.length}}">
+          <text class="none-t">这一段没有命中的条目</text>
+          <text class="none-s" wx:if="{{pLoading}}">正在人物库中检索「{{query}}」…</text>
+          <text class="none-s" wx:else>换一个年份、事件或人物再试；也可点上方地区改回「全部」。</text>
+        </view>
+
+        <view class="band {{item.slim ? 'slim' : ''}}" wx:for="{{bands}}" wx:key="i" wx:for-index="bi" id="b{{item.i}}">
+          <view class="band-head">
+            <view class="bh-left">
+              <text class="bh-year {{item.neg ? 'neg' : ''}}">{{item.yearLabel}}</text>
+              <text class="bh-cn" wx:if="{{item.cn}}">中 {{item.cn}}</text>
+              <text class="bh-wd" wx:if="{{item.wd}}">外 {{item.wd}}</text>
+            </view>
+            <text class="bh-page" wx:if="{{item.page}}">P{{item.page}}</text>
+          </view>
+
+          <view class="band-slim" wx:if="{{item.slim}}">{{item.slimText}}</view>
+
+          <view class="cols" wx:else>
+            <view class="col">
+              <view class="col-hd col-hd-cn">中国</view>
+              <view class="ev" wx:for="{{item.china}}" wx:for-item="ev" wx:for-index="ei" wx:key="k"
+                    data-bi="{{bi}}" data-col="china" data-ei="{{ei}}" bindtap="onToggleEntry">
+                <view class="ev-top">
+                  <view class="ev-dot" style="background: {{ev.dot}};"></view>
+                  <text class="ev-year {{ev.wait ? 'wait' : ''}}">{{ev.yearText}}</text>
+                  <text class="ev-tag">{{ev.tag}}</text>
+                </view>
+                <view class="ev-title">{{ev.title}}</view>
+                <view class="ev-desc" wx:if="{{ev.open}}">{{ev.desc}}</view>
+                <view class="ev-src" wx:if="{{ev.open}}">{{ev.src}}</view>
+              </view>
+              <view class="col-empty" wx:if="{{!item.cn}}">此段无中国条目</view>
+            </view>
+
+            <view class="col col-r">
+              <view class="col-hd col-hd-wd">域外</view>
+              <view class="ev" wx:for="{{item.world}}" wx:for-item="ev" wx:for-index="ei" wx:key="k"
+                    data-bi="{{bi}}" data-col="world" data-ei="{{ei}}" bindtap="onToggleEntry">
+                <view class="ev-top">
+                  <view class="ev-dot" style="background: {{ev.dot}};"></view>
+                  <text class="ev-year {{ev.wait ? 'wait' : ''}}">{{ev.yearText}}</text>
+                  <text class="ev-tag">{{ev.tag}}</text>
+                </view>
+                <view class="ev-title">{{ev.title}}</view>
+                <view class="ev-desc" wx:if="{{ev.open}}">{{ev.desc}}</view>
+                <view class="ev-src" wx:if="{{ev.open}}">{{ev.src}}</view>
+              </view>
+              <view class="col-empty" wx:if="{{!item.wd}}">此段无域外条目</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="tail" wx:if="{{bands.length}}">— 已到年表末尾 —</view>
+        </block>
+      </block>
+    </scroll-view>
+
+    <!-- 拖动预览：手指在轴上时浮出当前段摘要，松手立即消失并跳到该段。
+         不做拖动中实时滚动列表：173 段要跳到远处必须先把中间所有段渲染出来，
+         那样每次 touchmove 都会碰 bands 数组并重排，必然掉帧；预览卡只改两行文本。 -->
+    <view class="pv" wx:if="{{dragOn}}">
+      <view class="pv-hd">
+        <text class="pv-year">{{activeLabel}}</text>
+        <text class="pv-idx">第 {{activeIndex + 1}} / {{meta.anchors}} 段</text>
+      </view>
+      <block wx:if="{{pv}}">
+        <view class="pv-line">
+          <text class="pv-k cn">中</text>
+          <text class="pv-v">{{pv.cnText}}</text>
+        </view>
+        <view class="pv-line">
+          <text class="pv-k wd">外</text>
+          <text class="pv-v">{{pv.wdText}}</text>
+        </view>
+      </block>
+      <text class="pv-foot">松手跳到该段</text>
+    </view>
+  </view>
+
+  <!-- ── 人物页内全屏层：中外来往。fixed 覆盖整屏，但不销毁底层 scroll-view，
+       关闭后人物资料与合并时间轴仍在原滚动位置；层内按设计页结构整页呈现。 ── -->
+  <view class="pov" wx:if="{{person.panel}}">
+    <view class="pov-hd" style="padding-top: {{safeAreaTop}}px;">
+      <view class="pov-back" bindtap="onClosePanel" hover-class="pov-back-hover" hover-stay-time="60">
+        <text class="pov-back-a">‹</text>
+        <text class="pov-back-t">返回</text>
+      </view>
+      <text class="pov-t">中外来往</text>
+    </view>
+
+    <scroll-view class="pov-body" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}"
+                 scroll-into-view="{{person.panelInto}}" scroll-with-animation="{{true}}">
+      <view class="pov-inner">
+        <!-- ═══════════ ① 中外来往：设计页 interactions-rich 的页身 ═══════════ -->
+        <block wx:if="{{person.panel === 'ix'}}">
+          <!-- 图例：三层区分，默认收起；点「判定」展开口径 -->
+          <view class="lg">
+            <view class="lg-hd" bindtap="onToggleLegend" hover-class="lg-hd-hover" hover-stay-time="60">
+              <view class="lg-it"><view class="lg-dot is-ix"></view><text class="lg-t">彩色 = 有据往来</text></view>
+              <view class="lg-it"><view class="lg-dot is-du"></view><text class="lg-t">琥珀 = 存疑</text></view>
+              <text class="lg-more">{{person.legendOpen ? '收起 ▴' : '判定 ▾'}}</text>
+            </view>
+            <view class="lg-bd" wx:if="{{person.legendOpen}}">
+              <text class="lg-p"><text class="lg-b">彩色 · 确有往来：</text>有同时代或近一手文献直接记载双方接触，逐条附原文与卷次。</text>
+              <text class="lg-p"><text class="lg-b">琥珀虚线 · 存疑单列：</text>有说法但无一手记载，单列、虚线、不计入确证。</text>
+            </view>
+          </view>
+
+          <!-- 按钮行：设计页为吸顶目录；小程序放进内容流首屏，跳转层内小节 -->
+          <view class="jumpbar">
+            <view class="jb" data-target="{{person.ixPage.doubt.length ? 'sec-doubt' : 'sec-ix'}}"
+                  bindtap="onJumpPanel" hover-class="jb-on" hover-stay-time="60">
+              <text class="jb-in">{{person.ixPage.doubt.length ? '存疑卡' : '往来'}}</text>
+            </view>
+            <view class="jb" wx:if="{{person.ixPage.doubt.length}}" data-target="sec-why"
+                  bindtap="onJumpPanel" hover-class="jb-on" hover-stay-time="60">
+              <text class="jb-in">判定</text>
+            </view>
+          </view>
+
+          <!-- 人物头卡：kicker + 徽章 / 姓名 / 身份 / 地域 / 类型标签 / 三项统计 -->
+          <view class="dpc">
+            <view class="dpc-top">
+              <text class="dpc-kicker">{{person.ixPage.kicker}}</text>
+              <text class="dpc-badge {{person.ixPage.badgeDoubt ? 'is-doubt' : ''}}">{{person.ixPage.badge}}</text>
+            </view>
+            <text class="dpc-name">{{person.ixPage.name}}</text>
+            <view class="dpc-role" wx:if="{{person.ixPage.identity}}">
+              <text class="dpc-role-b">{{person.ixPage.identity}}</text>
+            </view>
+            <text class="dpc-meta" wx:if="{{person.ixPage.area}}">活动地域 · {{person.ixPage.area}}</text>
+            <text class="dpc-meta" wx:if="{{person.ixPage.meta}}">{{person.ixPage.meta}}</text>
+            <view class="dpc-types" wx:if="{{person.ixPage.types.length}}">
+              <text class="tchip" wx:for="{{person.ixPage.types}}" wx:key="label"
+                    style="color:{{item.color}};background:{{item.soft}};">{{item.label}} ×{{item.n}}</text>
+            </view>
+            <view class="dpc-stats">
+              <view class="dpc-stat" wx:for="{{person.ixPage.stats}}" wx:key="l">
+                <text class="dpc-sn">{{item.n}}</text>
+                <text class="dpc-sl">{{item.l}}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 真实往来：竖向时间线 -->
+          <view class="sec-head" id="sec-ix" wx:if="{{person.ixPage.main.length}}">
+            <text class="sec-h2">真实往来 · 有文献可考</text>
+            <text class="sec-s">{{person.ixPage.main.length}} 条 · 逐条附原文</text>
+          </view>
+          <view class="ixflow {{person.ixPage.main.length > 1 ? '' : 'is-single'}}" id="sec-ix-flow"
+                wx:if="{{person.ixPage.main.length}}">
+            <view class="ixflow-item" id="ix-{{item.k}}" wx:for="{{person.ixPage.main}}" wx:key="k">
+              <view class="ixflow-dot"></view>
+              <template is="ix-card" data="{{...item, open: person.ixOpenKey === item.k}}" />
+            </view>
+          </view>
+
+          <view class="pov-empty" wx:if="{{!person.ixPage.main.length && !person.ixPage.doubt.length}}">
+            <text class="pov-empty-t">暂无已核实往来</text>
+            <text class="pov-empty-s">只收有出处的条目，宁缺不补；同期人物与事件已并入本页时间轴。</text>
+          </view>
+
+          <!-- 存疑：单独琥珀虚线区，判定另起一块 -->
+          <block wx:if="{{person.ixPage.doubt.length}}">
+            <view class="sec-head" id="sec-doubt">
+              <text class="sec-h2">存疑 · 单列，不计入确证</text>
+              <text class="sec-s">{{person.ixPage.doubt.length}} 条 · 有说法，无一手记载</text>
+            </view>
+            <view class="ixflow is-single">
+              <view class="ixflow-item" id="ix-{{item.k}}" wx:for="{{person.ixPage.doubt}}" wx:key="k">
+                <view class="ixflow-dot is-doubt"></view>
+                <template is="ix-card" data="{{...item, open: person.ixOpenKey === item.k}}" />
+              </view>
+            </view>
+            <view class="d-why" id="sec-why">
+              <text class="d-why-t">为什么不算确证</text>
+              <text class="d-why-p">{{person.ixPage.doubtWhy}}</text>
+              <text class="d-why-li" wx:for="{{person.ixPage.doubtPoints}}" wx:key="*this">· {{item}}</text>
+            </view>
+          </block>
+
+          <view class="screen-foot">
+            <text class="foot-b">两层的区别：</text>彩色卡片是有文献的往来；琥珀虚线是存疑，不计入确证。同期人物与事件统一放在本页时间轴，按期排布。
+          </view>
+        </block>
+
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- ── 时间轴节点详情浮层：四类节点共用，底部抽屉 + 遮罩，沿用纸本口径 ── -->
+  <view class="tpop" wx:if="{{person.tlPopup}}" catchtouchmove="onTlPopHold">
+    <view class="tpop-mask" bindtap="onCloseTlPopup"></view>
+    <view class="tpop-card" catchtap="noop">
+      <view class="tpop-hd">
+        <text class="tpop-k k-{{person.tlPopup.kind}}">{{person.tlPopup.tag}}</text>
+        <text class="tpop-t">{{person.tlPopup.title}}</text>
+        <view class="tpop-x" bindtap="onCloseTlPopup" hover-class="tpop-x-hover" hover-stay-time="60">关闭</view>
+      </view>
+      <view class="tpop-rows">
+        <view class="tpop-r" wx:for="{{person.tlPopup.rows}}" wx:key="k">
+          <text class="tpop-rk">{{item.k}}</text>
+          <text class="tpop-rv">{{item.v}}</text>
+        </view>
+      </view>
+      <text class="tpop-desc" wx:if="{{person.tlPopup.desc}}">{{person.tlPopup.desc}}</text>
+      <text class="tpop-src">{{person.tlPopup.src}}</text>
+      <view class="tpop-btn" bindtap="onCloseTlPopup" hover-class="tpop-btn-hover" hover-stay-time="60">关闭</view>
+    </view>
+  </view>
+
+  <guide-layer id="guideLayer" />
+</view>

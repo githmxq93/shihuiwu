@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "历史人物查询 - 姓名、朝代与关系检索"
+}

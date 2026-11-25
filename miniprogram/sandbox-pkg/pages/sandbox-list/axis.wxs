@@ -1,0 +1,124 @@
+/**
+ * 战役列表 · 时间轴拖动的 WXS 处理器（照搬 parallel-pkg/pages/compare/axis.wxs 的做法）。
+ * 1) 游标：touchstart / touchmove 逐帧改 #tlThumb 的 left，零 setData，保证跟手；
+ * 2) 反馈：跨场时节流 callMethod('onAxisPreview')，让页面同步场次 / 年份 / 预览卡；
+ * 3) 松手后的定位与列表滚动仍由页面 onAxisEnd → _jumpTo 负责。
+ * 轨道 left / width / 总场数不在这里测量，由页面 _measureTrack() 写进 data，再通过 data-* 传进来。
+ *
+ * WXS 语法约束（改这个文件前必读）：
+ * 1) 变量声明只用 var，不用块级声明；
+ * 2) 函数只用 function 声明，不用箭头函数；
+ * 3) 不用模板字符串，字符串拼接一律用加号；
+ * 4) 不用解构、展开运算符、可选链、参数默认值；
+ * 5) 不调用内置构造函数做类型转换（如 Number、parseInt、String），数字转换用乘 1；
+ * 6) 不用 Array 的高阶方法等现代 API。
+ * 违反任意一条，微信会在编译阶段直接报 Unexpected token，整个页面都编译不过。
+ */
+function pickTouch(e) {
+  if (e.touches && e.touches.length > 0) {
+    return e.touches[0];
+  }
+  if (e.changedTouches && e.changedTouches.length > 0) {
+    return e.changedTouches[0];
+  }
+  return null;
+}
+
+// 把触点位置换算成 0~1 的进度；取不到触点或轨道宽度时返回 -1
+function ratioOf(e) {
+  var t = pickTouch(e);
+  if (!t) {
+    return -1;
+  }
+  if (!e.currentTarget || !e.currentTarget.dataset) {
+    return -1;
+  }
+  var ds = e.currentTarget.dataset;
+  // WXS 里不能调用内置构造函数，用乘 1 把 dataset 里的字符串转成数字
+  var left = ds.left * 1;
+  var width = ds.width * 1;
+  if (width <= 0) {
+    return -1;
+  }
+  var r = (t.clientX - left) / width;
+  if (r < 0) {
+    r = 0;
+  }
+  if (r > 1) {
+    r = 1;
+  }
+  return r;
+}
+
+// 直接改游标样式，不走 setData
+function paint(r, ownerInstance) {
+  if (!ownerInstance) {
+    return;
+  }
+  var thumb = ownerInstance.selectComponent('#tlThumb');
+  if (!thumb) {
+    return;
+  }
+  thumb.setStyle({
+    left: (r * 100) + '%'
+  });
+}
+
+// 上一次通知给页面的场次 / 时间戳；只有跨场且间隔够久才 callMethod，避免每次 touchmove 都打扰逻辑层
+var lastIdx = -1;
+var lastAt = 0;
+
+// 让页面同步场次 / 年份 / 预览卡。
+// 用触摸事件的 timeStamp 做 45ms 节流：文字约 22 帧/秒地更新，肉眼连贯，又不会把逻辑层打满。
+function notify(i, ownerInstance, ts) {
+  if (!ownerInstance || !ownerInstance.callMethod) {
+    return;
+  }
+  if (i < 0 || i === lastIdx) {
+    return;
+  }
+  if (ts - lastAt < 45) {
+    return;
+  }
+  lastAt = ts;
+  lastIdx = i;
+  ownerInstance.callMethod('onAxisPreview', { i: i });
+}
+
+// 用 dataset 里的总场数把进度换算成场次序号，与页面 _axisIndex 口径一致
+function indexOf(e, r) {
+  if (!e.currentTarget || !e.currentTarget.dataset) {
+    return -1;
+  }
+  var total = e.currentTarget.dataset.total * 1;
+  if (total <= 1) {
+    return -1;
+  }
+  return Math.round(r * (total - 1));
+}
+
+// 按下就先跟手一次，单击（没有 move）也不会停在旧位置等松手
+function start(e, ownerInstance) {
+  lastIdx = -1;
+  lastAt = 0;
+  var r = ratioOf(e);
+  if (r < 0) {
+    return;
+  }
+  paint(r, ownerInstance);
+  notify(indexOf(e, r), ownerInstance, e.timeStamp);
+}
+
+function move(e, ownerInstance) {
+  var r = ratioOf(e);
+  if (r < 0) {
+    return;
+  }
+  paint(r, ownerInstance);
+  notify(indexOf(e, r), ownerInstance, e.timeStamp);
+}
+
+module.exports = {
+  start: start,
+  move: move
+};

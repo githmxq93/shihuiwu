@@ -1,0 +1,310 @@
+page {
+  background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-primary) 30%, var(--bg-primary) 100%);
+  min-height: 100vh;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===== 专题头部（C 案「题签头」，随列表滚动） =====
+   深底 + 下沿 20rpx 圆角（口径同其他深色头页）。导航栏同步切深色（nav-bar dark），
+   其底部 #332820 与头部渐变起点同值 —— 两段拼成一块连续深色头部，中间不露缝。
+   2026-11-13：由浅纸头改为 C 案题签头；再按反馈删掉「卷」印章与时期签，只留标题/数据行/简介。 */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  padding: 28rpx 32rpx;
+  color: #fff7e8;
+  background:
+    radial-gradient(120% 90% at 88% 0%, rgba(207, 138, 75, 0.2) 0%, transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+}
+
+.hero-row {
+  display: flex;
+  align-items: center;
+}
+
+.hero-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 标题固定单行 + 省略：避免长专题名把头部撑高，吸顶阈值也随之跳动 */
+.hero-title {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+  font-size: 52rpx;
+  line-height: 1.2;
+  font-weight: 900;
+  color: #fff7e8;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 数据行：篇数 · 字数 · 更新日期。数字用金色衬线斜体，单位/分隔符压低亮度 */
+.hero-meta {
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  line-height: 1.4;
+  color: rgba(255, 247, 232, 0.66);
+}
+
+.meta-num {
+  font-family: Georgia, 'Noto Serif SC', serif;
+  font-style: italic;
+  font-size: var(--fs-26);
+  color: #e9c79b;
+}
+
+.meta-label {
+  color: rgba(255, 247, 232, 0.66);
+}
+
+.meta-dot {
+  margin: 0 12rpx;
+  color: rgba(255, 247, 232, 0.4);
+}
+
+/* 简介固定一行：超长省略，不把头部撑高（头部一高，吸顶阈值就跟着变） */
+.hero-desc {
+  margin-top: 16rpx;
+  font-size: var(--fs-24);
+  line-height: 1.5;
+  color: rgba(255, 247, 232, 0.78);
+  letter-spacing: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* ===== 吸顶条（深色，与头部同一套底） =====
+   滚过头部后出现，保持显示专题名。fixed 定在导航栏下沿（top 由 wxml 内联注入），
+   只在 isSticky 切换时重设，滚动中不改布局。
+   96rpx = 48px 紧凑单行：左专题名 + 右「21 篇 · 更新 10-01」。
+   触发阈值由 topic.js measureHero() 实测 .hero-section 高度算出，量不到时用兜底常量。 */
+.sticky-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 95;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 32rpx;
+  background:
+    radial-gradient(120% 90% at 88% 0%, rgba(207, 138, 75, 0.2) 0%, transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+  box-shadow: 0 6rpx 18rpx rgba(23, 18, 14, 0.28);
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.sticky-bar.is-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sticky-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: #fff7e8;
+  letter-spacing: 0;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sticky-meta {
+  flex: none;
+  margin-left: 24rpx;
+  font-size: var(--fs-20);
+  color: rgba(255, 247, 232, 0.62);
+  letter-spacing: 0;
+}
+
+/* ===== 文章列表（可滚动） ===== */
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: 0;
+}
+
+.article-list {
+  padding: 24rpx 24rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+/* 对齐 Web detail.css .topic-article-card：暖调米白卡 + 左缘主题色竖条 */
+.article-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 28rpx 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 14rpx rgba(61, 46, 31, 0.08);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.article-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4rpx;
+  background: linear-gradient(180deg, var(--accent-gold) 0%, rgba(181, 113, 58, 0.05) 100%);
+}
+
+.article-card:active {
+  background: var(--bg-card-hover);
+  border-color: rgba(181, 113, 58, 0.35);
+  transform: scale(0.985);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
+}
+
+/* 对齐 Web .topic-article-number：金色圆徽序号 */
+.article-number {
+  font-size: var(--fs-22);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.1);
+  border-radius: 50%;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.article-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.article-title {
+  font-size: var(--fs-32);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.article-summary {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.article-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 4rpx;
+}
+
+.article-figures {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.figures-label {
+  color: var(--text-muted);
+}
+
+.figures-name {
+  color: var(--accent-gold-ink);
+  font-weight: 500;
+}
+
+.article-arrow {
+  font-size: var(--fs-36);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding-top: 6rpx;
+  opacity: 0.4;
+}
+
+.bottom-spacer {
+  height: calc(60rpx + env(safe-area-inset-bottom));
+}
+
+/* ===== 三态（加载/失败/空） ===== */
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  gap: 20rpx;
+}
+
+.state-text {
+  font-size: var(--fs-28);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.state-btn {
+  margin-top: 16rpx;
+  padding: 18rpx 56rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, var(--accent-gold-light), var(--accent-gold));
+  color: var(--bg-primary);
+  font-size: var(--fs-28);
+  font-weight: 600;
+}
+
+.state-btn:active {
+  opacity: 0.85;
+}
+
+.loading-spinner {
+  width: 56rpx;
+  height: 56rpx;
+  border: 4rpx solid rgba(181, 113, 58, 0.15);
+  border-top-color: var(--accent-gold-ink);
+  border-radius: 50%;
+  animation: topic-spin 0.8s linear infinite;
+}
+
+@keyframes topic-spin {
+  to { transform: rotate(360deg); }
+}

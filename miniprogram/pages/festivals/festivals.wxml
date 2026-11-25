@@ -1,0 +1,181 @@
+<view class="page">
+  <nav-bar safeAreaTop="{{safeAreaTop}}" />
+
+  <!-- 滚动态窄标题条：fixed 贴在导航下沿（top = navH），高 88rpx = 44px。
+       与实时看板页 .stick-hd 同做法：不进文档流、只切 opacity / transform，不改高度。 -->
+  <view class="stick-hd {{hdCompact ? 'on' : ''}}" style="top:{{navH}}px">节日文化</view>
+
+  <scroll-view
+    class="page-scroll"
+    style="padding-top:{{navH}}px"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollToId}}"
+    scroll-with-animation="{{true}}"
+    bindscroll="onScroll"
+  >
+    <!-- ===== 深色头：四块金色磁贴 ===== -->
+    <view id="fest-top" class="hero">
+      <view class="hero-kicker">世慧屋 · 节庆文化</view>
+      <view class="hero-title">节日<text class="hero-title-accent">文化</text></view>
+      <view class="hero-sub">一年十二月逐月展开 · 四类可单独筛</view>
+      <view class="hero-tiles">
+        <view class="ht" wx:for="{{heroTiles}}" wx:key="k">
+          <view class="ht-n">{{item.n}}</view>
+          <view class="ht-l">{{item.label}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 四类 tab：贴在深色头下沿 ===== -->
+    <view class="cats">
+      <view
+        class="cat {{cat === item.key ? 'is-on' : ''}}"
+        wx:for="{{cats}}"
+        wx:key="key"
+        data-cat="{{item.key}}"
+        bindtap="onTapCat"
+        hover-class="cat-hover"
+        hover-stay-time="80"
+      >
+        <text class="cat-name">{{item.name}}</text>
+        <text class="cat-num">{{item.n}}</text>
+      </view>
+    </view>
+
+    <!-- ===== 十二月方块条：随内容滚走（不再吸顶），顶部只留窄标题条 ===== -->
+    <view class="rail">
+      <view
+        class="chip {{open === item.m ? 'is-on' : ''}} {{item.zero ? 'is-zero' : ''}}"
+        wx:for="{{tiles}}"
+        wx:key="m"
+        data-m="{{item.m}}"
+        bindtap="onTapChip"
+      >{{item.m}}</view>
+    </view>
+
+    <!-- ===== 十二月长卷 ===== -->
+    <view class="bands">
+      <block wx:for="{{tiles}}" wx:key="m">
+        <!-- 定位锚点：交给吸顶条留出 navH + 吸顶条 的高度 -->
+        <view
+          id="m{{item.m}}"
+          class="anchor"
+          style="height:{{scrollOffsetPx}}px;margin-top:-{{scrollOffsetPx}}px"
+        ></view>
+
+        <view class="band {{open === item.m ? 'is-open' : ''}} {{item.zero ? 'is-zero' : ''}}">
+          <view
+            class="mhead"
+            data-m="{{item.m}}"
+            bindtap="onToggleMonth"
+            hover-class="mhead-hover"
+            hover-stay-time="80"
+          >
+            <view class="mno">{{item.idx}}</view>
+            <view class="mtit">
+              <view class="mt-line">
+                <text class="mt-name">{{item.month}}</text>
+                <text class="mt-lunar">{{item.lunarLabel}}</text>
+              </view>
+              <view class="mt-en">{{item.english}}</view>
+            </view>
+            <view class="mright">
+              <view class="mtot">{{item.count}}<text class="mtot-u">项</text></view>
+              <view class="mbrk">
+                <view
+                  class="mbrk-l {{l.dim ? 'is-dim' : ''}}"
+                  wx:for="{{item.lines}}"
+                  wx:for-item="l"
+                  wx:key="t"
+                >{{l.t}}</view>
+              </view>
+            </view>
+            <view class="chev"></view>
+          </view>
+
+          <!-- 展开区：只渲染当前展开的这个月 -->
+          <view class="mbody" wx:if="{{open === item.m}}">
+            <!-- 节令与纪念日 -->
+            <block wx:if="{{showAlmanac}}">
+              <view class="glabel">
+                <text class="gl-t">节令与纪念日</text>
+                <text class="gl-n">{{cur.cAlmanac}}</text>
+              </view>
+              <view class="alist">
+                <view class="ev k-{{item.kind}}" wx:for="{{cur.almanac}}" wx:key="k">
+                  <view class="ev-d">{{item.date}}</view>
+                  <view class="ev-sp"></view>
+                  <view class="ev-n">{{item.name}}</view>
+                  <view wx:if="{{item.tag}}" class="ev-tag">{{item.tag}}</view>
+                </view>
+              </view>
+            </block>
+
+            <!-- 农历民俗 -->
+            <block wx:if="{{showFolk}}">
+              <view class="glabel">
+                <text class="gl-t">农历民俗</text>
+                <text class="gl-n">{{cur.cFolk}}</text>
+              </view>
+              <view class="folk">
+                <view
+                  class="fcell {{item.core ? 'is-core' : ''}}"
+                  wx:for="{{folkView}}"
+                  wx:key="k"
+                >{{item.name}}</view>
+              </view>
+              <view
+                wx:if="{{folkMore > 0}}"
+                class="more"
+                bindtap="onToggleFolk"
+                hover-class="more-hover"
+                hover-stay-time="80"
+              >{{folkToggleText}}</view>
+            </block>
+
+            <!-- 民族节庆 -->
+            <block wx:if="{{showEthnic}}">
+              <view class="glabel">
+                <text class="gl-t">民族节庆</text>
+                <text class="gl-n">{{cur.cEthnic}}</text>
+              </view>
+              <view class="er" wx:for="{{cur.ethnic}}" wx:key="name">
+                <view class="er-top">
+                  <text class="er-n">{{item.name}}</text>
+                  <text class="er-tag">{{item.ethnic}}</text>
+                </view>
+                <view class="er-meta">{{item.time}} · {{item.region}}</view>
+              </view>
+            </block>
+
+            <!-- 地方特色节庆 -->
+            <block wx:if="{{showLocal}}">
+              <view class="glabel">
+                <text class="gl-t">地方特色节庆</text>
+                <text class="gl-n">{{cur.cLocal}}</text>
+              </view>
+              <view class="lr" wx:for="{{cur.local}}" wx:key="name">
+                <text class="lr-n">{{item.name}}</text>
+                <text class="lr-r">{{item.region}}</text>
+                <text class="lr-t">{{item.time}}</text>
+              </view>
+            </block>
+
+            <view wx:if="{{emptyNote}}" class="empty">{{emptyNote}}</view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="footnote">节令按公历日期排列；民俗、民族、地方节庆无固定公历日期，按对应月份归入，不强行插入日序。开斋节、古尔邦节按伊斯兰教历推算，公历日期逐年不同，未固定到月份。数据整理自公开节令资料，仅作文化普及参考。</view>
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 回到顶部 -->
+  <view wx:if="{{showTop}}" class="to-top" bindtap="onToTop">
+    <view class="to-top-arrow"></view>
+  </view>
+</view>

@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "relation-graph": "../../components/relationGraph/relationGraph"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "人物关系图谱 - 历史人物关系网络可视化"
+}

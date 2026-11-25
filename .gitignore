@@ -1,0 +1,45 @@
+# 依赖与构建产物
+node_modules/
+miniprogram_npm/
+dist/
+build/
+
+# 微信开发者工具私有配置（含本机账号与编译设置）
+project.private.config.json
+
+# 备份与临时目录
+_backup/
+*.bak
+*.tmp
+.tmp/
+.tmp-shots/
+.cache/
+.verify_scratch/
+_snapshots/
+
+# 日志
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 环境变量与密钥
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx

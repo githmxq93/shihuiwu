@@ -1,0 +1,230 @@
+<page-meta root-background-color="#f4ede1" />
+
+<view class="dv-page">
+  <nav-bar safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" dark="{{false}}" />
+
+  <view class="dv-body" style="padding-top: {{navBarHeight}}px;">
+    <!-- 加载 / 失败 -->
+    <view class="dv-state" wx:if="{{loading}}">
+      <view class="dv-spin"></view>
+      <text class="dv-state-t">正在把两条生命线放到同一段时间上…</text>
+    </view>
+    <view class="dv-state" wx:elif="{{error}}">
+      <text class="dv-state-t">{{error}}</text>
+      <view class="dv-state-btn" bindtap="retryLoad"><text>重新加载</text></view>
+    </view>
+
+    <block wx:else>
+      <!-- 视图切换：A / B 共用这一个控件 -->
+      <view class="dv-seg">
+        <view class="dv-seg-i {{view === 'A' ? 'dv-seg-on' : ''}}" data-v="A" bindtap="switchView">
+          <text>双轨年表</text>
+        </view>
+        <view class="dv-seg-i {{view === 'B' ? 'dv-seg-on' : ''}}" data-v="B" bindtap="switchView">
+          <text>三段人生</text>
+        </view>
+      </view>
+
+      <!-- ==================== A · 双轨年表 ==================== -->
+      <block wx:if="{{view === 'A'}}">
+        <view class="dv-hero">
+          <text class="dv-kicker">{{kicker}}</text>
+          <text class="dv-h1">{{headline}}</text>
+          <text class="dv-sub">{{summary}}</text>
+          <view class="dv-stats" wx:if="{{stats.length}}">
+            <view class="dv-stat" wx:for="{{stats}}" wx:key="label">
+              <view class="dv-stat-v">
+                <text>{{item.value}}</text>
+                <text class="dv-stat-u" wx:if="{{item.unit}}">{{item.unit}}</text>
+              </view>
+              <text class="dv-stat-l">{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="dv-card">
+          <view class="dv-card-hd">
+            <text class="dv-card-t">两条生命线</text>
+            <text class="dv-card-n">{{scaleNote}}</text>
+          </view>
+
+          <view class="dv-plot" wx:if="{{plot}}">
+            <!-- 刻度与网格 -->
+            <view class="dv-tick" wx:for="{{plot.ticks}}" wx:key="label" style="left: {{item.left}}%">
+              <text>{{item.label}}</text>
+            </view>
+            <view class="dv-gridline" wx:for="{{plot.ticks}}" wx:key="label" style="left: {{item.left}}%"></view>
+
+            <!-- 并存区间 -->
+            <view class="dv-band" wx:if="{{plot.band}}" style="left: {{plot.band.left}}%; width: {{plot.band.width}}%">
+              <text class="dv-band-label">{{plot.band.label}}</text>
+            </view>
+
+            <!-- 出生差括号 -->
+            <block wx:if="{{plot.bracket}}">
+              <view class="dv-bracket" style="left: {{plot.bracket.left}}%; width: {{plot.bracket.width}}%"></view>
+              <text class="dv-bracket-label {{plot.bracket.left < 14 ? 'dv-bracket-label-l' : ''}}" style="left: {{plot.bracket.left + plot.bracket.width / 2}}%">{{plot.bracket.label}}</text>
+            </block>
+
+            <!-- 上线：名称在上，线在下 -->
+            <view class="dv-lane dv-lane-a">
+              <view class="dv-lane-hd">
+                <text class="dv-lane-nm">{{nameA}}</text>
+                <text class="dv-lane-yr">{{lifeAText}}</text>
+              </view>
+              <view class="dv-track">
+                <view class="dv-bar dv-bar-a {{plot.rows[0].dotted ? 'dv-dotted' : ''}} {{plot.rows[0].openLeft ? 'dv-open-l' : ''}} {{plot.rows[0].openRight ? 'dv-open-r' : ''}}"
+                  style="left: {{plot.rows[0].left}}%; width: {{plot.rows[0].width}}%"></view>
+                <view wx:if="{{!plot.rows[0].openLeft}}" class="dv-dot dv-dot-a {{plot.rows[0].dotted ? 'dv-dot-hollow' : ''}}" style="left: {{plot.rows[0].left}}%"></view>
+                <view wx:if="{{!plot.rows[0].openRight}}" class="dv-dot dv-dot-a {{plot.rows[0].dotted ? 'dv-dot-hollow' : ''}}" style="left: {{plot.rows[0].left + plot.rows[0].width}}%"></view>
+              </view>
+            </view>
+
+            <!-- 下线：线在上，名称在下 -->
+            <view class="dv-lane dv-lane-b">
+              <view class="dv-track">
+                <view class="dv-bar dv-bar-b {{plot.rows[1].dotted ? 'dv-dotted' : ''}} {{plot.rows[1].openLeft ? 'dv-open-l' : ''}} {{plot.rows[1].openRight ? 'dv-open-r' : ''}}"
+                  style="left: {{plot.rows[1].left}}%; width: {{plot.rows[1].width}}%"></view>
+                <view wx:if="{{!plot.rows[1].openLeft}}" class="dv-dot dv-dot-b {{plot.rows[1].dotted ? 'dv-dot-hollow' : ''}}" style="left: {{plot.rows[1].left}}%"></view>
+                <view wx:if="{{!plot.rows[1].openRight}}" class="dv-dot dv-dot-b {{plot.rows[1].dotted ? 'dv-dot-hollow' : ''}}" style="left: {{plot.rows[1].left + plot.rows[1].width}}%"></view>
+              </view>
+              <view class="dv-lane-hd dv-lane-hd-b">
+                <text class="dv-lane-nm">{{nameB}}</text>
+                <text class="dv-lane-yr">{{lifeBText}}</text>
+              </view>
+            </view>
+
+            <!-- 先走者：竖线 + 标注 -->
+            <block wx:if="{{plot.deathMark}}">
+              <view class="dv-death-line" style="left: {{plot.deathMark.left}}%"></view>
+              <text class="dv-death-label {{plot.deathMark.left > 68 ? 'dv-death-label-r' : ''}}" style="left: {{plot.deathMark.left}}%">{{plot.deathMark.label}}</text>
+            </block>
+          </view>
+          <view wx:else class="dv-empty">
+            两人至少有一端生卒皆缺，无法落在同一条时间轴上；请返回详情页换一位生卒可算的人。
+          </view>
+
+          <text class="dv-note" wx:if="{{approxNote}}">{{approxNote}}</text>
+        </view>
+
+        <view class="dv-card dv-events">
+          <view class="dv-card-hd">
+            <text class="dv-card-t">{{eventTitle}}</text>
+            <text class="dv-card-n" wx:if="{{overlapLabel}}">{{overlapLabel}}</text>
+          </view>
+          <view wx:if="{{events.length}}">
+            <view class="dv-ev" wx:for="{{events}}" wx:key="key">
+              <view class="dv-ev-yr">
+                <text class="dv-ev-y">{{item.yearLabel}}</text>
+                <text class="dv-ev-age" wx:if="{{item.ageText}}">{{item.ageText}}</text>
+              </view>
+              <view class="dv-ev-main">
+                <text class="dv-ev-t">{{item.title}}</text>
+                <text class="dv-ev-d" wx:if="{{item.desc}}">{{item.desc}}</text>
+              </view>
+              <text class="dv-ev-side {{item.side === 'a' ? 'dv-side-a' : 'dv-side-b'}}">{{item.sideName}}</text>
+            </view>
+          </view>
+          <view wx:else class="dv-empty">{{eventEmpty}}</view>
+        </view>
+
+        <view class="dv-foot">
+          <text class="dv-foot-note">{{footNote}}</text>
+          <view class="dv-share-entry {{canShare ? '' : 'dv-share-off'}}" bindtap="openShare">
+            <text>生成分享卡</text>
+          </view>
+        </view>
+      </block>
+
+      <!-- ==================== B · 三段人生 ==================== -->
+      <block wx:elif="{{view === 'B'}}">
+        <view class="dv-darkhero">
+          <text class="dv-dk-kicker">三段人生</text>
+          <text class="dv-dk-h1">{{actsTitle || '三段人生暂不可算'}}</text>
+          <text class="dv-dk-sub" wx:if="{{actsSub}}">{{actsSub}}</text>
+        </view>
+
+        <block wx:if="{{acts.length}}">
+          <view class="dv-ribbon">
+            <view class="dv-rib dv-rib-{{item.key}}" wx:for="{{acts}}" wx:key="key" style="width: {{item.ratio}}%">
+              <text wx:if="{{item.ratio >= 16}}">{{item.years}} 年</text>
+            </view>
+          </view>
+
+          <view class="dv-act" wx:for="{{acts}}" wx:key="key">
+            <view class="dv-act-bar dv-rib-{{item.key}}"></view>
+            <view class="dv-act-hd">
+              <text class="dv-act-t">{{item.title}}</text>
+              <text class="dv-act-y">{{item.rangeText}} · {{item.years}} 年</text>
+            </view>
+            <text class="dv-act-ages">{{item.ages}}</text>
+            <view class="dv-act-evs" wx:if="{{item.events.length}}">
+              <view class="dv-act-ev" wx:for="{{item.events}}" wx:for-item="ev" wx:key="year">
+                <text class="dv-act-ev-y">{{ev.yearLabel}}</text>
+                <text class="dv-act-ev-t">{{ev.title}}</text>
+              </view>
+            </view>
+            <text wx:else class="dv-act-empty">{{item.emptyText}}</text>
+          </view>
+
+          <view class="dv-foot dv-foot-dark">
+            <text class="dv-foot-note">三段按出生与卒年真实切分，卡片内只列库内事件。</text>
+            <view class="dv-share-entry {{canShare ? '' : 'dv-share-off'}}" bindtap="openShare">
+              <text>生成分享卡</text>
+            </view>
+          </view>
+        </block>
+
+        <view wx:else class="dv-empty-card">
+          <text class="dv-empty">{{actsEmpty}}</text>
+        </view>
+      </block>
+    </block>
+  </view>
+
+  <!-- ==================== 分享卡（C 版式） ==================== -->
+  <view class="dv-modal" wx:if="{{shareOpen}}">
+    <view class="dv-mask" bindtap="closeShare" catchtouchmove="noop"></view>
+    <view class="dv-sheet">
+      <view class="dv-sheet-hd">
+        <text class="dv-sheet-t">分享卡</text>
+        <text class="dv-sheet-x" bindtap="closeShare">×</text>
+      </view>
+      <!-- [注意] 这里刻意不用 scroll-view：2d canvas 放在 scroll-view 内滚动时
+           会出现「图层不随内容滚」的问题（详情页关系图谱踩过同一个坑）。
+           改用普通 view + overflow-y，内容随普通文档流滚动。
+           预览也不再直接暴露 canvas：画完立即导出为图片，用 <image> 展示。
+           canvas 是原生层，弹层动态挂载后原生层位置与 WebView 布局容易不同步，
+           真机上会出现「画布整体下移、上方一大块空白色块、底部按钮被顶出屏幕」，
+           换成图片后该问题从根上消失，同时长按即可保存。 -->
+      <view class="dv-canvas-scroll">
+        <!-- 生成中：画布可见（原生层需要真实渲染），上面盖一层进度遮罩 -->
+        <view class="dv-canvas-stage" wx:if="{{!cardPath && !cardError}}">
+          <canvas type="2d" id="shareCanvas" class="dv-share-canvas"
+            style="width: {{canvasW}}px; height: {{canvasH}}px;"></canvas>
+          <view class="dv-canvas-mask">
+            <view class="dv-spin"></view>
+            <text>{{cardReady ? '正在导出图片…' : '正在生成分享卡…'}}</text>
+          </view>
+        </view>
+
+        <!-- 生成失败：给得出原因和重试入口，不留空白 -->
+        <view class="dv-card-fail" wx:if="{{cardError}}">
+          <text class="dv-card-fail-t">{{cardError}}</text>
+          <text class="dv-card-fail-s">可重新生成，或改用「发给朋友」</text>
+          <view class="dv-card-retry" bindtap="retryCard"><text>重新生成</text></view>
+        </view>
+
+        <!-- 成品：图片预览，长按可直接保存 -->
+        <image wx:if="{{cardPath}}" class="dv-share-img" src="{{cardPath}}" mode="widthFix"
+          show-menu-by-longpress="{{true}}" bindtap="previewCard" />
+
+        <text class="dv-share-tip">点图片可放大，长按可保存；卡面只取共同区间与库内事件，缺失年份标「待补」，不做补算。</text>
+      </view>
+      <view class="dv-sheet-ft">
+        <view class="dv-btn dv-btn-ghost" bindtap="saveShare"><text>保存到相册</text></view>
+        <button class="dv-btn dv-btn-gold" open-type="share">发给朋友</button>
+      </view>
+    </view>
+  </view>
+</view>

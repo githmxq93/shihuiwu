@@ -1,0 +1,259 @@
+<view class="page">
+  <nav-bar title="注销账号" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+  <view style="height: {{navBarHeight}}px;"></view>
+
+  <!-- 加载中 -->
+  <view class="state-box" wx:if="{{loading}}">
+    <text class="state-text">正在加载…</text>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state-box" wx:elif="{{loadFailed}}">
+    <text class="state-text">账号信息加载失败</text>
+    <view class="state-btn" bindtap="onRetryLoad">重新加载</view>
+  </view>
+
+  <block wx:elif="{{submitted}}">
+    <!-- ==================== 完成页：注销申请已提交（冷静期中） ====================
+         [注意] 关键语义：这里只是「申请已提交」，账号**尚未**注销、数据也还在，
+            必须显著写出来，否则用户会以为已经注销完了。
+         UI 按 个人中心/注销/注销.txt 的「情感化沉浸版」重做：
+         波纹对勾图标 → 倒计时大卡片 → 三段时间轴 → 底部固定操作栏。 -->
+
+    <!-- 状态头部 -->
+    <view class="hero-section">
+      <view class="success-icon">
+        <view class="success-ripple"></view>
+        <view class="success-check"></view>
+      </view>
+      <text class="status-title">注销申请已提交</text>
+      <view class="status-pill">账号尚未注销，数据仍然保留</view>
+    </view>
+
+    <!-- 倒计时大卡片（视觉焦点） -->
+    <view class="countdown-card">
+      <text class="countdown-label">冷静期剩余时间</text>
+      <view class="countdown-number">
+        <text class="cd-num">{{pendingDaysLeft}}</text>
+        <text class="cd-unit">天</text>
+      </view>
+      <view class="countdown-deadline">
+        <text>将于 </text>
+        <text class="cd-strong">{{purgeAtLocal}}</text>
+        <text> 彻底注销</text>
+      </view>
+    </view>
+
+    <!-- 时间轴（替代原来的三条编号文字） -->
+    <view class="timeline-section">
+      <!-- 阶段 1：已提交 -->
+      <view class="tl-item tl-completed">
+        <view class="tl-dot"></view>
+        <view class="tl-body">
+          <view class="tl-title-row">
+            <text class="tl-title">注销申请提交</text>
+            <text class="tl-time">{{submittedAtLocal}}</text>
+          </view>
+          <text class="tl-desc">账号进入冷静期，所有数据原样保留。</text>
+        </view>
+      </view>
+
+      <!-- 阶段 2：冷静期（进行中） -->
+      <view class="tl-item tl-active">
+        <view class="tl-dot"></view>
+        <view class="tl-body">
+          <view class="tl-title-row">
+            <text class="tl-title">冷静期（进行中）</text>
+            <text class="tl-time">{{pendingDaysLeft}} 天倒计时</text>
+          </view>
+          <text class="tl-desc">在此期间用该手机号/微信登录即可撤回注销申请，也可点击下方按钮<text class="tl-strong">撤回注销申请</text>。</text>
+        </view>
+      </view>
+
+      <!-- 阶段 3：彻底注销 -->
+      <view class="tl-item tl-future">
+        <view class="tl-dot"></view>
+        <view class="tl-body">
+          <view class="tl-title-row">
+            <text class="tl-title">彻底注销</text>
+            <text class="tl-time">{{purgeAtLocal}}</text>
+          </view>
+          <text class="tl-desc">账号数据将被<text class="tl-strong">彻底清空且无法恢复</text>，此后 7 天内不可用该手机号/微信重新注册。</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部固定操作栏（渐变遮罩 + 主/次按钮） -->
+    <view class="action-bar">
+      <view class="btn btn-primary {{revoking ? 'btn-disabled' : ''}}" bindtap="onRevoke">{{revoking ? '处理中…' : '撤回注销申请'}}</view>
+      <view class="btn btn-secondary" bindtap="onBackToProfile">我知道了</view>
+    </view>
+
+    <view class="done-bottom-space"></view>
+  </block>
+
+  <block wx:else>
+    <!-- ==================== 1. 醒目警示区 ==================== -->
+    <view class="warn-card">
+      <view class="warn-icon">!</view>
+      <view class="warn-body">
+        <text class="warn-title">注销账号</text>
+        <text class="warn-desc">账号注销后，数据将被清空且无法恢复。为保障安全，注销后 7 天内不可重新注册。</text>
+      </view>
+    </view>
+
+    <!-- ==================== 2. 说明卡片：会失去什么 ==================== -->
+    <view class="card">
+      <view class="card-title">注销后将失去</view>
+      <view class="lose-item">
+        <view class="lose-dot"></view>
+        <text class="lose-text">消息通知将全部清空</text>
+      </view>
+      <view class="lose-item">
+        <view class="lose-dot"></view>
+        <text class="lose-text">我的收藏将全部清空</text>
+      </view>
+      <view class="lose-item">
+        <view class="lose-dot"></view>
+        <text class="lose-text">浏览历史将全部清空</text>
+      </view>
+      <view class="lose-item">
+        <view class="lose-dot"></view>
+        <text class="lose-text">登录设备记录将全部清空</text>
+      </view>
+      <view class="lose-item">
+        <view class="lose-dot"></view>
+        <text class="lose-text">密保与密码将被清空</text>
+      </view>
+      <view class="lose-item">
+        <view class="lose-dot"></view>
+        <text class="lose-text">账号数据不可恢复</text>
+      </view>
+    </view>
+
+    <!-- ==================== 3. 验证表单（按 CANCEL_INFO 动态渲染） ==================== -->
+    <view class="card">
+      <view class="card-title">身份验证</view>
+
+      <!-- 顺序固定：登录密码 → 密保问题 → 绑定手机号 → 绑定邮箱 → 兜底昵称 -->
+
+      <!-- 3.1 登录密码 -->
+      <block wx:if="{{hasPassword}}">
+        <view class="field-label">登录密码</view>
+        <input
+          class="field-input"
+          password="{{true}}"
+          maxlength="20"
+          placeholder="请输入登录密码"
+          placeholder-class="field-ph"
+          value="{{password}}"
+          bindinput="onInputPassword"
+          adjust-position="{{true}}"
+        />
+      </block>
+
+      <!-- 3.2 密保问题（后端随机抽 1 题） -->
+      <block wx:if="{{securityQuestion}}">
+        <view class="field-label">密保问题</view>
+        <view class="field-question">{{securityQuestion.question}}</view>
+        <input
+          class="field-input"
+          maxlength="30"
+          placeholder="请输入密保答案"
+          placeholder-class="field-ph"
+          value="{{securityAnswer}}"
+          bindinput="onInputSecurityAnswer"
+          adjust-position="{{true}}"
+        />
+      </block>
+
+      <!-- 3.3 绑定手机号 -->
+      <block wx:if="{{hasPhone}}">
+        <view class="field-label-row">
+          <text class="field-label">绑定手机号</text>
+          <text class="field-hint">{{phoneMasked}}</text>
+        </view>
+        <input
+          class="field-input"
+          type="number"
+          maxlength="11"
+          placeholder="请输入账号绑定的手机号"
+          placeholder-class="field-ph"
+          value="{{phone}}"
+          bindinput="onInputPhone"
+          adjust-position="{{true}}"
+        />
+      </block>
+
+      <!-- 3.4 绑定邮箱 -->
+      <block wx:if="{{hasEmail}}">
+        <view class="field-label-row">
+          <text class="field-label">绑定邮箱</text>
+          <text class="field-hint">{{emailMasked}}</text>
+        </view>
+        <input
+          class="field-input"
+          maxlength="60"
+          placeholder="请输入账号绑定的邮箱"
+          placeholder-class="field-ph"
+          value="{{email}}"
+          bindinput="onInputEmail"
+          adjust-position="{{true}}"
+        />
+
+        <!-- 邮件服务可用时给验证码区，否则给一行文案指引 -->
+        <block wx:if="{{emailServiceReady}}">
+          <view class="field-label">邮箱验证码</view>
+          <view class="code-row">
+            <input
+              class="field-input code-input"
+              type="number"
+              maxlength="6"
+              placeholder="请输入邮箱验证码"
+              placeholder-class="field-ph"
+              value="{{emailCode}}"
+              bindinput="onInputEmailCode"
+              adjust-position="{{true}}"
+            />
+            <view class="code-btn {{countdown > 0 || sending ? 'code-btn-disabled' : ''}}" bindtap="onSendCode">
+              {{countdown > 0 ? '已发送(' + countdown + 's)' : (sending ? '发送中…' : '发送验证码')}}
+            </view>
+          </view>
+        </block>
+        <view class="field-note" wx:else>如需协助办理注销，可通过「意见反馈」联系我们</view>
+      </block>
+
+      <!-- 3.5 兜底：四项验证全无时，输入昵称确认 -->
+      <block wx:if="{{needFallbackNickname}}">
+        <view class="field-label">账号昵称</view>
+        <input
+          class="field-input"
+          maxlength="20"
+          placeholder="请输入账号昵称以确认"
+          placeholder-class="field-ph"
+          value="{{confirmText}}"
+          bindinput="onInputConfirmText"
+          adjust-position="{{true}}"
+        />
+      </block>
+    </view>
+
+    <!-- ==================== 4. 勾选确认 ==================== -->
+    <view class="agree-row" bindtap="onToggleAgree">
+      <view class="agree-box {{agreed ? 'agree-box-on' : ''}}">
+        <view class="agree-tick css-check" wx:if="{{agreed}}"></view>
+      </view>
+      <text class="agree-text">我已阅读并同意上述内容，了解账号注销后无法恢复</text>
+    </view>
+
+    <!-- ==================== 5. 底部按钮 ==================== -->
+    <view class="actions">
+      <view class="btn btn-danger {{submitting ? 'btn-disabled' : ''}}" bindtap="onSubmit">
+        {{submitting ? '注销中…' : '确认注销'}}
+      </view>
+      <view class="btn btn-ghost" bindtap="onCancel">取消</view>
+    </view>
+
+    <view class="bottom-space"></view>
+  </block>
+</view>

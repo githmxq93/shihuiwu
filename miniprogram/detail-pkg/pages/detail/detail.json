@@ -1,0 +1,13 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "relation-graph": "/chart-pkg/components/relationGraph/relationGraph",
+    "articleOverlay": "/components/articleOverlay/articleOverlay",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  },
+  "componentPlaceholder": {
+    "relation-graph": "view"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "历史人物生平介绍与人物关系 - 世慧屋"
+}

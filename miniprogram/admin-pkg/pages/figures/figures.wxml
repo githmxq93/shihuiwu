@@ -1,0 +1,317 @@
+<import src="../../../templates/admin-nav/admin-nav.wxml" />
+<view class="page-wrapper">
+  <template is="admin-nav" data="{{title: '人物管理', safeAreaTop: safeAreaTop, emptyRightClass: 'nav-right', rightText: '退出'}}" />
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">查</text>
+      <input class="search-input" placeholder="搜索人物名称…" bindinput="onSearchInput" />
+    </view>
+    <view class="dynasty-filter">
+      <picker mode="selector" range="{{dynastyList}}" bindchange="onDynastyChange">
+        <text class="dynasty-label">{{currentDynasty || '全部朝代'}}</text>
+        <view class="dynasty-arrow css-tri-down"></view>
+      </picker>
+    </view>
+  </view>
+
+  <scroll-view class="content-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}" refresher-enabled="{{true}}" refreshertriggered="{{refreshing}}" bindrefresherrefresh="onRefresh">
+    <view class="figure-list">
+      <view class="figure-item" wx:for="{{figures}}" wx:for-item="fig" wx:key="id">
+        <view class="figure-info">
+          <view class="figure-id">#{{fig.id}}</view>
+          <view class="figure-main">
+            <view class="figure-name">{{fig.name}}</view>
+            <view class="figure-meta">
+              <text class="meta-tag" wx:if="{{fig.dynasty}}">{{fig.dynasty}}</text>
+              <text class="meta-tag" wx:if="{{fig.nationality}}">{{fig.nationality}}</text>
+            </view>
+            <view class="figure-years" wx:if="{{fig.birthYear || fig.deathYear}}">
+              <text>{{fig.birthYear || '?'}} — {{fig.deathYear || '?'}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="figure-actions">
+          <!-- [注意] 传下标而不是整个对象：列表行字段多，塞 dataset 会随 XML 一起序列化 -->
+          <view class="action-btn action-edit" data-index="{{index}}" bindtap="onEditFigure">编辑</view>
+          <view class="action-btn action-delete" data-id="{{fig.id}}" data-name="{{fig.name}}" bindtap="onDeleteFigure">删除</view>
+        </view>
+      </view>
+      <view class="empty-state" wx:if="{{figures.length === 0 && !loading}}">
+        <text class="empty-text">暂无人物数据</text>
+      </view>
+      <view class="loading-more" wx:if="{{loading}}">
+        <text>加载中…</text>
+      </view>
+    </view>
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <view class="pagination-bar" wx:if="{{totalPages > 0 && !loading}}">
+    <view class="pagination-inner">
+      <view class="page-btn {{page <= 1 ? 'disabled' : ''}}" bindtap="onPrevPage">‹ 上一页</view>
+      <text class="page-info">{{page}} / {{totalPages}}</text>
+      <view class="page-btn {{page >= totalPages ? 'disabled' : ''}}" bindtap="onNextPage">下一页 ›</view>
+    </view>
+  </view>
+
+  <view class="fab-btn" bindtap="onAddFigure">
+    <text class="fab-icon">＋</text>
+    <text class="fab-text">新增人物</text>
+  </view>
+
+  <!-- ==================== 编辑表单 ==================== -->
+  <view class="modal-overlay" wx:if="{{showForm}}" bindtap="onCloseForm">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{formMode === 'add' ? '新增人物' : '编辑人物'}}</text>
+        <text class="modal-close" bindtap="onCloseForm">✕</text>
+      </view>
+
+      <scroll-view class="modal-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+
+        <!-- ========== 基本档案 ========== -->
+        <view class="sec-title">基本档案</view>
+        <view class="form-group">
+          <text class="form-label required">姓名</text>
+          <input class="form-input" placeholder="请输入姓名" value="{{formData.name}}" data-field="name" bindinput="onFormInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">别名（逗号分隔）</text>
+          <input class="form-input" placeholder="如 字××,号××" value="{{formData.aliases}}" data-field="aliases" bindinput="onFormInput" />
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">字</text>
+            <input class="form-input" placeholder="表字" value="{{formData.courtesyName}}" data-field="courtesyName" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">号</text>
+            <input class="form-input" placeholder="别号" value="{{formData.artName}}" data-field="artName" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">常用名</text>
+            <input class="form-input" placeholder="惯用称呼" value="{{formData.commonName}}" data-field="commonName" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">英文名</text>
+            <input class="form-input" placeholder="英文名" value="{{formData.nameEn}}" data-field="nameEn" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">性别</text>
+            <picker mode="selector" range="{{genderOptions}}" value="{{genderIndex}}" bindchange="onFormGenderChange">
+              <view class="form-input form-picker">{{formData.gender || '请选择'}}</view>
+            </picker>
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">生肖</text>
+            <picker mode="selector" range="{{zodiacOptions}}" value="{{zodiacIndex}}" bindchange="onFormZodiacChange">
+              <view class="form-input form-picker">{{formData.zodiac || '请选择'}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <!-- ========== 生卒与地点 ========== -->
+        <view class="sec-title">生卒与地点</view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">出生年</text>
+            <input class="form-input" placeholder="如 1866" value="{{formData.birthYear}}" data-field="birthYear" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">逝世年</text>
+            <input class="form-input" placeholder="如 1925" value="{{formData.deathYear}}" data-field="deathYear" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">出生地</text>
+            <input class="form-input" placeholder="出生地" value="{{formData.birthPlace}}" data-field="birthPlace" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">逝世地</text>
+            <input class="form-input" placeholder="逝世地" value="{{formData.deathPlace}}" data-field="deathPlace" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">地区</text>
+            <input class="form-input" placeholder="籍贯/主要活动地" value="{{formData.region}}" data-field="region" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">寿命</text>
+            <input class="form-input" placeholder="如 59 岁" value="{{formData.longevity}}" data-field="longevity" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-group">
+          <text class="form-label">在世状态</text>
+          <picker mode="selector" range="{{lifeStatusOptions}}" value="{{lifeStatusIndex}}" bindchange="onFormLifeStatusChange">
+            <view class="form-input form-picker">{{formData.lifeStatus || '请选择'}}</view>
+          </picker>
+        </view>
+
+        <!-- ========== 身份 ========== -->
+        <view class="sec-title">身份</view>
+        <view class="form-group">
+          <text class="form-label">朝代</text>
+          <picker mode="selector" range="{{dynastyOptions}}" value="{{dynastyIndex}}" bindchange="onFormDynastyChange">
+            <view class="form-input form-picker">{{formData.dynasty || '请选择朝代'}}</view>
+          </picker>
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">国籍</text>
+            <input class="form-input" placeholder="国籍" value="{{formData.nationality}}" data-field="nationality" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">民族</text>
+            <input class="form-input" placeholder="民族" value="{{formData.ethnicity}}" data-field="ethnicity" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-group">
+          <text class="form-label">职业 / 身份</text>
+          <input class="form-input" placeholder="如 军事家、政治家" value="{{formData.occupation}}" data-field="occupation" bindinput="onFormInput" />
+        </view>
+        <view class="form-row">
+          <view class="form-group form-half">
+            <text class="form-label">教育</text>
+            <input class="form-input" placeholder="教育背景" value="{{formData.education}}" data-field="education" bindinput="onFormInput" />
+          </view>
+          <view class="form-group form-half">
+            <text class="form-label">信仰</text>
+            <input class="form-input" placeholder="宗教信仰" value="{{formData.faith}}" data-field="faith" bindinput="onFormInput" />
+          </view>
+        </view>
+        <view class="form-group">
+          <text class="form-label">标签（逗号分隔）</text>
+          <input class="form-input" placeholder="如 政治家,军人,北洋" value="{{formData.tags}}" data-field="tags" bindinput="onFormInput" />
+        </view>
+
+        <!-- ========== 展示信息 ========== -->
+        <view class="sec-title">展示信息</view>
+        <view class="form-group">
+          <text class="form-label">头像（图片地址 / 文本图标）</text>
+          <input class="form-input" placeholder="留空则显示姓名首字" value="{{formData.avatar}}" data-field="avatar" bindinput="onFormInput" />
+        </view>
+        <view class="form-group">
+          <view class="form-label-row">
+            <text class="form-label required">一句话简介</text>
+            <text class="form-label-hint">{{formData.bio.length}} / 200</text>
+          </view>
+          <textarea class="form-textarea" maxlength="200" placeholder="用于列表卡片与 SEO 描述" value="{{formData.bio}}" data-field="bio" bindinput="onFormInput" />
+        </view>
+        <view class="form-group">
+          <view class="form-label-row">
+            <text class="form-label">详细介绍</text>
+            <text class="form-label-action" bindtap="onToggleFullBio">全屏</text>
+          </view>
+          <textarea class="form-textarea form-textarea-lg" placeholder="支持多段落" value="{{formData.fullBio}}" data-field="fullBio" bindinput="onFormInput" />
+        </view>
+
+        <!-- ========== 条目面板（6 类，配置表驱动） ========== -->
+        <view class="sec-title">条目面板</view>
+        <view class="panel" wx:for="{{itemPanels}}" wx:key="key" wx:for-item="panel">
+          <view class="panel-head" data-key="{{panel.key}}" bindtap="onTogglePanel">
+            <text class="panel-arrow">{{openPanels[panel.key] ? '▾' : '▸'}}</text>
+            <text class="panel-label">{{panel.label}}</text>
+            <text class="panel-count">{{formData[panel.key].length}}</text>
+          </view>
+
+          <block wx:if="{{openPanels[panel.key]}}">
+            <view class="item-card" wx:for="{{formData[panel.key]}}" wx:key="ri" wx:for-item="row" wx:for-index="ri">
+              <view class="item-head">
+                <text class="item-no">{{panel.itemName}} {{ri + 1}}</text>
+                <text class="item-del" data-panel="{{panel.key}}" data-index="{{ri}}" bindtap="onRemoveItem">删除</text>
+              </view>
+
+              <!-- 主字段 -->
+              <view class="form-group" wx:for="{{panel.primaryFields}}" wx:key="key" wx:for-item="fld">
+                <text class="form-label">{{fld.label}}</text>
+                <textarea wx:if="{{fld.type === 'textarea'}}" class="form-textarea" placeholder="{{fld.ph}}"
+                  value="{{row[fld.key]}}" data-panel="{{panel.key}}" data-index="{{ri}}" data-field="{{fld.key}}" bindinput="onItemInput" />
+                <input wx:else class="form-input" placeholder="{{fld.ph}}"
+                  value="{{row[fld.key]}}" data-panel="{{panel.key}}" data-index="{{ri}}" data-field="{{fld.key}}" bindinput="onItemInput" />
+                <view class="chip-row" wx:if="{{fld.chips}}">
+                  <text class="chip" wx:for="{{fld.chips}}" wx:key="index" wx:for-item="opt"
+                    data-panel="{{panel.key}}" data-index="{{ri}}" data-field="{{fld.key}}" data-value="{{opt}}" bindtap="onItemChip">{{opt}}</text>
+                </view>
+              </view>
+
+              <!-- 补充字段（折叠） -->
+              <block wx:if="{{panel.secondaryFields.length > 0}}">
+                <view class="more-toggle" data-panel="{{panel.key}}" data-index="{{ri}}" bindtap="onToggleItemMore">
+                  {{row._more ? '▾ 收起补充字段' : '▸ 补充字段'}}
+                </view>
+                <block wx:if="{{row._more}}">
+                  <view class="form-group" wx:for="{{panel.secondaryFields}}" wx:key="key" wx:for-item="fld">
+                    <text class="form-label">{{fld.label}}</text>
+                    <textarea wx:if="{{fld.type === 'textarea'}}" class="form-textarea" placeholder="{{fld.ph}}"
+                      value="{{row[fld.key]}}" data-panel="{{panel.key}}" data-index="{{ri}}" data-field="{{fld.key}}" bindinput="onItemInput" />
+                    <input wx:else class="form-input" placeholder="{{fld.ph}}"
+                      value="{{row[fld.key]}}" data-panel="{{panel.key}}" data-index="{{ri}}" data-field="{{fld.key}}" bindinput="onItemInput" />
+                    <view class="chip-row" wx:if="{{fld.chips}}">
+                      <text class="chip" wx:for="{{fld.chips}}" wx:key="index" wx:for-item="opt"
+                        data-panel="{{panel.key}}" data-index="{{ri}}" data-field="{{fld.key}}" data-value="{{opt}}" bindtap="onItemChip">{{opt}}</text>
+                    </view>
+                  </view>
+                </block>
+              </block>
+            </view>
+
+            <view class="item-add" data-key="{{panel.key}}" bindtap="onAddItem">＋ 添加{{panel.itemName}}</view>
+          </block>
+        </view>
+
+        <!-- ========== 关系 ========== -->
+        <view class="sec-title">关系{{formData.relations.length ? '（' + formData.relations.length + '）' : ''}}</view>
+        <view class="rel-list" wx:if="{{formData.relations.length > 0}}">
+          <view class="rel-item" wx:for="{{formData.relations}}" wx:key="rlIdx" wx:for-item="rel" wx:for-index="rlIdx">
+            <view class="rel-row">
+              <text class="rel-type">{{rel.type}}</text>
+              <text class="rel-name">{{rel.name || ('ID ' + rel.targetId)}}</text>
+              <text class="rel-del" data-index="{{rlIdx}}" bindtap="onRemoveRelation">删除</text>
+            </view>
+            <text class="rel-desc" wx:if="{{rel.description}}">{{rel.description}}</text>
+          </view>
+        </view>
+
+        <view class="rel-add">
+          <text class="rel-add-title">新增关系</text>
+          <picker mode="selector" range="{{relationTypes}}" value="{{relationIndex}}" bindchange="onRelationTypeChange">
+            <view class="form-input form-picker">关系类型：{{relationTypes[relationIndex]}}</view>
+          </picker>
+          <input class="form-input rel-input" placeholder="说明（可选）" value="{{newRelDesc}}" bindinput="onRelDescInput" />
+          <input class="form-input rel-input" placeholder="搜索人物姓名，点结果即添加" value="{{relKeyword}}" bindinput="onRelKeywordInput" />
+          <view class="cand-list" wx:if="{{relCandidates.length > 0}}">
+            <view class="cand-item" wx:for="{{relCandidates}}" wx:key="id" wx:for-item="cf"
+              data-id="{{cf.id}}" data-name="{{cf.name}}" bindtap="onPickRelation">
+              <text class="cand-name">{{cf.name}}</text>
+              <text class="cand-meta">{{cf.dynasty || ''}}</text>
+            </view>
+          </view>
+          <text class="hint-line" wx:if="{{relSearching}}">搜索中…</text>
+          <text class="hint-line">关系目标从搜索结果选择（避免手填姓名造成错连）；保存时仅在关系有改动才回写关系表。</text>
+        </view>
+
+      </scroll-view>
+
+      <view class="modal-footer">
+        <view class="form-btn form-btn-cancel" bindtap="onCloseForm">取消</view>
+        <view class="form-btn form-btn-submit {{saving ? 'is-disabled' : ''}}" bindtap="onSubmitForm">{{saving ? '保存中…' : '保存'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ==================== 详细介绍全屏编辑 ==================== -->
+  <view class="fullscreen-editor" wx:if="{{showFullBio}}">
+    <view class="fullscreen-header">
+      <text class="fullscreen-title">编辑详细介绍</text>
+      <text class="fullscreen-done" bindtap="onToggleFullBio">完成</text>
+    </view>
+    <textarea class="fullscreen-textarea" placeholder="支持多段落，回车分隔" value="{{formData.fullBio}}" data-field="fullBio" bindinput="onFormInput" />
+  </view>
+</view>

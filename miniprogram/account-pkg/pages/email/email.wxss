@@ -1,0 +1,211 @@
+/* ============================================================
+   邮件联系（account-pkg 分包）
+   形态：独立页而非「我的」页浮层 —— 表单含 picker + 单行输入 + 多行输入，
+   多行输入在底栏浮层里容易被键盘顶出可视区；独立页可直接滚动、原生
+   adjust-position 行为稳定。与「意见反馈」同为表单，形态保持一致。
+   口径：字号全部 2rpx 的偶数倍；不写 letter-spacing（默认 0）；
+   文字色 #75654f / #8f5326，正文对比度 ≥4.5:1；颜色跟随 app.wxss 暖纸令牌。
+   ============================================================ */
+
+.em-body {
+  height: 100vh;
+  box-sizing: border-box;
+  background-color: var(--bg-primary);
+  background-image: radial-gradient(rgba(139, 115, 85, 0.16) 1rpx, transparent 1rpx);
+  background-size: 48rpx 48rpx;
+}
+
+/* ---------- 页头 ---------- */
+.em-head {
+  padding: 32rpx 40rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.em-title {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: var(--fs-40);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.em-sub {
+  margin-top: 10rpx;
+  font-size: var(--fs-26);
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* ---------- 表单卡 ---------- */
+.em-form {
+  margin: 0 32rpx;
+  padding: 8rpx 32rpx 40rpx;
+  background-color: var(--bg-card);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 32rpx;
+  box-shadow: 0 4rpx 20rpx rgba(139, 107, 74, 0.05);
+  box-sizing: border-box;
+}
+
+.em-field {
+  padding-top: 28rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.em-label {
+  font-size: var(--fs-26);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* picker 触发区：整行 88rpx，热区 ≥44px */
+.em-picker {
+  margin-top: 12rpx;
+  height: 88rpx;
+  padding: 0 24rpx;
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-elevated);
+  border: 2rpx solid rgba(107, 90, 69, 0.16);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.em-picker-text {
+  flex: 1;
+  font-size: var(--fs-30);
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.em-chevron {
+  font-size: var(--fs-32);
+  line-height: 1;
+  color: var(--text-muted);
+  transform: rotate(90deg);
+}
+
+.em-input {
+  margin-top: 12rpx;
+  height: 88rpx;
+  padding: 0 24rpx;
+  font-size: var(--fs-30);
+  line-height: 88rpx;
+  color: var(--text-primary);
+  background-color: var(--bg-elevated);
+  border: 2rpx solid rgba(107, 90, 69, 0.16);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.em-textarea {
+  margin-top: 12rpx;
+  width: 100%;
+  height: 320rpx;
+  padding: 20rpx 24rpx;
+  font-size: var(--fs-30);
+  line-height: 1.7;
+  color: var(--text-primary);
+  background-color: var(--bg-elevated);
+  border: 2rpx solid rgba(107, 90, 69, 0.16);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.em-placeholder {
+  color: var(--text-muted);
+}
+
+/* 说明 + 字数：左右分列，字数不压占位文案 */
+.em-meta {
+  margin-top: 10rpx;
+  display: flex;
+  align-items: flex-start;
+}
+
+.em-note {
+  flex: 1;
+  padding-right: 16rpx;
+  font-size: var(--fs-22);
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.em-counter {
+  flex-shrink: 0;
+  font-size: var(--fs-22);
+  line-height: 1.7;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 状态 ---------- */
+.em-error,
+.em-success {
+  margin-top: 24rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 12rpx;
+  font-size: var(--fs-26);
+  line-height: 1.6;
+}
+
+.em-error {
+  color: #9c3f2c;
+  background-color: #fbf0ec;
+  border: 2rpx solid rgba(156, 63, 44, 0.18);
+}
+
+.em-success {
+  /* #3d6b41 在 #eef4ec 上约 4.7:1，保证 26rpx 正文也过 4.5:1 */
+  color: #3d6b41;
+  background-color: #eef4ec;
+  border: 2rpx solid rgba(74, 124, 78, 0.18);
+}
+
+/* ---------- 提交 ---------- */
+.em-submit {
+  margin-top: 32rpx;
+  width: 100%;
+  height: 96rpx;
+  line-height: 96rpx;
+  padding: 0;
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--bg-elevated);
+  background: linear-gradient(135deg, #9a5a2b 0%, var(--accent-gold-ink) 100%);
+  border: none;
+  border-radius: 48rpx;
+  box-shadow: 0 12rpx 28rpx rgba(139, 83, 38, 0.22);
+}
+
+.em-submit::after {
+  border: none;
+}
+
+.em-submit-hover {
+  opacity: 0.9;
+}
+
+.em-submit-off {
+  color: var(--text-muted);
+  background: #efe6d8;
+  box-shadow: none;
+}
+
+.em-hint {
+  display: block;
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* 底部安全区：给键盘与 Home 指示条留出空间 */
+.em-safe {
+  height: 80rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+}

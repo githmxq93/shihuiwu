@@ -1,0 +1,69 @@
+/* ===================== 底部五标签 dock（共享样式 · 唯一来源） =====================
+   详情页 / 世系页 / 足迹页统一 @import 本文件，页面内不要再各写一份，避免样式分叉。
+   形态按原型（detail-ui-prototype/final-integrated.html 的 .dock/.dock-in）：
+   外层只做一条通栏渐隐（透明→深），真正的深色底 + 圆角 + 描边 + 投影落在内层 .dock-in 上。
+   [重要] 不能用「通栏实色 + border-top」：那是直角色块，且在圆角外侧会露出直边/白块。
+   圆角外侧之所以不露硬边，靠的就是外层这条渐隐 —— 内层四角坐在渐变上而不是坐在米色页底上。
+   不用 backdrop-filter：低端机在新版 WebView 才生效，旧机型会退化成纯色，
+   这里直接用高不透明度深色 + 细描边，视觉接近磨砂且无兼容风险。 */
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  /* 安全区留白跟着圆角走：内层离底 20rpx，再叠加系统手势区，避免圆角贴住屏幕边 */
+  padding: 0 20rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg,
+    rgba(23, 18, 14, 0) 0%,
+    rgba(23, 18, 14, 0.46) 42%,
+    rgba(23, 18, 14, 0.92) 100%);
+}
+.dock-in {
+  display: flex;
+  align-items: stretch;
+  gap: 8rpx;
+  padding: 10rpx 8rpx 8rpx;
+  border-radius: 32rpx;
+  background: rgba(35, 28, 22, 0.94);
+  border: 1rpx solid rgba(246, 236, 218, 0.14);
+  box-shadow: 0 16rpx 34rpx -12rpx rgba(0, 0, 0, 0.72),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.10);
+}
+.dock-i {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  padding: 10rpx 0 8rpx;
+  border-radius: 14rpx;
+  border: 1rpx solid transparent;
+}
+.dock-hover { background: rgba(255, 255, 255, 0.06); }
+.dock-g {
+  width: 42rpx;
+  height: 42rpx;
+  border-radius: 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  color: rgba(246, 236, 218, 0.72);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1rpx solid rgba(246, 236, 218, 0.16);
+}
+.dock-t {
+  font-size: 22rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.66);
+}
+.dock-on { border-color: rgba(207, 138, 75, 0.42); background: rgba(207, 138, 75, 0.13); }
+.dock-on .dock-g {
+  color: #2a1b10;
+  background: linear-gradient(150deg, #f0d2a5, #d79a5f);
+  border-color: rgba(255, 228, 190, 0.7);
+}
+.dock-on .dock-t { color: #f3d9b2; font-weight: 600; }

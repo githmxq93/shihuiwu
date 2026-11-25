@@ -1,0 +1,307 @@
+<!-- 别名列表模板（检索分段与类目内共用，保证两屏同一套语言） -->
+<template name="aliasList">
+  <view class="c-list">
+    <view wx:for="{{list}}" wx:key="alias" class="c-item {{item._open ? 'c-item-open' : ''}}">
+      <view class="c-row" data-alias="{{item.alias}}" data-t="{{t}}" bindtap="onToggleRow">
+        <view class="c-main">
+          <view class="c-nm">
+            <block wx:for="{{item._segs}}" wx:for-item="seg" wx:key="o">
+              <text wx:if="{{seg.hl}}" class="hl">{{seg.t}}</text>
+              <text wx:else>{{seg.t}}</text>
+            </block>
+          </view>
+          <view class="c-sub">{{item._sub}}</view>
+        </view>
+        <text class="c-chev">›</text>
+      </view>
+
+      <view wx:if="{{item._open}}" class="c-detail">
+        <view wx:for="{{item.items}}" wx:for-item="r" wx:key="id" class="c-entry">
+          <view class="c-entry-head">
+            <text class="c-entry-dy">{{r.dynasty || '朝代不详'}}</text>
+            <text class="c-copy" data-id="{{r.id}}" data-t="{{t}}" catchtap="onCopy">复制</text>
+          </view>
+          <view wx:if="{{r._titleText}}" class="c-title">
+            <block wx:for="{{r._titleSegs}}" wx:for-item="seg" wx:key="o">
+              <text wx:if="{{seg.hl}}" class="hl">{{seg.t}}</text>
+              <text wx:else>{{seg.t}}</text>
+            </block>
+          </view>
+          <view wx:if="{{r.note}}" class="c-note">
+            <block wx:for="{{r._expanded ? r._noteSegsFull : r._noteSegs}}" wx:for-item="seg" wx:key="o">
+              <text wx:if="{{seg.hl}}" class="hl">{{seg.t}}</text>
+              <text wx:else>{{seg.t}}</text>
+            </block>
+            <text wx:if="{{!r._expanded && r._needClamp}}">…</text>
+          </view>
+          <view wx:if="{{r._needClamp}}" class="c-expand" data-id="{{r.id}}" data-t="{{t}}" catchtap="onToggleNote">
+            {{r._expanded ? '收起' : '展开剩余注释'}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{hasMore && !loading}}" class="load-more" data-t="{{t}}" bindtap="onLoadMore">加载更多</view>
+</template>
+
+<!-- 朝代 chip 组（检索筛选面板与类目内筛选共用） -->
+<template name="dynastyChips">
+  <view class="chip-wrap">
+    <view
+      wx:for="{{popular}}"
+      wx:for-item="d"
+      wx:key="index"
+      class="chip {{(!dynasty && d === '不限') || dynasty === d ? 'chip-active' : ''}}"
+      data-d="{{d}}"
+      data-t="{{t}}"
+      bindtap="onDynastyTap"
+    >{{d}}</view>
+    <view class="chip chip-more" data-t="{{t}}" bindtap="onToggleDynasty">{{expanded ? '收起' : '更多'}}</view>
+  </view>
+  <view wx:if="{{expanded}}" class="chip-wrap">
+    <view
+      wx:for="{{more}}"
+      wx:for-item="d"
+      wx:key="index"
+      class="chip {{dynasty === d ? 'chip-active' : ''}}"
+      data-d="{{d}}"
+      data-t="{{t}}"
+      bindtap="onDynastyTap"
+    >{{d}}</view>
+  </view>
+</template>
+
+<!-- 检索筛选面板：范围（仅有关键词时）+ 朝代；由结果头「筛选 ▾」或空态「调整筛选」打开 -->
+<template name="filterPanel">
+  <view class="filters">
+    <view wx:if="{{keyword}}" class="filter-block">
+      <view class="filter-label">范围</view>
+      <view class="chip-wrap">
+        <view
+          wx:for="{{scopes}}"
+          wx:for-item="sc"
+          wx:key="key"
+          class="chip {{scope === sc.key ? 'chip-active' : ''}}"
+          data-s="{{sc.key}}"
+          bindtap="onScopeTap"
+        >{{sc.label}}</view>
+      </view>
+    </view>
+    <view class="filter-block">
+      <view class="filter-label">朝代</view>
+      <template is="dynastyChips" data="{{popular: dynastyList, more: moreList, dynasty: dynasty, expanded: expanded, t: t}}" />
+    </view>
+  </view>
+</template>
+
+<view class="oa-page">
+  <nav-bar safeAreaTop="{{safeAreaTop}}" dark="{{true}}" />
+
+  <!-- 深色头部：与详情页/世系页/足迹页同一套口径；本页定高 100vh + scroll-view，
+       头部 fixed 常驻，滚动容器内用 .head-spacer 让出同高，正文不会被遮。 -->
+  <view class="oa-head-wrap">
+    <view class="oa-head" id="oaHead" style="padding-top:{{navBarHeight}}px">
+      <view class="oa-head-row">
+        <view class="oa-head-nm">
+          <view class="oa-head-nameline">
+            <text class="oa-head-name">职官别名</text>
+            <text class="oa-head-era">历代官制</text>
+          </view>
+          <text class="oa-head-sub">太傅、太保、尚书、侍郎……历代官职称谓、释义与文献出处对照</text>
+        </view>
+        <text class="oa-head-tag">职官</text>
+      </view>
+
+      <!-- 分段导航：检索 / 类别。头部高度由 JS 实测，分段增加的高度自动计入 headH。 -->
+      <view class="oa-seg">
+        <view class="oa-seg-item {{seg === 'search' ? 'oa-seg-on' : ''}}" data-s="search" bindtap="onSegTap">检索</view>
+        <view class="oa-seg-item {{seg === 'category' ? 'oa-seg-on' : ''}}" data-s="category" bindtap="onSegTap">类别</view>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}" scroll-into-view="{{scrollInto}}">
+    <view class="head-spacer" id="pageTop" style="height: {{headH}}px;"></view>
+
+    <!-- ========== 检索分段 ========== -->
+    <block wx:if="{{seg === 'search'}}">
+      <view class="search-box">
+        <input
+          class="search-input"
+          type="text"
+          placeholder="输入官名或别名，如「宰相」「太傅」"
+          placeholder-class="search-placeholder"
+          value="{{keyword}}"
+          bindinput="onInput"
+          bindconfirm="onSearch"
+          confirm-type="search"
+        />
+        <view wx:if="{{keyword}}" class="search-clear" bindtap="onClear">✕</view>
+        <view class="search-act {{loading ? 'search-act-off' : ''}}" bindtap="onSearch">搜索</view>
+      </view>
+
+      <!-- 前缀联想（F6） -->
+      <view wx:if="{{suggestOpen && suggests.length > 0}}" class="suggest">
+        <view
+          wx:for="{{suggests}}"
+          wx:for-item="s"
+          wx:key="index"
+          class="suggest-item"
+          data-s="{{s}}"
+          bindtap="onSuggestTap"
+        >
+          <text class="suggest-icon">查</text>
+          <text class="suggest-text">{{s}}</text>
+        </view>
+      </view>
+
+      <!-- 初始态：只有搜索行 + 热门搜索 -->
+      <view wx:if="{{!searched && !loading}}" id="guide-hot" class="quick">
+        <view class="quick-label">热门搜索</view>
+        <view class="chip-wrap">
+          <view
+            wx:for="{{popular}}"
+            wx:for-item="tag"
+            wx:key="index"
+            class="chip"
+            data-tag="{{tag}}"
+            bindtap="onPopularTap"
+          >{{tag}}</view>
+        </view>
+      </view>
+
+      <view class="skeleton-wrap" wx:if="{{loading}}">
+        <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+          <view class="skeleton-line skeleton-line-title"></view>
+          <view class="skeleton-line"></view>
+          <view class="skeleton-line skeleton-line-short"></view>
+        </view>
+        <view class="skeleton-hint">正在加载…</view>
+      </view>
+
+      <view wx:elif="{{loadFailed}}" class="error-retry">
+        <text class="error-retry-text">网络连接失败，请检查网络后重试</text>
+        <view class="error-retry-btn" bindtap="onSearch">重新搜索</view>
+      </view>
+
+      <block wx:elif="{{searched && results.length === 0}}">
+        <template is="filterPanel" wx:if="{{filterOpen}}" data="{{scopes: scopes, keyword: keyword, scope: scope, dynastyList: popularDynasties, moreList: moreDynasties, dynasty: dynasty, expanded: dynastyExpanded, t: tpSearch}}" />
+        <view class="empty-state">
+          <view class="empty-title">未找到匹配的职官别名</view>
+          <view class="empty-sub">换个关键词，或调整朝代与搜索范围。</view>
+          <view class="empty-btn" bindtap="onOpenFilter">调整筛选</view>
+        </view>
+      </block>
+
+      <block wx:elif="{{searched}}">
+        <view class="list-head">
+          <text class="list-head-l">共 {{total}} 条结果{{dynasty ? '［' + dynasty + '］' : ''}}</text>
+          <text class="filter-toggle {{filterOpen ? 'filter-toggle-on' : ''}}" bindtap="onToggleFilter">筛选 ▾</text>
+        </view>
+        <template is="filterPanel" wx:if="{{filterOpen}}" data="{{scopes: scopes, keyword: keyword, scope: scope, dynastyList: popularDynasties, moreList: moreDynasties, dynasty: dynasty, expanded: dynastyExpanded, t: tpSearch}}" />
+        <template is="aliasList" data="{{list: results, hasMore: hasMore, loading: loading, t: tpSearch}}" />
+      </block>
+
+      <view class="bottom-spacer"></view>
+    </block>
+
+    <!-- ========== 类别分段 ========== -->
+    <block wx:else>
+      <!-- 类别索引 -->
+      <block wx:if="{{!catDetail}}">
+        <view class="idx-head">
+          <text class="idx-title">职官类别</text>
+          <text class="idx-total">共 {{categoriesTotal}} 类</text>
+        </view>
+        <view class="idx-hint">按收录条数排列，点类别查看该类全部别名。</view>
+
+        <!-- 类别量很大时（真实数据近 2000 类）提供本地筛选，避免长列表翻找 -->
+        <view wx:if="{{categories.length > 30}}" class="cat-filter">
+          <input
+            class="cat-filter-input"
+            type="text"
+            placeholder="筛选类别名，如「皇帝」「宰相」"
+            placeholder-class="search-placeholder"
+            value="{{catFilterKeyword}}"
+            bindinput="onCatFilterInput"
+          />
+          <view wx:if="{{catFilterKeyword}}" class="search-clear" bindtap="onCatFilterClear">✕</view>
+        </view>
+        <view wx:if="{{catFilterKeyword}}" class="idx-status">匹配 {{catIndexTotal}} 类</view>
+
+        <view wx:if="{{catListError}}" class="error-retry">
+          <text class="error-retry-text">类别列表加载失败，请检查网络</text>
+          <view class="error-retry-btn" bindtap="onReloadCategories">重新加载</view>
+        </view>
+        <view wx:elif="{{catListLoading && !categories.length}}" class="loading-text">正在加载类别…</view>
+
+        <block wx:else>
+          <view class="idx-list">
+            <view
+              wx:for="{{catIndex}}"
+              wx:for-item="c"
+              wx:key="name"
+              class="idx-row"
+              data-name="{{c.name}}"
+              bindtap="onCatTap"
+            >
+              <text class="idx-nm">{{c.name}}</text>
+              <view class="idx-right">
+                <text class="idx-cnt">{{c.count}} 条</text>
+                <text class="idx-chev">›</text>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{catIndexTotal > catIndex.length && !catFilterKeyword}}" class="load-more" bindtap="onCatMore">显示更多类别</view>
+          <view wx:elif="{{catIndexTotal > catIndex.length}}" class="idx-more-hint">还有 {{catIndexTotal - catIndex.length}} 类未显示，请细化关键词</view>
+        </block>
+
+        <view class="bottom-spacer"></view>
+      </block>
+
+      <!-- 类目内列表 -->
+      <block wx:else>
+        <view class="cat-top">
+          <text class="cat-back" bindtap="onCatBack">‹ 全部类别</text>
+          <text class="filter-toggle {{catFilterOpen ? 'filter-toggle-on' : ''}}" bindtap="onToggleCatFilter">筛选 ▾</text>
+        </view>
+        <view class="cat-head">
+          <text class="cat-name">{{catDetail}}</text>
+          <text class="cat-total">共 {{catTotal}} 条{{catDynasty ? '［' + catDynasty + '］' : ''}}</text>
+        </view>
+
+        <view wx:if="{{catFilterOpen}}" class="filters">
+          <view class="filter-block">
+            <view class="filter-label">朝代</view>
+            <template is="dynastyChips" data="{{popular: popularDynasties, more: moreDynasties, dynasty: catDynasty, expanded: dynastyExpanded, t: tpCat}}" />
+          </view>
+        </view>
+
+        <view wx:if="{{catLoading && catResults.length === 0}}" class="loading-text">正在加载…</view>
+
+        <view wx:elif="{{catFailed}}" class="error-retry">
+          <text class="error-retry-text">网络连接失败，请检查网络后重试</text>
+          <view class="error-retry-btn" bindtap="onCatRetry">重新加载</view>
+        </view>
+
+        <view wx:elif="{{catSearched && catResults.length === 0}}" class="empty-state">
+          <view class="empty-title">该类别下暂无匹配条目</view>
+          <view class="empty-sub">换个朝代，或返回全部类别。</view>
+          <view class="empty-btn" bindtap="onCatClearDynasty">调整筛选</view>
+        </view>
+
+        <block wx:elif="{{catSearched}}">
+          <view class="list-head">
+            <text class="list-head-l">共 {{catTotal}} 条</text>
+          </view>
+          <template is="aliasList" data="{{list: catResults, hasMore: catHasMore, loading: catLoading, t: tpCat}}" />
+        </block>
+
+        <view class="bottom-spacer"></view>
+      </block>
+    </block>
+  </scroll-view>
+
+  <!-- 职官别名首次进入：单条气泡，只讲热门搜索与类别入口 -->
+  <guide-bubble id="guideBubble" />
+</view>

@@ -1,0 +1,73 @@
+<nav-bar title="邮件联系" dark="{{true}}" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+<scroll-view class="em-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}"
+  scroll-top="{{scrollTop}}" scroll-with-animation="{{true}}">
+  <view class="nav-spacer" style="height: {{navBarHeight}}px; flex-shrink: 0;"></view>
+
+  <view class="em-head">
+    <text class="em-title">直接写给站长</text>
+    <text class="em-sub">选择收件邮箱，内容将直接发送到站长邮箱；未登录也可发送。</text>
+  </view>
+
+  <view class="em-form">
+    <view class="em-field" id="guide-em-mailbox">
+      <text class="em-label">收件邮箱</text>
+      <picker mode="selector" range="{{mailboxLabels}}" value="{{mailboxIndex}}" bindchange="onMailboxChange">
+        <view class="em-picker">
+          <text class="em-picker-text">{{mailboxLabels[mailboxIndex]}}</text>
+          <text class="em-chevron">›</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="em-field" id="guide-em-subject">
+      <text class="em-label">主题（选填）</text>
+      <input
+        class="em-input"
+        value="{{subject}}"
+        maxlength="{{maxSubject}}"
+        placeholder="留空则默认「来自世慧屋的分享」"
+        placeholder-class="em-placeholder"
+        bindinput="onSubjectInput"
+        adjust-position="{{true}}"
+        cursor-spacing="24"
+      />
+    </view>
+
+    <view class="em-field" id="guide-em-body">
+      <text class="em-label">内容</text>
+      <textarea
+        class="em-textarea"
+        value="{{body}}"
+        maxlength="{{maxBody}}"
+        placeholder="写清楚你的问题或建议"
+        placeholder-class="em-placeholder"
+        bindinput="onBodyInput"
+        adjust-position="{{true}}"
+        cursor-spacing="32"
+        show-confirm-bar="{{false}}"
+      />
+      <view class="em-meta">
+        <text class="em-note">页面标题与官网链接将自动附在邮件末尾</text>
+        <text class="em-counter">{{bodyLen}}/{{maxBody}}</text>
+      </view>
+    </view>
+
+    <view class="em-error" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+    <view class="em-success" wx:if="{{successMsg}}">{{successMsg}}</view>
+
+    <button
+      id="guide-em-submit"
+      class="em-submit {{(sending || sent || !bodyOk) ? 'em-submit-off' : ''}}"
+      bindtap="onSend"
+      disabled="{{sending || sent || !bodyOk}}"
+      hover-class="{{sending || sent || !bodyOk ? '' : 'em-submit-hover'}}"
+    >{{sending ? '发送中…' : (sent ? '已发送' : '发送邮件')}}</button>
+
+    <text class="em-hint">同一网络每小时最多发送 3 封</text>
+  </view>
+
+  <view class="em-safe"></view>
+</scroll-view>
+
+<guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />

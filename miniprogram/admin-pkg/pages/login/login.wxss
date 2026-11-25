@@ -1,0 +1,205 @@
+page {
+  background: var(--bg-primary);
+  min-height: 100vh;
+}
+
+.page-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 560rpx;
+  background: var(--bg-elevated);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: 32rpx;
+  padding: 60rpx 48rpx 48rpx;
+  box-shadow: 0 8rpx 40rpx rgba(0,0,0,0.15);
+  animation: card-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(30rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 56rpx;
+}
+
+.login-icon {
+  font-size: 72rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.login-title {
+  font-size: var(--fs-40);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  display: block;
+}
+
+.login-desc {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  margin-top: 12rpx;
+  display: block;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.input-label {
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-deep);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 0 24rpx;
+  height: 88rpx;
+  transition: border-color 0.2s;
+}
+
+.input-focus {
+  border-color: var(--accent-gold-ink);
+}
+
+.login-input {
+  flex: 1;
+  height: 100%;
+  font-size: var(--fs-30);
+  color: var(--text-primary);
+}
+
+.toggle-pwd {
+  font-size: var(--fs-32);
+  padding: 8rpx;
+  flex-shrink: 0;
+}
+
+.error-msg {
+  font-size: var(--fs-24);
+  color: #f87171;
+  text-align: center;
+  padding: 8rpx 0;
+}
+
+.login-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: var(--radius);
+  font-size: var(--fs-32);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--text-muted);
+  transition: all 0.2s;
+  margin-top: 8rpx;
+}
+
+.btn-active {
+  background: var(--accent-gold);
+  box-shadow: 0 4rpx 20rpx rgba(181, 113, 58, 0.3);
+}
+
+.login-btn:active {
+  transform: scale(0.97);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 36rpx;
+}
+
+.footer-hint {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* ===== 后台账号登录：新增元素（徽标、CSS 眼睛、模式切换、placeholder） ===== */
+.login-icon-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  height: 120rpx;
+  margin: 0 auto 20rpx;
+  border-radius: 32rpx;
+  background: var(--tile-deep);
+  color: var(--tile-deep-text);
+  font-family: var(--font-serif);
+  font-size: 56rpx;
+  font-weight: 700;
+}
+.login-ph {
+  color: #c4b7a4;
+}
+/* 密码显隐：CSS 画眼睛（不引图片、不用 emoji） */
+.eye {
+  position: relative;
+  width: 40rpx;
+  height: 26rpx;
+  border: 3rpx solid var(--text-muted);
+  border-radius: 50%;
+}
+.eye::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10rpx;
+  height: 10rpx;
+  margin: -5rpx 0 0 -5rpx;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.eye-on {
+  border-color: var(--accent-gold-ink);
+}
+.eye-on::after {
+  background: var(--accent-gold);
+}
+.eye-slash {
+  position: absolute;
+  left: -4rpx;
+  top: 10rpx;
+  width: 48rpx;
+  height: 3rpx;
+  background: var(--accent-gold);
+  transform: rotate(-45deg);
+}
+.mode-switch {
+  margin-top: 12rpx;
+  text-align: center;
+}
+.mode-switch-text {
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  text-decoration: underline;
+  text-decoration-color: rgba(181, 113, 58, 0.3);
+}

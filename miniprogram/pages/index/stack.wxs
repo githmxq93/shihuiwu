@@ -1,0 +1,210 @@
+/**
+ * 首页乱序牌堆 · 拖拽渲染层逻辑（WXS 版）
+ * ==================================================================
+ * 设计目标：touchmove 全程「零 setData」——顶卡位移由 WXS 直接 setStyle
+ *          写到卡片节点。旧实现每次 touchmove 都 setData 3 个字段
+ *          （_style 还是全量长字符串），60~120Hz 高频事件全部走逻辑层
+ *          序列化，是「滑动不丝滑 / 有延迟」的根因。
+ *
+ * 与 js 的通信（低频：一次拖拽 ≤ 6 次 callMethod）：
+ *   [注意] callMethod 的真实语义是「直接调用逻辑层（页面）的同名方法」，
+ *   不是触发 bind: 事件（custom-tab-bar/index.wxs 先例：wxml 无任何 bind:，
+ *   js 直接定义 onWxsSelect(arg)）。因此 notify 的名字必须与页面 js
+ *   的方法名一致（onStackXxx），detail 对象整体作为第一个参数传入。
+ *   onStackStart  —— 起拖：js setData _dragging（拖拽阴影反馈）
+ *   onStackTag    —— tag 过阈值两档（±20px）：js setData _tagL/_tagR（0/1）
+ *   onStackTap    —— 轻触（未移动）：进人物详情
+ *   onStackThrow  —— 甩出（|dx| > 90）：js 走 _throwStackCard 做 order 循环
+ *   onStackBack   —— 力度不够弹回：js 重建该卡节点归位
+ *   onStackGiveUp —— 纵向主导 / 系统打断：同 back
+ *
+ * 样式写入架构（2026-10-22 三次迭代后的最终形态，勿改回任何旧形态）：
+ *   WXS setStyle 的优先级高于数据样式且**不可撤销**——一张卡只要被
+ *   setStyle 写过，之后它的数据 _style 更新就全部失效。牌堆是 20 张
+ *   循环轮转的强交互（每张卡会反复改变深度），任何「写一次留在节点上」
+ *   的方案都会在轮完一圈后全盘崩坏（实测：滑 20 次后可见层空白）。
+ *   因此本文件的写入被限制到最小集合：
+ *   · touchMove  —— 拖拽位移（跟手所必需，松手后由 js 善后）
+ *   · touchEnd   —— 仅甩出动画（一次性、飞完即弃的视觉）
+ *   其余一切姿态更新（弹回、放弃、归位、循环重排）一律由 js 把该卡
+ *   _ukey 递增 ⇒ wx:key 变化 ⇒ 旧节点销毁（WXS 残留随之消失）、新节点
+ *   按数据 _style 渲染 ⇒ 零残留、零失效。
+ *
+ * 本文件严格遵守 WXS 解析器限制（custom-tab-bar 踩过的坑，勿改）：
+ *   1. 不支持科学计数法：1e9 会报 Unexpected token e，必须写 999999999;
+ *   2. 不支持 return 后紧跟同行的 }（解析器不做 ASI），return 一律补分号;
+ *   3. 不用 typeof / undefined；表达式 + 拼接一律单行不断行。
+ * ==================================================================
+ */
+var MOVE_TOLERANCE = 4    // 超过该位移（px）判定为「拖动」而非「点击」
+var VERTICAL_GIVEUP = 10  // 纵向位移超过该值且大于横向 ⇒ 放弃拖拽让位滚动
+var TAG_THRESHOLD = 20    // 横向位移过该值（px）亮对应 tag（两档，不逐帧）
+var THROW_THRESHOLD = 90  // 横向位移过该值（px）松手即甩出
+var DRAG_SCALE = 1.03     // 拖拽中顶卡轻微放大
+var TILT_FACTOR = 0.08    // 每位移 1px 的附加旋转（度）
+var THROW_TRANSITION = 'transform 0.55s cubic-bezier(0.3,0,0.6,1), opacity 0.5s ease'
+
+/* 取不到节点句柄的一次性告警（WXS 只支持 console.log，重复日志会被框架过滤） */
+var missLogged = false
+// 日志总开关（2026-10-29）：生产保持 false ⇒ 真机控制台零输出。
+// 排查卡片拖拽样式不生效时改为 true 即可看到一次性告警。
+var DEBUG = false
+
+function logMiss(where) {
+  if (!DEBUG) return;
+  if (missLogged) return;
+  missLogged = true;
+  console.log('[stack] 未取到卡片节点（' + where + '），WXS setStyle 未写入');
+}
+
+/* ins.getState() 不可用时的兜底状态（正常路径走 per-instance 状态） */
+var FALLBACK = { inited: false }
+
+/**
+ * 取当前卡片节点的 per-instance 状态容器（每张卡一个实例，天然隔离）。
+ * 首次调用时初始化字段；getState 不可用时退回 FALLBACK。
+ */
+function getSt(ins) {
+  var st = null;
+  if (ins && ins.getState) st = ins.getState();
+  if (!st) st = FALLBACK;
+  if (st.inited) return st;
+  st.inited = true;
+  st.active = false;
+  st.sidx = -1;
+  st.startX = 0;
+  st.startY = 0;
+  st.dx = 0;
+  st.dy = 0;
+  st.moved = false;
+  st.ox = 0;
+  st.oy = 0;
+  st.rot = 0;
+  st.tag = 0;
+  return st;
+}
+
+/* 取触点坐标：优先 pageX/pageY，无则退 clientX/clientY；都取不到返回 null */
+function point(e) {
+  var t = e.touches && e.touches[0];
+  if (!t) t = e.changedTouches && e.changedTouches[0];
+  if (!t) return null;
+  var x = t.pageX;
+  if (!x) x = t.clientX;
+  var y = t.pageY;
+  if (!y) y = t.clientY;
+  return { x: x, y: y };
+}
+
+function abs(n) {
+  if (n < 0) return -n;
+  return n;
+}
+
+function notify(ins, name, detail) {
+  if (ins && ins.callMethod) ins.callMethod(name, detail);
+}
+
+function touchStart(e, ins) {
+  var ds = e.currentTarget.dataset || {};
+  var p = point(e);
+  if (!p) return;
+  var st = getSt(ins);
+  st.active = true;
+  st.sidx = ds.sidx * 1;
+  st.startX = p.x;
+  st.startY = p.y;
+  st.dx = 0;
+  st.dy = 0;
+  st.moved = false;
+  st.ox = ds.ox * 1 || 0;
+  st.oy = ds.oy * 1 || 0;
+  st.rot = ds.rot * 1 || 0;
+  st.tag = 0;
+  notify(ins, 'onStackStart', { sidx: st.sidx });
+}
+
+function touchMove(e, ins) {
+  var st = getSt(ins);
+  if (!st.active) return;
+  var p = point(e);
+  if (!p) return;
+  st.dx = p.x - st.startX;
+  st.dy = p.y - st.startY;
+  var adx = abs(st.dx);
+  var ady = abs(st.dy);
+  if (adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE) st.moved = true;
+
+  // 纵向主导 ⇒ 用户想滚页面：放弃拖拽（不写样式——归位由 js 重建节点完成，
+  // bindtouch 非 catch，滚动不被拦）
+  if (ady > adx && ady > VERTICAL_GIVEUP) {
+    st.active = false;
+    notify(ins, 'onStackGiveUp', { sidx: st.sidx });
+    return;
+  }
+
+  // 核心：位移直接写卡片节点（渲染层执行，不经逻辑层序列化）
+  var node = e.instance;
+  if (node && node.setStyle) {
+    node.setStyle({
+      transform: 'translate(' + (st.ox + st.dx) + 'px,' + (st.oy + st.dy) + 'px) rotate(' + (st.rot + st.dx * TILT_FACTOR) + 'deg) scale(' + DRAG_SCALE + ')'
+    });
+  } else {
+    logMiss('touchMove');
+  }
+
+  // tag 两档：过阈值才回传 js（整个拖拽过程最多 2 次，不逐帧 setData）
+  var tag = 0;
+  if (st.dx < -TAG_THRESHOLD) tag = -1;
+  if (st.dx > TAG_THRESHOLD) tag = 1;
+  if (tag !== st.tag) {
+    st.tag = tag;
+    notify(ins, 'onStackTag', { sidx: st.sidx, tag: tag });
+  }
+}
+
+function touchEnd(e, ins) {
+  var st = getSt(ins);
+  if (!st.active) return;
+  st.active = false;
+  var ds = e.currentTarget.dataset || {};
+  if (!st.moved) {
+    notify(ins, 'onStackTap', { sidx: st.sidx, id: ds.id });
+    return;
+  }
+  if (abs(st.dx) > THROW_THRESHOLD) {
+    // 甩出：一次性飞出动画（飞完即弃）。之后的循环归位由 js 重建节点完成
+    var node = e.instance;
+    if (node && node.setStyle) {
+      var w = ds.winw * 1 || 375;
+      var dir = st.dx > 0 ? 1 : -1;
+      node.setStyle({
+        transition: THROW_TRANSITION,
+        transform: 'translate(' + (dir * w * 1.2) + 'px,' + (st.dx * 0.3 - 40) + 'px) rotate(' + (dir * 28) + 'deg) scale(0.96)',
+        opacity: 0,
+        zIndex: 999
+      });
+    } else {
+      logMiss('touchEnd-throw');
+    }
+    notify(ins, 'onStackThrow', { sidx: st.sidx, dx: st.dx });
+    return;
+  }
+  // 力度不够：不写样式，js 重建该卡节点 ⇒ 按数据 _style 瞬移回位
+  notify(ins, 'onStackBack', { sidx: st.sidx });
+}
+
+/* 系统手势打断（来电/下拉等）：只弹回，绝不当作点击跳详情 */
+function touchCancel(e, ins) {
+  var st = getSt(ins);
+  if (!st.active) return;
+  st.active = false;
+  notify(ins, 'onStackGiveUp', { sidx: st.sidx });
+}
+
+module.exports = {
+  touchStart: touchStart,
+  touchMove: touchMove,
+  touchEnd: touchEnd,
+  touchCancel: touchCancel
+}

@@ -1,0 +1,901 @@
+/* 底部五标签 dock：与详情页 / 足迹页共用 templates/dock/dock.wxss（唯一来源，勿在本文件另写一份） */
+@import "../../../templates/dock/dock.wxss";
+
+/* 世系家族树 —— 光主题（与全站羊皮纸底一致）
+ *
+ * 版式骨架：左侧一根分段谱线（.ln-seg，每列画一段）+ 每代一个圆点（.ln-dot），
+ * 卡片统一挂在 72rpx 缩进之后。有线，「上下代」才是看得见的结构；
+ * 没有它，几组卡片只是几组卡片。
+ * 为什么分段而不是一整根：最后一列的圆点在最上面、卡片在下面，
+ * 一根绝对定位的长线只能靠 bottom 收尾，会一直垂到卡片底部之外。
+ *
+ * 两条已知坑（前一轮实测，别踩）：
+ *   1. 不用 flex `gap`：老基础库下与 margin 混用会出现 24rpx 错位，一律用 margin 控间距。
+ *   2. 不用 `color-mix()`：WXSS 不支持（pages/index/index.wxss:415 已注释确认），
+ *      半透明色一律写死 rgba。
+ */
+
+.ln-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  /* 底部让位（2026-11-09）：原本只有 60rpx，加五标签 dock 后必须让出底栏高度 + 安全区，
+     否则滚到底时最后一条 ln-foot / 展开行会被固定底栏压住。dock 本体约 132rpx，
+     这里留 200rpx（底栏 + 20rpx 呼吸）再叠加系统手势区。 */
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ===== 深色常驻头部（2026-11-08 统一顶部样式） =====
+   取值与详情页 .b2-mini-wrap / .b2-mini 完全一致（同色系、同圆角、同阴影、同姓名排版）。
+   外层负责 sticky 吸顶并垫一层页面底色：内层底部是圆角，缺角处若露出正文，
+   滚动时内容会从两个圆角缺口漏出来，用页面底色挡住。
+   高度由内联 padding-top = navBarHeight 承担导航让位，因此不需要旧的 .nav-spacer。 */
+.ln-head-wrap {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-primary);
+}
+.ln-head {
+  position: relative;
+  padding: 20rpx 32rpx 24rpx;
+  background:
+    radial-gradient(120% 90% at 84% 0%, rgba(207, 138, 75, 0.28), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+  box-shadow: 0 10rpx 24rpx -14rpx rgba(30, 20, 12, 0.7);
+  overflow: hidden;
+}
+/* 织物纹理：与详情页 .b2-mini::before 同一条，文字层抬到 z-index:1 之上 */
+.ln-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+}
+.ln-head-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.ln-head-nm {
+  flex: 1;
+  min-width: 0;
+}
+.ln-head-nameline {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+  flex-wrap: wrap;
+}
+.ln-head-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-38);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+.ln-head-era {
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: #e5b77f;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1rpx solid rgba(229, 183, 127, 0.38);
+  border-radius: 999rpx;
+  padding: 2rpx 14rpx;
+  white-space: nowrap;
+}
+.ln-head-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.52);
+}
+.ln-head-tag {
+  flex: none;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.5);
+}
+
+.ln-hover { opacity: 0.7; }
+
+/* ---------------- 面包屑 ---------------- */
+
+.ln-trail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 32rpx 4rpx;
+}
+.ln-trail-back {
+  display: flex;
+  align-items: center;
+  max-width: 68%;
+  padding: 6rpx 0;
+}
+.ln-trail-arrow {
+  font-size: var(--fs-32);
+  color: var(--accent-gold-ink);
+  margin-right: 4rpx;
+  line-height: 1;
+}
+.ln-trail-label {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+  margin-right: 8rpx;
+}
+.ln-trail-name {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ln-trail-root { padding: 6rpx 0 6rpx 16rpx; }
+.ln-trail-root-text {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+/* ---------------- 骨架 / 错误 ---------------- */
+
+.ln-skel { padding: 48rpx 24rpx; }
+.ln-skel-center {
+  width: 70%;
+  height: 132rpx;
+  margin: 0 auto 32rpx;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  opacity: 0.75;
+}
+.ln-skel-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+.ln-skel-node {
+  width: 42%;
+  height: 96rpx;
+  margin: 0 8rpx;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  opacity: 0.55;
+}
+
+.ln-error { padding: 160rpx 48rpx 0; text-align: center; }
+.ln-error-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  color: var(--text-primary);
+  margin-bottom: 16rpx;
+}
+.ln-error-desc {
+  display: block;
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 40rpx;
+}
+.ln-error-btn {
+  display: inline-block;
+  padding: 18rpx 56rpx;
+  border: 1rpx solid var(--border-color);
+  border-radius: 999rpx;
+}
+.ln-error-btn-text {
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+}
+
+/* ---------------- 谱线骨架 ---------------- */
+
+.ln-tree {
+  position: relative;
+  padding: 8rpx 0 8rpx;
+  transition: opacity 0.15s ease;
+}
+/* 只改查询参数（展开一代 / 取全部兄弟 / 加深代际）时的静默刷新：
+   整棵树变淡而不是换成骨架屏——点一下「另有 3 位」整页闪一遍，比不展开还糟。 */
+.ln-busy { opacity: 0.5; }
+
+.ln-col {
+  position: relative;
+  margin-top: 32rpx;
+}
+.ln-col:first-of-type { margin-top: 8rpx; }
+.ln-col-self { margin-top: 40rpx; }
+
+/* 谱线段：每列自己从本代圆点往下画到下一代圆点。
+   不用一根贯穿全树的长线——长线是绝对定位，下端只能靠 bottom 定，
+   而最后一列的圆点在最上面、卡片在下面，线会垂到卡片底部之外，看着像「下面还有一代」。
+   left 39rpx + 宽 2rpx = 圆心 40rpx，与 .ln-dot 的圆心（34 + 6）对齐。 */
+.ln-seg {
+  position: absolute;
+  left: 39rpx;
+  top: 18rpx;
+  bottom: -46rpx;
+  width: 2rpx;
+  background: rgba(61, 46, 31, 0.14);
+}
+
+.ln-col-head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  padding: 0 32rpx 14rpx 72rpx;
+}
+/* 圆点压在谱线上：left 34rpx + 12rpx 宽 = 圆心 40rpx，与 .ln-seg 对齐 */
+.ln-dot {
+  position: absolute;
+  left: 34rpx;
+  top: 6rpx;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2rpx solid rgba(61, 46, 31, 0.28);
+  box-sizing: border-box;
+}
+.ln-dot-self {
+  width: 16rpx;
+  height: 16rpx;
+  left: 32rpx;
+  top: 4rpx;
+  background: var(--accent-gold);
+  border-color: var(--accent-gold-ink);
+}
+/* 可折叠的代：圆点放大成「+ / −」按钮。
+   left 26rpx + 半宽 14rpx = 圆心 40rpx，仍与 .ln-seg（left 39rpx + 2rpx）对齐。
+   整条 .ln-col-head 都可点，圆点本身不必再撑点击热区。 */
+.ln-dot-toggle {
+  left: 26rpx;
+  top: 0;
+  width: 28rpx;
+  height: 28rpx;
+  border: 2rpx solid var(--accent-gold);
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ln-dot-sign {
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  font-weight: 600;
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+.ln-col-label {
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+.ln-col-label-self {
+  color: var(--accent-gold-ink);
+}
+.ln-col-count {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  margin-left: 12rpx;
+}
+
+/* ---------------- 节点卡（两列网格） ---------------- */
+
+.ln-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  padding: 0 24rpx 0 72rpx;
+}
+
+/* 两列等宽：容器内容宽 654rpx，50% − 8rpx = 319rpx；两张 + 各 8rpx 右距 = 654rpx，刚好填满 */
+.ln-node {
+  display: flex;
+  align-items: center;
+  width: calc(50% - 8rpx);
+  box-sizing: border-box;
+  margin: 0 8rpx 14rpx 0;
+  padding: 18rpx 16rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.ln-node-avatar {
+  flex: none;
+  width: 56rpx;
+  height: 56rpx;
+  margin-right: 14rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(181, 113, 58, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ln-node-img { width: 100%; height: 100%; }
+/* 只放一个字：整个姓名塞进圆里会被裁成「帝刘」这种半截字 */
+.ln-node-initial {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+
+.ln-node-body { flex: 1; min-width: 0; }
+.ln-node-title { display: flex; align-items: center; }
+.ln-node-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ln-node-badge {
+  flex: none;
+  margin-left: 8rpx;
+  padding: 2rpx 8rpx;
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.12);
+  border-radius: 6rpx;
+}
+.ln-node-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 占位：整行一条虚线，表示"这条线到这里断了"。
+   不画成半格卡——它是断点，不是一个人。 */
+.ln-node-gap {
+  width: calc(100% - 8rpx);
+  background: transparent;
+  border: 1rpx dashed rgba(61, 46, 31, 0.22);
+  box-shadow: none;
+  padding: 16rpx 20rpx;
+}
+.ln-gap-body { display: flex; align-items: baseline; }
+.ln-gap-title {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+.ln-gap-hint {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+/* 本人：唯一一张全宽卡 + 金色左边框。全页只有这里加强调，不靠放大字号 */
+.ln-node-self {
+  width: calc(100% - 8rpx);
+  padding: 24rpx 20rpx;
+  background: var(--bg-elevated);
+  border-color: rgba(181, 113, 58, 0.42);
+  border-left: 6rpx solid var(--accent-gold);
+  box-shadow: 0 4rpx 16rpx rgba(181, 113, 58, 0.1);
+}
+.ln-node-avatar-self {
+  width: 72rpx;
+  height: 72rpx;
+  margin-right: 18rpx;
+  background: rgba(181, 113, 58, 0.16);
+}
+.ln-node-name-self {
+  font-size: var(--fs-34);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 折叠行：独立一行、只画上边框虚线。
+   画成四边框 + 圆角就变成"第三张卡"，「另有 1 位」会被读成第 3 个人叫这个名字。 */
+.ln-fold {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 24rpx 0 72rpx;
+  padding: 20rpx 0;
+  border-top: 1rpx dashed rgba(61, 46, 31, 0.2);
+}
+.ln-fold-action {
+  border-top: 1rpx solid var(--border-subtle);
+  border-bottom: 1rpx solid var(--border-subtle);
+  margin-top: 18rpx;
+  padding: 24rpx 0;
+}
+.ln-fold-text {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+}
+.ln-fold-arrow {
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  margin-left: 8rpx;
+  line-height: 1;
+}
+
+/* 其他父母：主世系只保留一位父亲 + 一位母亲，其余父辈（继父/嗣父/养父/嫡母/庶母…）
+   收在这里。卡片用弱一档的底色 + 虚线边，和主位区分开，避免被读成"第三个父亲"。 */
+.ln-fold-extra { border-top-style: dotted; }
+.ln-row-extra { padding-top: 4rpx; }
+.ln-node-extra {
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+/* 数据存疑警示卡：祖先代「父亲」>2 位时，先收起只给这张卡，点开再全量展开 */
+.ln-suspect {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: 0 24rpx 0 72rpx;
+  padding: 18rpx 20rpx;
+  background: rgba(181, 113, 58, 0.08);
+  border: 1rpx solid rgba(181, 113, 58, 0.32);
+  border-radius: var(--radius);
+}
+.ln-suspect-warn {
+  font-size: var(--fs-24);
+  font-weight: 600;
+  color: rgba(181, 113, 58, 0.95);
+  margin-right: 10rpx;
+}
+.ln-suspect-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.ln-suspect-arrow {
+  flex: none;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  margin-left: 12rpx;
+  line-height: 1;
+}
+
+/* ---------------- 配偶 / 兄弟（挂在本人这一代下面） ---------------- */
+
+.ln-side {
+  margin: 16rpx 24rpx 0 72rpx;
+}
+.ln-side-label {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  letter-spacing: 0;
+  margin-bottom: 12rpx;
+}
+/* 配偶 / 兄弟 的展开行头：标题居左、+ / − 居右，整行可点 */
+.ln-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+.ln-side-head .ln-side-label { margin-bottom: 0; }
+.ln-side-toggle {
+  flex: none;
+  padding-left: 20rpx;
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+.ln-side-row { display: flex; flex-wrap: wrap; }
+.ln-side-card {
+  width: calc(50% - 8rpx);
+  box-sizing: border-box;
+  margin: 0 8rpx 12rpx 0;
+  padding: 16rpx 18rpx;
+  background: var(--bg-secondary);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+.ln-side-name {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ln-side-meta {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------------- 继续向上 / 向下 ---------------- */
+
+.ln-more {
+  margin: 20rpx 24rpx 0;
+  padding: 22rpx 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-subtle);
+  border-left: 4rpx solid rgba(181, 113, 58, 0.5);
+  border-radius: var(--radius);
+}
+.ln-more-static {
+  border-left-color: rgba(61, 46, 31, 0.16);
+  background: transparent;
+}
+/* 收回一代：与「点此继续」同构但方向相反。左边框改弱化色，避免和「继续」抢注意力，
+   但保留 .ln-more 的卡片底色以维持「可点」的观感（不像 .ln-more-static 那样像纯说明）。 */
+.ln-more-back { border-left-color: rgba(61, 46, 31, 0.3); }
+.ln-more-title {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-primary);
+}
+.ln-more-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+/* ---------------- B 档 ---------------- */
+
+.ln-b-head { padding: 48rpx 32rpx 8rpx; }
+.ln-b-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 42rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.ln-b-sub {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+.ln-b-note {
+  display: block;
+  margin-top: 22rpx;
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.ln-sec { margin: 36rpx 24rpx 0; }
+.ln-sec-head {
+  display: flex;
+  align-items: baseline;
+  padding-bottom: 14rpx;
+  border-bottom: 1rpx solid var(--border-subtle);
+}
+.ln-sec-label {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+.ln-sec-count {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+.ln-attach-row {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 16rpx;
+}
+.ln-attach-card {
+  width: calc(50% - 8rpx);
+  box-sizing: border-box;
+  margin: 0 8rpx 12rpx 0;
+  padding: 16rpx 18rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+.ln-attach-name {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 26rpx;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ln-attach-meta {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------------- C 档：状态卡（零框零线，只有字） ---------------- */
+
+.ln-summary { padding: 120rpx 40rpx 40rpx; }
+.ln-summary-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.ln-summary-desc {
+  display: block;
+  margin-top: 24rpx;
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+.ln-divider {
+  height: 1rpx;
+  background: var(--border-subtle);
+  margin: 40rpx 0;
+}
+.ln-baseline {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.ln-exit {
+  display: flex;
+  align-items: center;
+  min-height: 96rpx;
+  padding: 12rpx 0;
+}
+.ln-exit-body { flex: 1; min-width: 0; }
+.ln-exit-title {
+  display: block;
+  font-size: var(--fs-28);
+  color: var(--text-primary);
+}
+.ln-exit-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+.ln-exit-arrow {
+  flex: none;
+  font-size: var(--fs-32);
+  color: var(--text-muted);
+  line-height: 1;
+  margin-left: 16rpx;
+}
+
+/* ---------------- 页脚 ---------------- */
+
+.ln-foot {
+  margin: 56rpx 24rpx 0;
+  padding-top: 32rpx;
+  border-top: 1rpx solid var(--border-subtle);
+  text-align: center;
+}
+.ln-foot-link {
+  font-size: 24rpx;
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+.ln-foot-link-center { display: block; margin-top: 8rpx; }
+
+/* ---------------- 长按节点：底部上滑详情浮层 ---------------- */
+
+/* 遮罩：压暗世系树。fixed 全屏覆盖，点击空白处关闭（onSheetClose 防抬手误触） */
+.ln-sheet-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+  background: rgba(30, 22, 12, 0.45);
+  display: flex;
+  align-items: flex-end;
+  animation: ln-mask-in 0.18s ease;
+}
+@keyframes ln-mask-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* 面板：底部上滑圆角卡，缓动入场 */
+.ln-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16rpx 36rpx calc(36rpx + env(safe-area-inset-bottom));
+  background: var(--bg-elevated);
+  border-top-left-radius: 28rpx;
+  border-top-right-radius: 28rpx;
+  box-shadow: 0 -8rpx 32rpx rgba(30, 22, 12, 0.18);
+  animation: ln-sheet-in 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes ln-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.ln-sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  margin: 0 auto 24rpx;
+  border-radius: 999rpx;
+  background: var(--border-color);
+}
+
+.ln-sheet-head { display: flex; align-items: center; }
+.ln-sheet-avatar {
+  flex: none;
+  width: 88rpx;
+  height: 88rpx;
+  margin-right: 24rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(181, 113, 58, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ln-sheet-img { width: 100%; height: 100%; }
+.ln-sheet-initial {
+  font-family: var(--font-serif);
+  font-size: var(--fs-38);
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+.ln-sheet-id { flex: 1; min-width: 0; }
+.ln-sheet-name {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--fs-36);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ln-sheet-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ln-sheet-dynasty { margin-top: 22rpx; }
+.ln-sheet-dynasty-tag {
+  display: inline-block;
+  padding: 6rpx 18rpx;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.12);
+  border-radius: 999rpx;
+}
+
+.ln-sheet-bio {
+  display: block;
+  margin-top: 22rpx;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.ln-sheet-actions {
+  display: flex;
+  margin-top: 32rpx;
+}
+.ln-sheet-btn {
+  flex: 1;
+  box-sizing: border-box;
+  margin: 0 8rpx;
+  padding: 24rpx 0;
+  border-radius: 14rpx;
+  text-align: center;
+}
+.ln-sheet-btn:first-child { margin-left: 0; }
+.ln-sheet-btn:last-child { margin-right: 0; }
+/* 查看完整详情：描边次要按钮 */
+.ln-sheet-btn-detail {
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+}
+/* 以此为树心：金色填充主按钮 */
+.ln-sheet-btn-center {
+  background: var(--accent-gold);
+}
+.ln-sheet-btn-text {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.ln-sheet-btn-detail .ln-sheet-btn-text { color: var(--text-primary); }
+.ln-sheet-btn-center .ln-sheet-btn-text { color: #fff; }
+
+
+/* ---------------- 分支口径开关：只看父系 / 父系+母系 ----------------
+   库里「生父+嗣父」「生母+嫡母+继母」极常见，一代平铺能到 8 张卡；
+   默认只看父系，母系折成一行提示，用户点一下才放出来。 */
+
+.ln-side-mode {
+  display: flex;
+  align-items: center;
+  margin: 6rpx 24rpx 18rpx 72rpx;
+  padding: 16rpx 20rpx;
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  border: 1rpx solid var(--border-subtle);
+}
+.ln-side-mode-track {
+  flex: none;
+  position: relative;
+  width: 56rpx;
+  height: 32rpx;
+  border-radius: var(--radius);
+  background: rgba(61, 46, 31, 0.18);
+}
+.ln-side-mode-track-on { background: var(--accent-gold); }
+.ln-side-mode-knob {
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: #fff;
+}
+.ln-side-mode-track-on .ln-side-mode-knob { left: 28rpx; }
+.ln-side-mode-label {
+  margin-left: 16rpx;
+  font-size: var(--fs-26);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.ln-side-mode-count {
+  flex: 1;
+  text-align: right;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* 某一代的母系分支被筛掉多少：不写出来，用户会以为库里没有 */
+.ln-mat-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 24rpx 0 72rpx;
+  padding: 14rpx 0 8rpx;
+  border-top: 1rpx dashed rgba(61, 46, 31, 0.12);
+}
+.ln-mat-hint-text {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+.ln-mat-hint-arrow {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+}

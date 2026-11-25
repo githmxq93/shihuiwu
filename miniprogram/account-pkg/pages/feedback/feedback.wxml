@@ -1,0 +1,185 @@
+<view class="page">
+  <nav-bar title="意见反馈" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+  <view style="height: {{navBarHeight}}px;"></view>
+
+  <!-- 未登录：本小程序为**个人主体**，不提供微信一键登录
+       （wx.login + 头像/昵称填写能力需已认证的非个人主体，个人主体调用必失败）。
+       统一引导到「我的」页走账号密码登录，与 Web 端同一套账号体系。 -->
+  <view class="login-prompt" wx:if="{{!isLoggedIn}}">
+    <view class="login-icon">&#x1f512;</view>
+    <view class="login-text">登录后即可提交反馈</view>
+    <button class="login-btn" bindtap="onGoLogin">去「我的」登录</button>
+  </view>
+
+  <!-- 已登录 -->
+  <view class="content" wx:if="{{isLoggedIn}}">
+    <!-- 顶部标签切换（滑块式分段控件，高度 44px） -->
+    <view class="fb-tabs" id="guide-fb-tabs">
+      <view class="fb-tab-slider {{activeTab === 'history' ? 'is-right' : ''}}"></view>
+      <view class="fb-tab {{activeTab === 'submit' ? 'is-active' : ''}}" data-tab="submit" bindtap="switchTab">提交反馈</view>
+      <view class="fb-tab {{activeTab === 'history' ? 'is-active' : ''}}" data-tab="history" bindtap="switchTab">反馈历史</view>
+    </view>
+
+    <!-- ================= 提交反馈 ================= -->
+    <view class="fb-body" wx:if="{{activeTab === 'submit'}}">
+
+      <!-- 1. 反馈类型（自定义下拉；value 仍为后端的 suggestion/bug/content/other/cancel_account） -->
+      <view class="fb-card fb-card-drop" id="guide-fb-type">
+        <view class="fb-label-row">
+          <view class="fb-label-main">
+            <text class="fb-label">反馈类型</text>
+            <text class="fb-badge is-req">必填</text>
+          </view>
+        </view>
+        <view class="fb-drop">
+          <view class="fb-drop-trigger {{dropdownOpen ? 'is-open' : ''}}" bindtap="onToggleDropdown">
+            <text class="fb-drop-value">{{fbTypeLabel}}</text>
+            <text class="fb-drop-arrow {{dropdownOpen ? 'is-open' : ''}}"></text>
+          </view>
+          <view class="fb-drop-list" wx:if="{{dropdownOpen}}">
+            <view class="fb-drop-item {{index === 0 ? 'is-first' : ''}} {{fbType === item.value ? 'is-active' : ''}}"
+                  wx:for="{{fbTypeOptions}}" wx:key="value"
+                  data-type="{{item.value}}" bindtap="onTypeChange">
+              <text class="fb-drop-item-text">{{item.label}}</text>
+              <view class="fb-drop-check css-check" wx:if="{{fbType === item.value}}"></view>
+            </view>
+          </view>
+        </view>
+        <!-- 「注销账号」风险提示（文案与原实现一致） -->
+        <view class="fb-note" wx:if="{{fbType === 'cancel_account'}}">
+          注销后账号及其关联数据（收藏、浏览足迹、站内信等）将被删除且不可恢复。请在下方填写邮箱，处理结果将通过邮件告知你。
+        </view>
+      </view>
+
+      <!-- 下拉展开时的透明占位：把下面的卡片整体推下去，让浮层列表落在空白区上。
+           真机上 input/textarea 是原生组件层（z-index 压不住），不推开的话列表会被输入框挡住、选项点不到 -->
+      <view class="fb-drop-spacer" wx:if="{{dropdownOpen && fbDropSpacer > 0}}" style="height: {{fbDropSpacer}}px;"></view>
+
+      <!-- 2. 反馈内容（必填；空提交 → 卡片朱砂外框 + 行内提示，输入后清除） -->
+      <view class="fb-card {{fbErrContent ? 'is-err' : ''}}" id="guide-fb-content">
+        <view class="fb-label-row">
+          <view class="fb-label-main">
+            <text class="fb-label">反馈内容</text>
+            <text class="fb-badge is-req">必填</text>
+          </view>
+        </view>
+        <view class="fb-float-wrap {{fbContentState === 'active' ? 'is-active' : ''}}">
+          <textarea class="fb-textarea {{fbErrContent ? 'is-err' : ''}}" value="{{fbContent}}" maxlength="2000"
+            placeholder="请描述你遇到的问题或建议" placeholder-class="fb-ph"
+            bindinput="onContentInput" bindfocus="onContentFocus" bindblur="onContentBlur"
+            bindkeyboardheightchange="onKeyboardHeightChange" cursor-spacing="96" />
+          <text class="fb-counter {{fbCountTone ? 'is-' + fbCountTone : ''}}">{{fbContent.length}}/2000</text>
+        </view>
+        <view class="fb-errline" wx:if="{{fbErrContent}}">
+          <text class="fb-errline-ico">!</text>
+          <text>请先填写反馈内容（至少 1 个字）</text>
+        </view>
+      </view>
+
+      <!-- 3. 联系方式（必填标识随「注销账号」切换） -->
+      <view class="fb-card {{fbErrContact ? 'is-err' : ''}}" id="guide-fb-contact">
+        <view class="fb-label-row">
+          <view class="fb-label-main">
+            <text class="fb-label">联系方式</text>
+            <text class="fb-badge {{fbType === 'cancel_account' ? 'is-req' : 'is-opt'}}">{{fbType === 'cancel_account' ? '必填' : '选填'}}</text>
+          </view>
+        </view>
+        <view class="fb-float-wrap {{fbContactState === 'active' ? 'is-active' : ''}}">
+          <input class="fb-input {{fbErrContact ? 'is-err' : ''}}" value="{{fbContact}}"
+            placeholder="{{fbType === 'cancel_account' ? '邮箱，注销结果将邮件告知' : '手机号或邮箱，便于回复你'}}"
+            placeholder-class="fb-ph"
+            bindinput="onContactInput" bindfocus="onContactFocus" bindblur="onContactBlur"
+            bindkeyboardheightchange="onKeyboardHeightChange" cursor-spacing="96" />
+        </view>
+        <view class="fb-errline" wx:if="{{fbErrContact}}">
+          <text class="fb-errline-ico">!</text>
+          <text>{{fbErrContact}}</text>
+        </view>
+      </view>
+
+      <!-- 4. 截图（选填，单张；加载/上传失败保留已选图，可直接重试） -->
+      <view class="fb-card {{fbImgErr ? 'is-err' : ''}}" id="guide-fb-image">
+        <view class="fb-label-row">
+          <view class="fb-label-main">
+            <text class="fb-label">截图</text>
+          </view>
+          <text class="fb-badge is-opt">选填 · 1 张</text>
+        </view>
+        <view class="fb-upload-box" wx:if="{{!fbImage}}" bindtap="onChooseImage" hover-class="fb-upload-hover">
+          <text class="fb-upload-plus">+</text>
+          <text class="fb-upload-text">上传图片</text>
+        </view>
+        <view class="fb-preview" wx:if="{{fbImage}}">
+          <image class="fb-preview-img" src="{{fbImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="onFbImageError" />
+          <view class="fb-preview-del" bindtap="onRemoveImage">
+            <text class="fb-preview-del-dot">&#x2715;</text>
+          </view>
+        </view>
+        <view class="fb-errline" wx:if="{{fbImgErr}}">
+          <text class="fb-errline-ico">!</text>
+          <text>{{fbImgErr}}</text>
+        </view>
+      </view>
+
+      <!-- 底部固定提交栏：键盘弹起时变为贴键盘的 56px 工具条（左计数、右提交） -->
+      <view class="fb-submit-area {{kbHeight > 0 ? 'is-kb' : ''}}" id="guide-fb-submit"
+            style="{{kbHeight > 0 ? 'bottom: ' + kbHeight + 'px;' : ''}}">
+        <text class="fb-kb-count" wx:if="{{kbHeight > 0}}">{{fbContent.length}}/2000</text>
+        <view class="fb-submit-btn {{submitting ? 'is-disabled' : ''}}" bindtap="onSubmit" hover-class="fb-submit-hover">
+          {{submitting ? '提交中…' : '提交反馈'}}
+        </view>
+      </view>
+    </view>
+
+    <!-- ================= 反馈历史 ================= -->
+    <view class="fb-body" wx:if="{{activeTab === 'history'}}">
+      <view class="fb-filters">
+        <view class="fb-chip {{fbFilter === '' ? 'is-active' : ''}}" data-filter="" bindtap="onFilterChange">全部</view>
+        <view class="fb-chip {{fbFilter === 'pending' ? 'is-active' : ''}}" data-filter="pending" bindtap="onFilterChange">待处理</view>
+        <view class="fb-chip {{fbFilter === 'replied' ? 'is-active' : ''}}" data-filter="replied" bindtap="onFilterChange">已回复</view>
+        <view class="fb-chip {{fbFilter === 'resolved' ? 'is-active' : ''}}" data-filter="resolved" bindtap="onFilterChange">已解决</view>
+      </view>
+
+      <view class="feedback-list" wx:if="{{feedbacks.length > 0}}">
+        <view class="fb-card fb-hist-card" wx:for="{{feedbacks}}" wx:key="id" data-id="{{item.id}}" bindtap="onToggleExpand">
+          <view class="fb-header">
+            <view class="fb-meta">
+              <text class="fb-type type-{{item.type}}">{{item.type === 'bug' ? 'BUG' : item.type === 'suggestion' ? '建议' : item.type === 'content' ? '内容' : item.type === 'cancel_account' ? '注销账号' : '其他'}}</text>
+              <text class="fb-status status-{{item.status}}">{{item.status === 'pending' ? '待处理' : item.status === 'replied' ? '已回复' : '已解决'}}</text>
+            </view>
+            <text class="fb-date">{{item.createdAt}}</text>
+          </view>
+          <view class="fb-content {{expandedId === item.id ? 'expanded' : ''}}">{{item.content}}</view>
+          <view class="fb-image-wrap" wx:if="{{item.image}}">
+            <image class="fb-image" src="{{item.image}}" mode="widthFix" lazy-load="{{true}}" binderror="onMyFeedbackImageError" data-index="{{index}}" />
+          </view>
+          <view class="fb-reply" wx:if="{{item.reply && expandedId === item.id}}">
+            <view class="reply-label">管理员回复：</view>
+            <view class="reply-text">{{item.reply}}</view>
+            <view class="reply-time" wx:if="{{item.repliedAt}}">{{item.repliedAt}}</view>
+          </view>
+          <view class="fb-expand-hint" wx:if="{{!item.reply || expandedId !== item.id}}">{{expandedId === item.id ? '收起' : '展开详情'}}</view>
+        </view>
+      </view>
+
+      <!-- 空态：图标 + 说明 + 44px 引导按钮；按钮只切 tab，不发请求、不加数据 -->
+      <view class="fb-empty-card" wx:if="{{feedbacks.length === 0 && !fbLoading}}">
+        <view class="fb-empty-ico">
+          <view class="fb-empty-ico-line"></view>
+          <view class="fb-empty-ico-line is-short"></view>
+          <view class="fb-empty-ico-dot">!</view>
+        </view>
+        <view class="fb-empty-title">还没有反馈记录</view>
+        <view class="fb-empty-desc">提交后，处理进度和管理员回复都会显示在这里</view>
+        <view class="fb-empty-btn" bindtap="onEmptyGoSubmit">去写第一条反馈</view>
+      </view>
+
+      <view class="load-more" wx:if="{{fbHasMore && feedbacks.length > 0}}">
+        <text class="load-text" wx:if="{{!fbLoading}}" bindtap="onLoadMore">加载更多</text>
+        <text class="load-text" wx:if="{{fbLoading}}">加载中...</text>
+      </view>
+    </view>
+  </view>
+
+  <guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />
+</view>

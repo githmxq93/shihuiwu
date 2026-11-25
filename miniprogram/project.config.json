@@ -1,0 +1,148 @@
+{
+  "compileType": "miniprogram",
+  "libVersion": "3.17.5",
+  "appid": "YOUR_APPID",
+  "projectname": "世慧屋",
+  "description": "名人百科-微信小程序",
+  "packOptions": {
+    "ignore": [
+      {
+        "value": "**/_backup/**",
+        "type": "glob"
+      },
+      {
+        "value": "**/*.snap-*.js",
+        "type": "glob"
+      },
+      {
+        "value": "pages/emperors/_backup/*",
+        "type": "glob"
+      },
+      {
+        "value": "detail-pkg/pages/detail/_backup/*",
+        "type": "glob"
+      },
+      {
+        "value": "data/*backup*.js",
+        "type": "glob"
+      },
+      {
+        "value": "data/*.cjs",
+        "type": "glob"
+      },
+      {
+        "value": "data/figures_data.json",
+        "type": "file"
+      },
+      {
+        "value": "data/deploy_ghpages.cjs",
+        "type": "file"
+      },
+      {
+        "value": "data/export_json.cjs",
+        "type": "file"
+      },
+      {
+        "value": "data/*.mjs",
+        "type": "glob"
+      },
+      {
+        "value": "data/*.txt",
+        "type": "glob"
+      },
+      {
+        "value": "data/batch_new_9.js",
+        "type": "file"
+      },
+      {
+        "value": "package.json",
+        "type": "file"
+      },
+      {
+        "value": "project.miniapp.json",
+        "type": "file"
+      },
+      {
+        "value": "project.private.config.json",
+        "type": "file"
+      },
+      {
+        "value": "app.miniapp.json",
+        "type": "file"
+      },
+      {
+        "value": "i18n/**",
+        "type": "glob"
+      },
+      {
+        "value": "data/_archive/**",
+        "type": "glob"
+      },
+      {
+        "value": "**/*.md",
+        "type": "glob"
+      },
+      {
+        "value": "**/*.cjs",
+        "type": "glob"
+      },
+      {
+        "value": ".cloudbase/**",
+        "type": "glob"
+      }
+    ],
+    "include": [
+      {
+        "value": "assets/tab/*.png",
+        "type": "glob"
+      }
+    ]
+  },
+  "setting": {
+    "bundle": false,
+    "urlCheck": true,
+    "scopeDataCheck": false,
+    "coverView": true,
+    "es6": true,
+    "postcss": true,
+    "compileHotReLoad": false,
+    "lazyloadPlaceholderEnable": false,
+    "minified": true,
+    "autoAudits": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": false,
+    "useIsolateContext": true,
+    "nodeModules": false,
+    "enhance": false,
+    "useMultiFrameRuntime": true,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "showShadowRootInWxmlPanel": true,
+    "packNpmManually": true,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "condition": true,
+    "compileWorklet": false,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "simulatorPluginLibVersion": {
+    "wxext14566970e7e9f62": "3.6.5-41",
+    "wxext94b1b46f6603361": "3.6.0"
+  },
+  "projectArchitecture": "miniProgram"
+}

@@ -1,0 +1,110 @@
+/* 这一年，谁在场 · 二级页（方案 B · 人物三幕）
+   视觉沿用结果页：暖纸底 / 深色锚点 / 金色强调 / 衬线标题 / 字距 0。 */
+.page {
+  --paper: #F4EDE1;
+  --card: #FCF9F2;
+  --ink: #3B2C1D;
+  --ink2: #6B5840;
+  --muted: #8A7B62;
+  --line: #E4D9C5;
+  --china: #B5713A;
+  --china-d: #8E4F27;
+  --dead: #8A7B62;
+  position: relative;
+  min-height: 100vh;
+  background: var(--paper);
+  letter-spacing: 0;
+}
+.bg-grain {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(181,113,58,0.07), transparent 38%),
+    radial-gradient(circle at 88% 42%, rgba(63,107,104,0.04), transparent 42%);
+}
+.body { height: 100vh; position: relative; z-index: 1; }
+.nav-spacer { width: 100%; }
+.bottom-spacer { height: 60rpx; }
+
+/* ── 深色年份头 ── */
+.whead {
+  position: relative; overflow: hidden; margin: 20rpx 36rpx 0;
+  padding: 28rpx 30rpx 0; border-radius: 30rpx; color: #F4EDE1;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(181,113,58,0.36), rgba(181,113,58,0) 58%),
+    linear-gradient(135deg, #3B2C1D 0%, #2A1F14 62%, #4A3521 100%);
+  box-shadow: 0 30rpx 50rpx -36rpx rgba(59,44,29,0.9);
+}
+.wh-glow { position: absolute; right: -40rpx; top: -60rpx; width: 220rpx; height: 220rpx; border-radius: 50%; background: radial-gradient(circle, rgba(217,165,102,0.28), rgba(217,165,102,0) 70%); pointer-events: none; }
+.wh-watermark { position: absolute; right: 20rpx; bottom: -30rpx; font-family: "Songti SC", "STSong", serif; font-size: 120rpx; color: rgba(251,247,239,0.055); pointer-events: none; }
+.wh-top { position: relative; z-index: 1; display: flex; align-items: baseline; gap: 16rpx; }
+.wh-year { font-family: "Songti SC", "STSong", serif; font-size: 68rpx; font-weight: 600; line-height: 1; color: #FBF7EF; }
+.wh-era { flex: 1; min-width: 0; font-size: 22rpx; color: #E7D6BA; line-height: 1.4; }
+.wh-seal { flex-shrink: 0; width: 58rpx; height: 58rpx; display: flex; align-items: center; justify-content: center; border: 1rpx solid rgba(217,165,102,0.55); border-radius: 10rpx; color: #E9C48D; font-family: "Songti SC", "STSong", serif; font-size: 21rpx; letter-spacing: 0; }
+.wh-ask { position: relative; z-index: 1; margin-top: 12rpx; font-size: 20rpx; color: rgba(231,214,186,0.62); }
+.wh-acts { position: relative; z-index: 1; display: flex; margin-top: 18rpx; border-top: 1rpx solid rgba(244,237,225,0.14); }
+.wh-act { flex: 1; padding: 16rpx 0 18rpx; text-align: center; border-right: 1rpx solid rgba(244,237,225,0.1); }
+.wh-act:last-child { border-right: 0; }
+.wa-l { display: flex; align-items: center; justify-content: center; gap: 8rpx; font-size: 19rpx; color: rgba(231,214,186,0.66); }
+.wa-dot { width: 10rpx; height: 10rpx; border-radius: 3rpx; }
+.is-born .wa-dot { background: #D9A566; }
+.is-alive .wa-dot { background: #FBF7EF; }
+.is-dead .wa-dot { background: #9E8F79; }
+.wa-n { margin-top: 8rpx; font-family: "Songti SC", "STSong", serif; font-size: 38rpx; font-weight: 600; line-height: 1; color: #FBF7EF; }
+.is-born .wa-n { color: #D9A566; }
+.is-dead .wa-n { color: #C0B09A; }
+
+/* ── 三幕卡片 ── */
+.acts { position: relative; }
+.act-card { position: relative; margin: 20rpx 36rpx 0; padding: 0 24rpx 6rpx 28rpx; background: var(--card); border: 1rpx solid var(--line); border-radius: 24rpx; box-shadow: 0 16rpx 34rpx -28rpx rgba(61,46,31,0.7); }
+.act-card::before { content: ""; position: absolute; left: 0; top: 24rpx; bottom: 24rpx; width: 6rpx; border-radius: 0 4rpx 4rpx 0; }
+.c-born::before { background: var(--china); }
+.c-alive::before { background: var(--ink); }
+.c-dead::before { background: linear-gradient(180deg, var(--dead), rgba(138,123,98,0.2)); }
+.ac-h { display: flex; align-items: center; gap: 12rpx; padding: 20rpx 0 14rpx; }
+.ac-t { font-family: "Songti SC", "STSong", serif; font-size: 28rpx; font-weight: 600; color: var(--ink); }
+.ac-s { font-size: 20rpx; color: var(--muted); }
+.ac-n { margin-left: auto; font-family: "Songti SC", "STSong", serif; font-size: 24rpx; font-weight: 600; color: var(--china-d); }
+.c-alive .ac-n { color: var(--ink); }
+.c-dead .ac-n { color: var(--dead); }
+
+.row { display: flex; align-items: center; gap: 14rpx; padding: 12rpx 0; border-top: 1rpx solid rgba(228,217,197,0.62); }
+.row-hover { background: rgba(181,113,58,0.06); }
+.r-name { flex-shrink: 0; max-width: 240rpx; font-size: 25rpx; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-life { flex-shrink: 0; font-size: 20rpx; color: var(--muted); white-space: nowrap; }
+.r-meta { flex: 0 1 auto; min-width: 0; margin-left: auto; max-width: 200rpx; font-size: 20rpx; color: #9A8C73; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-empty { padding: 18rpx 0 22rpx; font-size: 21rpx; color: #A2937A; text-align: center; border-top: 1rpx solid rgba(228,217,197,0.62); }
+.ac-more { display: flex; align-items: center; justify-content: center; gap: 8rpx; margin-top: 4rpx; padding: 14rpx 0; border-top: 1rpx dashed var(--line); font-size: 20rpx; color: var(--china-d); }
+.am-caret { font-size: 18rpx; opacity: 0.8; }
+
+/* ── 收敛旋钮 ── */
+.conv { display: flex; gap: 8rpx; margin-bottom: 12rpx; padding: 6rpx; background: rgba(61,46,31,0.05); border-radius: 14rpx; }
+.conv-b { flex: 1; height: 52rpx; line-height: 52rpx; text-align: center; border-radius: 10rpx; font-size: 20rpx; color: var(--muted); }
+.conv-b.on { background: #FBF7EF; color: var(--ink); font-weight: 600; box-shadow: 0 2rpx 8rpx rgba(61,46,31,0.14); }
+.conv-note { margin-bottom: 6rpx; font-size: 19rpx; line-height: 1.5; color: #9A8C73; }
+
+/* ── 底部事件条 ── */
+.evbar { margin: 20rpx 36rpx 0; padding: 16rpx 22rpx 18rpx; background: rgba(181,113,58,0.06); border: 1rpx solid rgba(181,113,58,0.22); border-radius: 20rpx; }
+.evbar-h { display: flex; align-items: center; }
+.evbar-t { font-family: "Songti SC", "STSong", serif; font-size: 24rpx; font-weight: 600; color: var(--china-d); }
+.evbar-n { margin-left: auto; font-size: 19rpx; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 12rpx; }
+.chip { padding: 6rpx 14rpx; border-radius: 8rpx; background: rgba(251,247,239,0.92); border: 1rpx solid rgba(228,217,197,0.9); font-size: 20rpx; color: var(--ink2); }
+.chip.more { color: var(--china-d); border-style: dashed; border-color: rgba(181,113,58,0.4); }
+
+.foot { margin: 22rpx 36rpx 0; font-size: 19rpx; line-height: 1.7; color: #9A8C73; }
+.foot-b { display: inline-block; margin-right: 10rpx; padding: 2rpx 10rpx; border-radius: 6rpx; background: rgba(181,113,58,0.1); color: var(--china-d); }
+
+/* ── 加载 / 失败 ── */
+.sk-wrap { padding: 20rpx 36rpx 0; }
+.sk-head { height: 240rpx; margin-bottom: 20rpx; border-radius: 30rpx; background: rgba(61,46,31,0.08); }
+.sk-card { margin-bottom: 20rpx; padding: 24rpx; background: var(--card); border: 1rpx solid var(--line); border-radius: 24rpx; }
+.sk-line { height: 20rpx; margin-bottom: 14rpx; border-radius: 6rpx; background: rgba(61,46,31,0.07); }
+.sk-line:last-child { margin-bottom: 0; }
+.w30 { width: 30%; }
+.w55 { width: 55%; }
+.w80 { width: 80%; }
+.err-card { margin: 60rpx 36rpx 0; padding: 48rpx 32rpx; text-align: center; background: var(--card); border: 1rpx solid var(--line); border-radius: 24rpx; }
+.err-mark { width: 56rpx; height: 56rpx; margin: 0 auto 18rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(181,113,58,0.12); color: var(--china-d); font-family: "Songti SC", "STSong", serif; font-size: 30rpx; }
+.err-t { font-size: 26rpx; font-weight: 600; color: var(--ink); }
+.err-b { margin-top: 12rpx; font-size: 21rpx; line-height: 1.6; color: var(--muted); }
+.err-btn { display: inline-block; margin-top: 26rpx; padding: 14rpx 44rpx; border-radius: 999rpx; background: linear-gradient(135deg, var(--china), var(--china-d)); color: #FCF9F2; font-size: 23rpx; }

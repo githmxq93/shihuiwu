@@ -1,0 +1,118 @@
+/* 设置（列表页 + 二级页共用样式）
+   沿用「关于世慧屋」的分组卡语言：纸底 / 米白卡 / 细描边 / 衬线标题。
+   文字色：标题 #33261a（卡底 14:1）/ 说明与页脚 --text-muted #75654f（卡底 5.27:1）/
+   勾选 --accent-gold-ink #8f5326（卡底 5.72:1），全部 ≥ 4.5:1。
+   二级页 settings-topic.wxss 直接 @import 本文件，只写差异部分。 */
+
+.st-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.st-body {
+  height: 100vh;
+}
+
+.st-intro {
+  display: block;
+  padding: 24rpx 40rpx 4rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.st-label {
+  padding: 28rpx 40rpx 12rpx;
+  font-size: 22rpx;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.st-card {
+  margin: 0 32rpx;
+  background: var(--bg-card);
+  border: 2rpx solid rgba(107, 90, 69, 0.12);
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 16rpx 36rpx -32rpx rgba(107, 90, 69, 0.5);
+}
+
+.st-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 26rpx 24rpx;
+}
+
+.st-row-line {
+  border-bottom: 2rpx solid rgba(61, 46, 31, 0.07);
+}
+
+.st-row-hover {
+  background: var(--bg-card-hover);
+}
+
+.st-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.st-row-title {
+  display: block;
+  font-size: 30rpx;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #33261a;
+}
+
+.st-row-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.st-check {
+  flex: none;
+  width: 32rpx;
+  text-align: center;
+  font-size: 32rpx;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+}
+
+/* 列表页入口行：右侧摘要 + 箭头（摘要过长时省略，不挤标题） */
+.st-row-nav {
+  padding-right: 16rpx;
+}
+
+.st-value {
+  flex: none;
+  max-width: 260rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 22rpx;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.st-arrow {
+  flex: none;
+  width: 28rpx;
+  text-align: center;
+  font-size: 30rpx;
+  line-height: 1;
+  color: rgba(61, 46, 31, 0.38);
+}
+
+.st-foot {
+  display: block;
+  padding: 28rpx 40rpx calc(48rpx + env(safe-area-inset-bottom));
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: var(--text-muted);
+}

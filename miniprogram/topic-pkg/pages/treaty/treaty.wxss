@@ -1,0 +1,339 @@
+@import "../../styles/topic-shell.wxss";
+
+/* ============================================================
+   历代条约 · 新拟态
+   （与 topic-pkg/pages/campaign、liberation 同源皮肤，令牌逐字对齐
+     pages/dynasty-timeline/dynasty-timeline.wxss 与 pages/emperors/emperors.wxss）
+     纸底 #f4ede1 · 白卡 #fbf7ef · 墨 #3d2e1f/#75654f
+     金棕 #b5713a · 赭石强调 #b5713a
+     高光 rgba(255,255,255,.9)/.95 · 投影 rgba(163,149,137,.25)/.35
+   换算规则：参考稿 1px = 2rpx
+   变量挂在 .tt-page，不污染全局主题。
+
+   结构说明：
+   1) 时期导航由流内横向条改为 fixed 挂 nav 下方，.page-scroll 用行内
+      padding-top（navH + 52px）给内容让位；
+   2) 一次只渲染当前时期的条约，导航点击即换内容；
+   3) 时期小结（内凹）给出条数与性质分布，条约卡（微凸）承载正文；
+   4) 每条条约在「内容概要」之外新增「条约始末」正文，左侧朱砂细条分
+      出第二个层级。
+   注意：.era-nav 不加 backdrop-filter —— 2026-10-03 真机白屏专项的修复结论。
+   ============================================================ */
+
+/* 当前时期小结：内凹凹槽 */
+.era-panel {
+  margin-top: 8rpx;
+  padding: 26rpx 28rpx 24rpx;
+  border-radius: 32rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+.ep-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+}
+
+/* 序号：淡金浮雕数字 */
+.ep-index {
+  flex: none;
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: rgba(140, 90, 68, 0.42);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 1rpx 1rpx 2rpx var(--cp-sl-2);
+}
+
+.ep-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.ep-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-36);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--cp-ink-2);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+.ep-years {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 条数：微凸小胶囊 */
+.ep-total {
+  flex: none;
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--cp-card);
+  font-size: var(--fs-20);
+  line-height: 1.8;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+  box-shadow:
+    -3rpx -3rpx 7rpx var(--cp-sl),
+    4rpx 4rpx 9rpx var(--cp-sd);
+}
+
+.ep-intro {
+  margin-top: 14rpx;
+  font-size: var(--fs-24);
+  line-height: 1.85;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+.ep-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 16rpx;
+}
+
+/* 性质分布小标签：内凹小槽，数字与词分色 */
+.ep-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8rpx;
+  padding: 5rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 3rpx 3rpx 7rpx var(--cp-sd),
+    inset -3rpx -3rpx 7rpx var(--cp-sl-2);
+}
+
+.ep-chip-num {
+  font-size: var(--fs-22);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ep-chip-label {
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: var(--cp-muted);
+}
+
+.ep-chip.unequal .ep-chip-num {
+  color: var(--accent-gold-ink);
+}
+
+.ep-chip.equal .ep-chip-num {
+  color: var(--accent-gold-ink);
+}
+
+.era-empty {
+  margin-top: 24rpx;
+  padding: 24rpx 26rpx;
+  border-radius: 24rpx;
+  background: var(--cp-bg);
+  font-size: 24rpx;
+  line-height: 1.75;
+  color: var(--cp-muted);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+/* ================= 条约卡片 ================= */
+.tt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 26rpx;
+}
+
+/* 微凸软包：多层外阴影 ＋ 极淡径向渐变底 */
+.tt-card {
+  padding: 28rpx 30rpx 26rpx;
+  border-radius: 32rpx;
+  background: radial-gradient(circle at 30% 30%, var(--cp-card-hi), var(--bg-card) 60%, var(--bg-primary));
+  box-shadow:
+    0 20rpx 40rpx -14rpx rgba(139, 115, 85, 0.17),
+    0 10rpx 20rpx -8rpx rgba(139, 115, 85, 0.11),
+    7rpx 7rpx 15rpx var(--cp-sd),
+    -7rpx -7rpx 15rpx var(--cp-sl),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+}
+
+.tt-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.tt-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 32rpx;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--cp-ink);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+/* 性质标签：四类分色 —— 不平等朱砂、和议金棕、涉外灰、平等与多边金棕描边 */
+.tt-nature {
+  flex: none;
+  padding: 3rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 18rpx;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow:
+    2rpx 2rpx 6rpx rgba(139, 115, 85, 0.18),
+    inset 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.9);
+}
+
+.tt-nature.unequal {
+  border: 2rpx solid rgba(181, 113, 58, 0.45);
+  background: rgba(181, 113, 58, 0.1);
+  color: var(--accent-gold-ink);
+}
+
+.tt-nature.peace {
+  border: 2rpx solid rgba(140, 90, 68, 0.4);
+  background: rgba(140, 90, 68, 0.08);
+  color: var(--accent-gold-ink);
+}
+
+.tt-nature.event {
+  border: 2rpx solid rgba(168, 154, 146, 0.55);
+  background: rgba(168, 154, 146, 0.1);
+  color: var(--cp-ink-soft);
+}
+
+.tt-nature.equal {
+  border: 2rpx solid rgba(140, 90, 68, 0.3);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--accent-gold-ink);
+}
+
+/* 时间 + 缔约方：时间做成内凹小槽，缔约方为轻标签 */
+.tt-meta {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 16rpx;
+}
+
+.tt-time {
+  flex: none;
+  padding: 5rpx 16rpx;
+  border-radius: 14rpx;
+  background: var(--cp-bg);
+  font-size: var(--fs-22);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 4rpx 4rpx 8rpx var(--cp-sd-2),
+    inset -4rpx -4rpx 8rpx var(--cp-sl-2);
+}
+
+.tt-parties {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10rpx;
+  padding-top: 4rpx;
+}
+.tt-parties-label{
+  flex: none;
+  font-size: var(--fs-20);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.tt-parties-text {
+  flex: 1;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--cp-ink-soft);
+}
+
+/* 内容概要：一句话结论 */
+.tt-summary {
+  margin-top: 16rpx;
+  font-size: var(--fs-26);
+  line-height: 1.82;
+  color: var(--cp-ink-2);
+  text-align: justify;
+}
+
+/* 条约始末：左侧朱砂竖条 + 小标签，与「概要」形成两种层级 */
+.tt-intro {
+  margin-top: 18rpx;
+  padding-left: 20rpx;
+  border-left: 6rpx solid rgba(181, 113, 58, 0.42);
+}
+
+.tt-intro-label {
+  font-size: var(--fs-20);
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.tt-intro-text {
+  margin-top: 4rpx;
+  font-size: 28rpx;
+  line-height: 1.88;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+/* 底部留白：页面级覆盖全局的 80rpx —— 回到顶部按钮浮在右下
+   （88rpx 高 + 距底 28px），留 150rpx 才能保证最后一张卡不被压住 */
+.bottom-spacer {
+  height: calc(150rpx + env(safe-area-inset-bottom));
+}
+
+/* ================= 回到顶部 ================= */
+.to-top {
+  position: fixed;
+  right: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 28px);
+  z-index: 88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--cp-card);
+  box-shadow:
+    -6rpx -6rpx 14rpx var(--cp-sl),
+    8rpx 8rpx 18rpx var(--cp-sd-2),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+  animation: ttToTopIn 0.22s ease-out;
+}
+
+@keyframes ttToTopIn {
+  from { opacity: 0; transform: translateY(12rpx) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

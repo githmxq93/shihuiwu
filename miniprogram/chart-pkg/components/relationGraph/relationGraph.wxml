@@ -1,0 +1,27 @@
+<view class="graph-wrapper">
+  <view class="graph-header">
+    <text class="graph-title">人物关系图谱</text>
+    <text class="graph-subtitle">关系网络</text>
+  </view>
+
+  <view class="graph-canvas" catchtouchmove="noop">
+    <ec-canvas ec="{{ec}}" />
+    <view class="filter-dropdown">
+      <picker mode="selector" range="{{filterOptions}}" value="{{filterIndex}}" bindchange="onFilterChange">
+        <view class="filter-btn">
+          <text class="filter-label">{{filterOptions[filterIndex]}}</text>
+          <text class="filter-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="legend-bar">
+    <view class="legend-item" wx:for="{{legendTypes}}" wx:key="name">
+      <view class="legend-dot" style="background: {{item.color}}"></view>
+      <text class="legend-label">{{item.name}}</text>
+    </view>
+  </view>
+
+  <view class="graph-hint">可拖拽移动 · 双指缩放 · 点击节点查看详情</view>
+</view>

@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "中国历史大事年表 - 按年份查询历史事件与人物",
+  "navigationStyle": "custom",
+  "backgroundColor": "#f4ede1",
+  "backgroundColorTop": "#f4ede1",
+  "backgroundColorBottom": "#f4ede1",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  }
+}

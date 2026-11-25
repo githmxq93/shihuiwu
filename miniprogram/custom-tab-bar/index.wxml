@@ -1,0 +1,29 @@
+<wxs src="./index.wxs" module="liquid" />
+<view
+  class="ctb {{hidden ? 'ctb-hidden' : ''}}"
+  data-w="{{windowWidth}}"
+  data-selected="{{selected}}"
+  synckey="{{syncKey}}"
+  change:synckey="{{liquid.syncObserver}}"
+  bindtouchstart="{{liquid.touchStart}}"
+  catchtouchmove="{{liquid.touchMove}}"
+  bindtouchend="{{liquid.touchEnd}}"
+  bindtouchcancel="{{liquid.touchEnd}}"
+>
+  <!-- 水滴：位置/宽度由 WXS（拖动时）或 data.dropStyle（静态兜底）驱动。
+       初始 opacity 为 0（见 index.wxss），待 WXS 摆正后再置 1，避免闪在 left:0。 -->
+  <view class="ctb-drop" style="{{dropStyle}}"></view>
+
+  <view
+    wx:for="{{list}}"
+    wx:key="pagePath"
+    class="ctb-item ctb-i{{index}}{{selected === index ? ' ctb-item-active' : ''}}"
+    style="color: {{selected === index ? '#8f5326' : '#75654f'}}; transform: scale({{selected === index ? 1.15 : 1}});"
+    data-index="{{index}}"
+    data-path="{{item.pagePath}}"
+    bindtap="onTapItem"
+  >
+    <view class="ctb-icon ctb-icon-{{item.key}}"></view>
+    <text class="ctb-label">{{item.text}}</text>
+  </view>
+</view>

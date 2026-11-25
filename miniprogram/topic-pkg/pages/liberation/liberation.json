@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "解放战争 - 战役时序、历史人物与事件专题",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  }
+}

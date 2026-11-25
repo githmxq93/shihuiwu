@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  },
+  "navigationBarTitleText": "关于世慧屋 - 世慧屋"
+}

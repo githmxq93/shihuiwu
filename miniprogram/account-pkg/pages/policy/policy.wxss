@@ -1,0 +1,42 @@
+.policy-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.page-scroll {
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.content {
+  padding: 200rpx 32rpx 0;
+}
+
+.content-title {
+  font-size: var(--fs-40);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 32rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.15);
+}
+
+.loading {
+  text-align: center;
+  padding: 80rpx 0;
+  color: var(--text-muted);
+  font-size: var(--fs-28);
+}
+
+.content-text {
+  font-size: var(--fs-28);
+  color: var(--text-secondary);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bottom-spacer {
+  height: calc(80rpx + env(safe-area-inset-bottom));
+}

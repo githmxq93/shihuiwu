@@ -1,0 +1,50 @@
+/* 形态对齐手写实现中的多数派：渐变背景（17 个手写页面里 11 个如此）。
+   背景色取自 app.wxss 的 --bg-nav —— 自定义属性可继承进自定义组件，不受样式隔离影响；
+   组件内的 var(--text-primary) 一直能生效，即这条链路本就通。
+   [注意] backdrop-filter: blur(10px) 已移除（2026-10-03 真机切页白屏专项）：
+   本元素是 position:fixed 全宽元素，且 --bg-nav 本身是「不透明渐变 → 底部 40% 渐隐透明」，
+   模糊只在渐隐条带可见，视觉增益极小；但真机（尤其安卓 WebView）上 fixed + backdrop-filter
+   会强制合成器为整页建立 backdrop root 并做离屏取样，页面首帧因此被拖慢约 1 秒 ——
+   四个 tab 页（首页/专题/查询/我的）各有一个此类元素，正好对应「每个页面首次进入都白屏」。
+   如需恢复毛玻璃观感，请先确认替代方案（如提高背景不透明度）而不是直接加回 blur。 */
+.nav-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--bg-nav); }
+/* 滚动后的「窄栏」形态：只有标题非空且传了 solid 才挂上，其余页面不受影响。
+   作用是把半透明渐变换成实底 + 一条细下边线 —— 内容从下面滚过时不会穿过文字，
+   姓名栏才读得出是一条栏，而不是浮在内容上的一行字。 */
+.nav-bar--solid {
+  background: var(--bg-primary);
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.16);
+  box-shadow: 0 2rpx 10rpx -6rpx rgba(90, 70, 40, 0.35);
+}
+/* 深色导航（详情页年表 / 关系 tab）：下沿取 --head-grad-top，正好接住页面 .b2-mini 的渐变起点，
+   两段拼成一块连续深色头部，不露白缝。默认不传 dark，其余页面完全不受影响。
+   [2026-11-14 B1] 原起点 #211a14 并入 --head-grad-mid：深色头只保留三档 token，不再散字面值。 */
+.nav-bar--ink {
+  background: linear-gradient(180deg, var(--head-grad-mid) 0%, var(--head-grad-top) 100%);
+}
+.nav-bar--ink .nav-back-icon { color: #f6ecda; }
+.nav-bar--ink .nav-title { color: #fff7e8; }
+/* 深色底上的金色动作字：ink 色（#8f5326）在深底不可读，改用亮金 #d9a86c（7.99:1） */
+.nav-bar--ink .nav-action { color: #d9a86c; }
+/* 深底禁用态：不能用 ink 色，也不能沿用 dark 动作金；#b3a48a 在 --head-grad-mid 上 7.4:1 */
+.nav-bar--ink .nav-action--disabled { color: #b3a48a; }
+/* 深色 + 吸顶实底：滚动后盖住下方内容，深底白字 */
+.nav-bar--ink.nav-bar--solid {
+  /* [2026-11-14 B1] 原 #1c1510 并入 --head-edge，深色头不再出现第四档字面色。 */
+  background: var(--head-edge);
+  border-bottom: 1rpx solid rgba(246, 236, 218, 0.12);
+  box-shadow: 0 2rpx 10rpx -6rpx rgba(0, 0, 0, 0.55);
+}
+.nav-inner { display: flex; align-items: center; height: 44px; padding: 0 16px; }
+.nav-back { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.nav-back-icon { font-size: 28px; color: var(--text-primary); line-height: 1; }
+.nav-title { flex: 1; text-align: center; font-size: 17px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
+.nav-placeholder { width: 40px; }
+/* 右侧动作（可选）：固定在右端，宽 64px（正好两个字的刷新 + 内边距）。
+   注意它是 flex 末位，且 placeholder 仍保留 —— 标题因此只偏移 ~12px，仍居中。 */
+.nav-action {
+  flex: none; width: 64px; height: 40px; line-height: 40px;
+  text-align: right; font-size: 14px; color: var(--accent-gold-ink);
+}
+.nav-action--hover { background: rgba(181, 113, 58, 0.10); }
+.nav-action--disabled { color: var(--text-muted); }

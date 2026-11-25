@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "邮件联系 - 世慧屋"
+}

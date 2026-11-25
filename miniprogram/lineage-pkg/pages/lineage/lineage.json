@@ -1,0 +1,9 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  },
+  "navigationStyle": "custom",
+  "disableScroll": false,
+  "navigationBarTitleText": "家族世系 - 三代直系亲属与姻亲关系查询"
+}

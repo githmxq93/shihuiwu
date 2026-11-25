@@ -1,0 +1,155 @@
+<!-- 沙盘推演 · 安史之乱（375×812 单屏结构，按原型 e-anshi.html 移植） -->
+<view class="sb-page">
+  <!-- 纸纹底 -->
+  <view class="sb-paper"></view>
+
+  <!-- 顶部：返回 + 标题 + 年份 -->
+  <view class="sb-top" style="padding-top:{{safeTop}}px">
+    <view class="sb-bar">
+      <view class="sb-back" bindtap="onBack" hover-class="sb-back-hover" hover-stay-time="80">
+        <text class="sb-back-i">‹</text>
+      </view>
+      <view class="sb-bar-k">沙 盘 推 演</view>
+    </view>
+    <view class="sb-hd">
+      <view class="sb-hd-l">
+        <view class="sb-title">{{meta.title}}</view>
+        <view class="sb-sub">{{meta.subtitle}} · {{meta.era}}</view>
+      </view>
+      <view class="sb-year">
+        <text class="sb-year-v">{{meta.years}}</text>
+        <text class="sb-year-u">{{meta.yearUnit}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 时间轴：播放键 + 可拖动轨道 + 六段标签 -->
+  <view class="sb-tl {{playing ? 'is-play' : ''}}">
+    <view class="sb-tl-row">
+      <view class="sb-play {{playing ? 'is-playing' : ''}}" bindtap="onTogglePlay" hover-class="sb-play-hover" hover-stay-time="60">
+        <view wx:if="{{!playing}}" class="sb-ic-play"></view>
+        <view wx:else class="sb-ic-pause">
+          <view class="sb-ic-bar"></view>
+          <view class="sb-ic-bar"></view>
+        </view>
+      </view>
+
+      <view class="sb-track"
+            bindtouchstart="onTrackStart"
+            catchtouchmove="onTrackMove"
+            bindtouchend="onTrackEnd"
+            bindtouchcancel="onTrackEnd">
+        <view class="sb-rail">
+          <view class="sb-rail-fill" style="width:{{pct}}%"></view>
+        </view>
+        <view class="sb-seg" wx:for="{{segs}}" wx:key="*this" style="left:{{item}}%"></view>
+        <view class="sb-thumb {{dragging ? 'is-drag' : ''}}" style="left:{{pct}}%"></view>
+        <view class="sb-tip {{dragging ? 'is-on' : ''}}" style="left:{{tipLeft}}%;transform:{{tipTf}};">
+          {{tipText}}
+        </view>
+      </view>
+    </view>
+
+    <view class="sb-labels">
+      <view class="sb-lab {{stageIndex === index ? 'is-on' : ''}}"
+            wx:for="{{stages}}" wx:key="label"
+            data-i="{{index}}" bindtap="onTapLabel" hover-class="sb-lab-hover" hover-stay-time="60">
+        <text class="sb-lab-n">{{item.no}}</text>
+        <text class="sb-lab-t">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 地图示意（canvas 2d） -->
+  <view class="sb-map">
+    <canvas type="2d" id="sb-canvas" class="sb-canvas"></canvas>
+    <view class="sb-focus {{ended ? 'is-end' : ''}}" wx:if="{{!meta.hideFocus}}">
+      <view class="sb-focus-k">{{focusKey}}</view>
+      <view class="sb-focus-v">{{focusText}}</view>
+    </view>
+    <view class="sb-seal {{ended ? 'is-on' : ''}}" wx:if="{{meta.endSeal}}">
+      <view class="sb-seal-c"><text>{{meta.endSeal.a}}</text></view>
+      <view class="sb-seal-c"><text>{{meta.endSeal.b}}</text></view>
+      <view class="sb-seal-s">{{meta.endSeal.sub}}</view>
+    </view>
+  </view>
+
+  <!-- 图例说明（原型在地图下方独立一行） -->
+  <view class="sb-note">{{meta.mapNote}}</view>
+
+  <!-- 阶段卡 -->
+  <scroll-view class="sb-card" scroll-y enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="sb-card-in">
+      <view class="sb-card-hd">
+        <view class="sb-card-hl">
+          <text class="sb-kicker">{{stage.kicker}}</text>
+          <text class="sb-ctitle">{{stage.title}}</text>
+        </view>
+        <view class="sb-stamp">{{stage.seal}}</view>
+      </view>
+
+      <!-- 兵力对比：条长按本阶段最大值归一 -->
+      <view class="sb-force">
+        <view class="sb-fr" wx:for="{{forceRows}}" wx:key="label">
+          <view class="sb-fr-l">{{item.label}}</view>
+          <view class="sb-fr-t">
+            <view class="sb-fr-i {{item.unknown ? 'is-unk' : ''}} {{item.cut ? 'is-cut' : ''}}"
+                  style="width:{{item.w}}%"></view>
+          </view>
+          <view class="sb-fr-v">{{item.value}}</view>
+          <view class="sb-fr-k sb-fr-k--{{item.kindCls}}">{{item.kind}}</view>
+          <view wx:if="{{item.cut}}" class="sb-fr-cut">{{item.cutText}}</view>
+        </view>
+        <view class="sb-force-n">
+          <text>条长按本阶段最大值归一；斜纹为无确载</text>
+          <text wx:if="{{stage.attrNote}}" class="sb-force-em"> · {{stage.attrNote}}</text>
+        </view>
+      </view>
+
+      <!-- 四个事件节点 -->
+      <view class="sb-evs">
+        <view class="sb-ev {{item.cls}}" wx:for="{{events}}" wx:key="id">
+          <view class="sb-ev-h">
+            <view class="sb-ev-y"><text>{{item.y}}</text></view>
+            <view class="sb-ev-t">{{item.time}}</view>
+          </view>
+          <view class="sb-ev-b">{{item.who}}</view>
+          <view class="sb-ev-x">{{item.text}}</view>
+        </view>
+      </view>
+
+      <view class="sb-turn">
+        <view class="sb-row-k">转折</view>
+        <view class="sb-row-v">{{stage.turn}}</view>
+      </view>
+      <view class="sb-why">
+        <view class="sb-row-k">为何</view>
+        <view class="sb-row-v">{{stage.why}}</view>
+      </view>
+
+      <view class="sb-src">
+        <view class="sb-src-k">出处</view>
+        <view class="sb-src-v">{{stage.src}}</view>
+      </view>
+
+      <view class="sb-legend">
+        <view class="sb-lg">
+          <view class="sb-lg-flag" style="border-left-color:#2b5262"></view>
+          <text>唐军</text>
+        </view>
+        <view class="sb-lg">
+          <view class="sb-lg-flag" style="border-left-color:#6f3a22"></view>
+          <text>叛军</text>
+        </view>
+        <view class="sb-lg">
+          <view class="sb-lg-flip"></view>
+          <text>易手</text>
+        </view>
+        <view class="sb-lg">
+          <view class="sb-lg-dash"></view>
+          <text>溃退</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,379 @@
+<!--
+  铭记历史 · 结构说明（2026-11-13 按 _design/remember/d-refine.html 落地）
+  ============================================================
+  1) 顶部换成三行深色头（与大事年表 / 世系页同口径），原 hero 的印章、双行标题已去掉；
+  2) 头下 37px 段导航：5 项对应 5 个 section，滚动时常驻并高亮；
+  3) 原 hero 的导语 / 8.15 高亮 / 注记压成 .lead 三小块，紧跟导航；
+  4) 五个 section 顺序与信息量不变，只统一卡片语言、补十二类字标与条目数。
+  滚动方式（2026-11-13 三次调整）：页面滚动 + 头部常驻压缩。
+  深色头与段导航包在 .hd-stack 里整块 fixed 钉在系统导航栏下沿（top = navH，内联）；
+  下滑过阈值后头从 93px 压到 44px：两行小字淡出、标题缩小、上下留白收紧，段导航跟着上移。
+  fixed 而非 sticky：sticky 还在文档流里，压缩时高度变小会把正文往上顶，滚动中会跳一下；
+  fixed 覆盖在正文上，压缩只多露出正文。页面里用 .hd-space 垫一块等高占位（treaty 同做法）。
+--> 
+<view class="page" style="padding-top:{{navH}}px;">
+  <nav-bar dark="{{true}}" safeAreaTop="{{safeAreaTop}}" />
+
+  <!-- 常驻头：压缩态由 hdCompact 驱动，两个高度都在 WXSS 里显式写死，过渡才可动画 -->
+  <view class="hd-stack" style="top:{{navH}}px;">
+    <!-- 深色三行头：史鉴 / 铭记历史 / 14 年 · 12 个节点 · 3500万以上军民伤亡 -->
+    <view class="hd {{hdCompact ? 'hd--compact' : ''}}">
+      <view class="hd-k">史鉴 · 1931—1945</view>
+      <view class="hd-t">铭记历史</view>
+      <view class="hd-s">
+        <view class="hd-si"><text class="hd-b">14</text><text class="hd-i">年</text></view>
+        <view class="hd-si"><text class="hd-b">12</text><text class="hd-i">个节点</text></view>
+        <view class="hd-si"><text class="hd-b">3500万</text><text class="hd-i">以上军民伤亡</text></view>
+      </view>
+    </view>
+
+    <!-- 段导航：5 项对 5 个 section，滚动时由 onPageScroll 反推当前段 -->
+    <view class="seg">
+      <view
+        wx:for="{{segs}}"
+        wx:key="key"
+        class="seg-i {{activeSeg === item.key ? 'on' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onTapSeg"
+        hover-class="seg-i-hover"
+        hover-stay-time="80"
+      >{{item.name}}</view>
+    </view>
+  </view>
+
+  <!-- 固定头的等高占位（展开态 186rpx + 段导航 74rpx）；压缩时不变，正文位置才不跳 -->
+  <view class="hd-space"></view>
+
+  <view class="page-body">
+    <!-- 原 hero 三段压缩：导语 + 8.15 高亮 + 注记 -->
+    <view class="lead">
+      <view class="lead-p">1931年9月18日，日本关东军发动九一八事变，侵占中国东北，开启了长达十四年的对华战争。至1945年8月15日日本宣布无条件投降，中国军民伤亡达<text class="lead-hl-num">3500万以上</text>，直接与间接经济损失约<text class="lead-hl-num">6000亿美元</text>（按1945年币值）。</view>
+
+      <view class="lead-hl">
+        <view class="lead-hl-t">纪念日本投降日 · 1945年8月15日</view>
+        <view class="lead-hl-d">日本天皇裕仁发布《终战诏书》，宣布无条件投降。同年9月2日，日本政府代表在密苏里号战列舰上签署投降书，中国抗日战争暨世界反法西斯战争胜利结束。9月3日为中国人民抗日战争胜利纪念日。</view>
+      </view>
+
+      <view class="lead-note">以下资料综合中国官方档案、远东国际军事法庭判决书及近年历史研究成果，按时间顺序与事件类别系统整理。</view>
+    </view>
+
+    <view class="error-retry" wx:if="{{loadFailed}}">
+      <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <!-- 加载中骨架：弱网下内容区尚无数据，若直接渲染空数组就是整片空白 -->
+    <view class="skeleton-wrap" wx:elif="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <!-- 请求成功但内容为空（区别于加载失败） -->
+    <view class="sk-empty" wx:elif="{{isEmpty}}">
+      <view class="sk-empty-icon">卷</view>
+      <view class="sk-empty-text">暂无相关内容</view>
+    </view>
+
+    <view class="content" wx:else>
+      <!-- 1 时间线 -->
+      <view class="section" id="sec-tl">
+        <view class="sec-h">
+          <view class="sec-ic">史</view>
+          <view class="sec-t">重大历史事件时间线（1931—1945）</view>
+        </view>
+        <view class="timeline">
+          <view wx:for="{{timeline}}" wx:key="event" class="tl {{item.highlight ? 'highlight' : ''}}">
+            <view class="tl-l">
+              <view class="tl-ico">{{item.iconEmoji}}</view>
+              <view class="tl-date">
+                <text class="tl-dt">{{item.dateTop}}</text>
+                <text class="tl-dt" wx:if="{{item.dateBottom}}">{{item.dateBottom}}</text>
+              </view>
+              <view class="tl-line"></view>
+            </view>
+            <view class="tl-c">
+              <view class="tl-image-wrap">
+                <image wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill" class="tl-image" lazy-load="{{true}}" binderror="onTlImageError" data-index="{{index}}"></image>
+                <view class="tl-image-fallback">{{item.event}}</view>
+              </view>
+              <view class="tl-e">{{item.event}}</view>
+              <view class="tl-d">{{item.desc}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 2 十二大类 -->
+      <view class="section" id="sec-crime">
+        <view class="sec-h">
+          <view class="sec-t">日本对华战争主要历史事件分类（共十二大类）</view>
+        </view>
+
+        <!-- 一、大规模平民伤亡 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">殇</view>
+            <view class="blk-t">一、大规模平民伤亡事件与战时惨案</view>
+            <view class="blk-n">10 起</view>
+          </view>
+          <view class="stack">
+            <view wx:for="{{massacres}}" wx:key="name" class="c">
+              <view class="mass-h">
+                <view class="mass-n">{{item.name}}</view>
+                <view class="mass-v">{{item.victims}}</view>
+              </view>
+              <view class="mass-m">{{item.time}} · {{item.place}}</view>
+              <view class="mass-x">{{item.note}}</view>
+            </view>
+          </view>
+          <view class="cn">此外还有平阳惨案（河北阜平，1000余人遇难）、三灶岛惨案（广东珠海，约3000人遇难）、旅顺大屠杀（1894年，约2万人，甲午战争期间）等。日本对华战争期间造成大量平民伤亡事件，仅华北地区有名有姓的即达数千起。</view>
+        </view>
+
+        <!-- 二、人体实验 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">疫</view>
+            <view class="blk-t">二、人体实验与生化武器部队</view>
+            <view class="blk-n">6 支</view>
+          </view>
+          <view class="stack">
+            <view wx:for="{{units}}" wx:key="code" class="c">
+              <view class="unit-code">{{item.code}}</view>
+              <view class="unit-base">驻地：{{item.base}}</view>
+              <view class="unit-crime">{{item.crime}}</view>
+            </view>
+          </view>
+          <view class="cn">补充说明：731部队将受害者称为"马路大"（日语意为"圆木"）。战后，731部队首脑石井四郎以实验数据换取美国免于起诉。</view>
+        </view>
+
+        <!-- 三、慰安妇 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">慰</view>
+            <view class="blk-t">三、日军慰安妇制度研究</view>
+            <view class="blk-n">6 项</view>
+          </view>
+          <view class="stack">
+            <view class="c key"><text class="key-l">涉及女性总数</text><text class="key-v">约20万女性</text></view>
+            <view class="c key"><text class="key-l">中国约</text><text class="key-v">12万</text><text class="key-e">（含大陆、台湾、香港）</text></view>
+            <view class="c key"><text class="key-l">朝鲜半岛约</text><text class="key-v">8万</text></view>
+            <view class="c key"><text class="key-l">受害者年龄</text><text class="key-v">多数14—25岁，最小仅11岁</text></view>
+            <view class="c key"><text class="key-l">日均接待士兵</text><text class="key-v">10—50名士兵</text></view>
+            <view class="c key"><text class="key-l">覆盖范围</text><text class="key-v">中国22个省份、东南亚日军占领区、太平洋岛屿</text></view>
+          </view>
+          <view class="cn">战后情况：日本政府尚未以法律形式承担国家赔偿责任，多数幸存者未获正式赔偿。"亚洲妇女基金"属民间补偿性质，多数受害者未接受。</view>
+        </view>
+
+        <!-- 四、细菌战 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">疫</view>
+            <view class="blk-t">四、细菌战与毒气战（主要战例）</view>
+            <view class="blk-n">6 场</view>
+          </view>
+          <view class="stack">
+            <view wx:for="{{germWars}}" wx:key="name" class="c">
+              <view class="cc-h">
+                <view class="cc-n">{{item.name}}</view>
+                <view class="cc-t">{{item.time}}</view>
+              </view>
+              <!-- kind：菌=细菌战 / 毒=毒气战 -->
+              <view class="cc-g">{{item.kind || '菌'}} {{item.germ}}</view>
+              <view class="cc-c">{{item.casualties}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 五、战时轰炸 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">空</view>
+            <view class="blk-t">五、战时轰炸</view>
+            <view class="blk-n">3 组</view>
+          </view>
+          <view class="stack">
+            <view wx:for="{{bombings}}" wx:key="target" class="c">
+              <view class="cc-h">
+                <view class="cc-n">{{item.target}}</view>
+                <view class="cc-t">{{item.duration}}</view>
+              </view>
+              <view class="cc-g">爆 {{item.bombs}}</view>
+              <view class="cc-c">{{item.casualties}}</view>
+            </view>
+          </view>
+          <view class="cn">重庆大轰炸期间，日军出动飞机超过9000架次，是二战中被轰炸次数最多的战时首都。</view>
+        </view>
+
+        <!-- 六、三光政策 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">火</view>
+            <view class="blk-t">六、三光政策与无人区</view>
+            <view class="blk-n">4 条</view>
+          </view>
+          <view class="stack">
+            <view class="c txt"><text class="text-term">政策内容：</text>烧光（焚毁村庄）、杀光（杀害平民）、抢光（抢掠物资）</view>
+            <view class="c txt"><text class="text-term">实施时间：</text>1941年起大规模推行</view>
+            <view class="c txt"><text class="text-term">实施地区：</text>华北（河北、山西、山东、热河、察哈尔）、华中部分抗日根据地</view>
+            <view class="c txt"><text class="text-term">损失：</text>仅山东省毁村数千个；华北"无人区"长达千里，因暴力与饥饿死亡的平民达数百万人。</view>
+          </view>
+        </view>
+
+        <!-- 七、强制劳工 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">工</view>
+            <view class="blk-t">七、强制劳工与战时劳动</view>
+            <view class="blk-n">5 项</view>
+          </view>
+          <view class="stack">
+            <view class="c key"><text class="key-l">被掳劳工总数</text><text class="key-v">约1000万</text></view>
+            <view class="c key"><text class="key-l">伪满洲国</text><text class="key-v">约700万人</text></view>
+            <view class="c key"><text class="key-l">日本本土</text><text class="key-v">约4.2万人</text></view>
+            <view class="c key"><text class="key-l">东南亚</text><text class="key-v">数万人</text></view>
+            <view class="c key"><text class="key-l">在日劳工死亡</text><text class="key-v">超过6800人</text></view>
+          </view>
+          <view class="cn">代表事件：花冈事件（1945年）：986名中国劳工在日本秋田县发动暴动后被镇压，418人死亡；大同、抚顺、鸡西等煤矿及丰满水坝发现大型劳工遗骨坑。</view>
+        </view>
+
+        <!-- 八、经济掠夺 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">药</view>
+            <view class="blk-t">八、战时经济政策与鸦片问题</view>
+            <view class="blk-n">4 条</view>
+          </view>
+          <view class="stack">
+            <view class="c txt"><text class="text-term">经济政策：</text>粮食统制（导致饥荒）、矿业垄断、金融控制（发行军票、伪币）、文物征集</view>
+            <view class="c txt"><text class="text-term">鸦片问题：</text>在热河、东北等地推广罂粟种植，实行专卖制度，向中国民众大量销售鸦片、吗啡、海洛因，受影响人数达数千万。</view>
+            <view class="c txt"><text class="text-term">直接损失：</text>约1000亿美元（1945年币值）</view>
+            <view class="c txt"><text class="text-term">间接损失：</text>约5000亿美元</view>
+          </view>
+        </view>
+
+        <!-- 九、文化破坏 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">籍</view>
+            <view class="blk-t">九、战时教育与文化政策</view>
+            <view class="blk-n">3 条</view>
+          </view>
+          <view class="stack">
+            <view class="c txt"><text class="text-term">文化机构损失：</text>商务印书馆、南开大学等机构遭炸毁，大量中国文物古籍被征集。</view>
+            <view class="c txt"><text class="text-term">教育政策：</text>在占领区推行日语教育，修改历史教材，宣扬"大东亚共荣"，限制中国历史地理教学。</view>
+            <view class="c txt"><text class="text-term">知识分子遭遇：</text>大量学者、教师、记者被逮捕、杀害，文化界损失严重。</view>
+          </view>
+        </view>
+
+        <!-- 十、战俘待遇 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">盾</view>
+            <view class="blk-t">十、战俘待遇问题</view>
+            <view class="blk-n">3 条</view>
+          </view>
+          <view class="stack">
+            <view class="c txt">日本未充分履行《日内瓦公约》义务，大量战俘被集体杀害（如南京数万战俘遇害）。</view>
+            <view class="c txt"><text class="text-term">泰缅铁路（死亡铁路）：</text>约6万名战俘及劳工参与修建，死亡约1.2万人。</view>
+            <view class="c txt"><text class="text-term">巴丹死亡行军（菲律宾）：</text>约7.8万名美菲战俘被押解，途中约1万人死亡。</view>
+          </view>
+        </view>
+
+        <!-- 十一、战后遗留 -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">遗</view>
+            <view class="blk-t">十一、战后遗留问题</view>
+            <view class="blk-n">3 条</view>
+          </view>
+          <view class="stack">
+            <view class="c txt"><text class="text-term">遗弃化学武器：</text>日军战败时在中国各地埋藏或投入江河的化学炮弹，迄今已发现数万枚，分布十几个省份，处理中仍不断造成平民伤亡。</view>
+            <view class="c txt"><text class="text-term">战争责任追究：</text>731部队首脑以实验数据换取美国免于起诉；冈村宁次被国民党政府释放；多名甲级战争责任嫌疑人在战后重返日本政界。</view>
+            <view class="c txt"><text class="text-term">慰安妇及劳工赔偿：</text>相关受害者至今未获日本政府正式国家赔偿。</view>
+          </view>
+        </view>
+
+        <!-- 十二、总体统计（补字标「数」） -->
+        <view class="blk">
+          <view class="blk-h">
+            <view class="blk-mk">数</view>
+            <view class="blk-t">十二、总体伤亡与损失统计</view>
+            <view class="blk-n">9 项</view>
+          </view>
+          <view class="g2">
+            <view wx:for="{{statistics}}" wx:key="label" class="c">
+              <view class="stat-l">{{item.label}}</view>
+              <view class="stat-v">{{item.value}}</view>
+            </view>
+          </view>
+          <view class="cn">战争对中国社会造成长期影响，人口结构、文化传承及生态环境均受到严重破坏，遗弃化学武器至今仍是安全隐患。</view>
+        </view>
+      </view>
+
+      <!-- 3 东京审判 -->
+      <view class="section" id="sec-trial">
+        <view class="sec-h">
+          <view class="sec-t">东京审判（远东国际军事法庭）概要</view>
+        </view>
+        <view class="g2">
+          <view class="c"><view class="trial-l">时间</view><view class="trial-v">1946年5月3日—1948年11月12日</view></view>
+          <view class="c"><view class="trial-l">地点</view><view class="trial-v">日本东京</view></view>
+          <view class="c"><view class="trial-l">被起诉甲级战争责任者</view><view class="trial-v">28名</view></view>
+          <view class="c"><view class="trial-l">绞刑</view><view class="trial-v trial-death">7人</view></view>
+          <view class="c"><view class="trial-l">无期徒刑</view><view class="trial-v">16人</view></view>
+          <view class="c"><view class="trial-l">有期徒刑</view><view class="trial-v">2人</view></view>
+        </view>
+        <view class="cn">绞刑执行名单：东条英机、松井石根、土肥原贤二、板垣征四郎、广田弘毅、木村兵太郎、武藤章。</view>
+      </view>
+
+      <!-- 4 战犯档案 -->
+      <view class="section" id="sec-crim">
+        <view class="sec-h">
+          <view class="sec-t">东京审判主要审判对象档案</view>
+        </view>
+        <view class="stack">
+          <view wx:for="{{criminals}}" wx:key="no" class="c crim">
+            <view class="crim-av">
+              <image wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill" class="crim-av-img" lazy-load="{{true}}" binderror="onCriminalImageError" data-index="{{index}}"></image>
+              <text class="crim-av-t">{{item.initial}}</text>
+              <text class="crim-no">{{item.no}}</text>
+            </view>
+            <view class="crim-info">
+              <view class="crim-n">{{item.name}}</view>
+              <view class="crim-p">{{item.post}}</view>
+              <view class="crim-c">{{item.crime}}</view>
+              <view class="crim-s">{{item.sentence}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 5 资料来源 -->
+      <view class="section" id="sec-src">
+        <view class="sec-h">
+          <view class="sec-ic">籍</view>
+          <view class="sec-t">资料来源与说明</view>
+        </view>
+        <view class="stack">
+          <view wx:for="{{sources}}" wx:key="index" class="c src">{{item}}</view>
+        </view>
+        <view class="final">
+          <view class="final-p">
+            <text class="final-l">历史档案不因时间推移而改变，</text>
+            <text class="final-l">史实记录也不会因回避而消失。</text>
+          </view>
+          <view class="final-p">
+            <text class="final-l">铭记历史，是为了以史为鉴、</text>
+            <text class="final-l">珍惜和平、开创未来。</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-spacer"></view>
+  </view>
+</view>

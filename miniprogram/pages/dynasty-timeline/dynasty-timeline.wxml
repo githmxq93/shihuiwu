@@ -1,0 +1,227 @@
+<view class="dt-page">
+  <nav-bar title="朝代时间轴" safeAreaTop="{{safeAreaTop}}" dark="{{true}}" />
+
+  <!-- 固定深色头：标题 + 8 段分期 tab。滚动区用 headSpacerH 垫高，
+       避免首段内容被 fixed 头部盖住（与「历代帝王」页同一做法）。 -->
+  <view class="dt-head" id="dtHead" style="padding-top: {{navH}}px;">
+    <view class="dh-hero">
+      <view class="dh-badge">五千年文明</view>
+      <view class="dh-title">朝代<text class="dh-accent">时间轴</text></view>
+      <view class="dh-sub">8 段分期 · {{total}} 条记录</view>
+    </view>
+    <!-- 分期标签条常驻：它挂在 fixed 的 .dt-head 里，天然贴住头部下沿；
+         滚动时由 onListScroll 反推当前段并把对应 tab 高亮 + 自动横向滚进视口。 -->
+    <scroll-view
+      id="guide-eras"
+      class="era-strip"
+      scroll-x="{{true}}"
+      enhanced="{{true}}"
+      show-scrollbar="{{false}}"
+      scroll-into-view="{{eraIntoView}}"
+      scroll-with-animation="{{true}}"
+    >
+      <view class="era-row">
+        <view
+          wx:for="{{eras}}"
+          wx:key="key"
+          wx:for-item="e"
+          id="era-{{e.key}}"
+          class="era {{eraKey === e.key ? 'on' : ''}}"
+          data-key="{{e.key}}"
+          bindtap="onTapEra"
+        >{{e.short}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view
+    class="page-scroll"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    scroll-top="{{scrollTop}}"
+    scroll-with-animation="{{scrollAnim}}"
+    bindscroll="onListScroll"
+  >
+    <view class="head-spacer" style="height: {{headSpacerH}}px;"></view>
+
+    <view class="skeleton-wrap" wx:if="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <view class="error-retry" wx:elif="{{loadFailed}}">
+      <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <view class="empty-state" wx:elif="{{!sections || sections.length === 0}}">
+      <view class="empty-text">暂无朝代数据</view>
+    </view>
+
+    <view wx:else class="secs">
+      <view
+        class="sec"
+        wx:for="{{sections}}"
+        wx:key="key"
+        wx:for-item="s"
+        wx:for-index="si"
+        id="sec-{{s.key}}"
+      >
+        <view class="sec-head">
+          <text class="sec-name">{{s.name}}</text>
+          <text class="sec-yr">{{s.yr}}</text>
+          <text class="sec-cnt">{{s.cnt}}</text>
+        </view>
+
+        <block wx:for="{{s.blocks}}" wx:key="key" wx:for-item="b" wx:for-index="bi">
+          <!-- 每个 block 按 kind 渲染：band 并立带 / row 朝代行 / fold 折叠块 / note 说明 -->
+
+          <!-- 并立带：组头 + 格子（三国 / 南北朝 / 宋辽金西夏） -->
+          <view wx:if="{{b.kind === 'band'}}" class="band">
+            <view class="band-h">
+              <text class="band-k">{{b.k}}</text>
+              <text class="band-title">{{b.title}}</text>
+              <text class="band-yr">{{b.yr}}</text>
+            </view>
+            <view class="cells">
+              <view
+                wx:for="{{b.cells}}"
+                wx:key="id"
+                wx:for-item="c"
+                class="cell"
+                data-id="{{c.id}}"
+                bindtap="onTapItem"
+                hover-class="cell-hover"
+              >
+                <view class="cell-nm">
+                  <view class="cell-dot" style="background: {{c.color}};"></view>
+                  <text>{{c.name}}</text>
+                </view>
+                <view class="cell-yr">{{c.yr}}</view>
+                <view class="cell-len">{{c.len}}</view>
+              </view>
+            </view>
+            <view wx:if="{{b.note}}" class="band-f">{{b.note}}</view>
+          </view>
+
+          <view wx:elif="{{b.kind === 'row'}}" class="row-wrap">
+            <!-- 朝代行：周 / 汉 / 晋 / 唐 带 ▸，可展开子段；其余点行开抽屉 -->
+            <view id="row-{{b.id}}" class="row {{b.open ? 'open' : ''}}" data-si="{{si}}" data-bi="{{bi}}" bindtap="onTapRow">
+              <view class="row-bar" style="background: {{b.color}};"></view>
+              <text class="row-nm">{{b.name}}</text>
+              <text wx:if="{{b.tag}}" class="row-tag">{{b.tag}}</text>
+              <text class="row-yr">{{b.yr}}</text>
+              <text class="row-len">{{b.len}}</text>
+              <text class="row-caret">{{b.hasSubs ? '▸' : '›'}}</text>
+            </view>
+            <view wx:if="{{b.hasSubs}}" class="subs" hidden="{{!b.open}}">
+              <view
+                wx:for="{{b.subs}}"
+                wx:key="id"
+                wx:for-item="k"
+                class="sub-row {{k.depth ? 'deep' : ''}}"
+                data-id="{{k.id}}"
+                bindtap="onTapItem"
+              >
+                <view class="sub-dot" style="background: {{k.color}};"></view>
+                <text class="sub-nm">{{k.name}}</text>
+                <text class="sub-yr">{{k.yr}}</text>
+                <text class="sub-len">{{k.len}}</text>
+              </view>
+              <view wx:if="{{b.note}}" class="sub-note">{{b.note}}</view>
+            </view>
+          </view>
+
+          <view wx:elif="{{b.kind === 'fold'}}" class="row-wrap">
+            <!-- 可折叠块：五胡十六国 / 五代 / 十国。段头即「历代帝王」页那行，
+                 点开箭头转 90°，内容在虚线子级里铺开。 -->
+            <view class="row fold {{b.open ? 'open' : ''}}" data-si="{{si}}" data-bi="{{bi}}" bindtap="onTapRow">
+              <view class="row-bar" style="background: {{b.color}};"></view>
+              <text class="row-nm">{{b.title}}</text>
+              <text class="row-tag">{{b.tag}}</text>
+              <text class="row-yr">{{b.range}}</text>
+              <text class="row-len">{{b.years}}</text>
+              <text class="row-caret">▸</text>
+            </view>
+            <view class="subs" hidden="{{!b.open}}">
+              <block wx:if="{{b.mode === 'list'}}">
+                <!-- 乙案列表：一行一政权，按开国年排，同年开国同色左边线 -->
+                <view
+                  wx:for="{{b.list}}"
+                  wx:key="id"
+                  class="{{item.cls}}"
+                  data-id="{{item.id}}"
+                  bindtap="onTapItem"
+                >
+                  <text class="lrow-start">{{item.startLabel}}</text>
+                  <text class="lrow-nm">{{item.name}}</text>
+                  <text class="lrow-sp">{{item.sp}}</text>
+                  <text class="lrow-len">{{item.len}}</text>
+                </view>
+              </block>
+              <block wx:else>
+                <!-- 五代：与宋辽金夏同构的卡片格子，右上角 1—5 表示相继次序 -->
+                <view class="seq-tip">{{b.tip}}</view>
+                <view class="cells seqc">
+                  <view
+                    wx:for="{{b.cells}}"
+                    wx:key="id"
+                    class="cell"
+                    data-id="{{item.id}}"
+                    bindtap="onTapItem"
+                    hover-class="cell-hover"
+                  >
+                    <view class="cell-ord" style="background: {{item.color}};">{{item.ord}}</view>
+                    <view class="cell-nm">
+                      <view class="cell-dot" style="background: {{item.color}};"></view>
+                      <text>{{item.name}}</text>
+                    </view>
+                    <view class="cell-yr">{{item.yr}}</view>
+                    <view class="cell-len">{{item.len}}</view>
+                  </view>
+                </view>
+              </block>
+              <view wx:if="{{b.note}}" class="band-f">{{b.note}}</view>
+            </view>
+          </view>
+
+          <view wx:elif="{{b.kind === 'note'}}" class="rg-note">{{b.text}}</view>
+
+        </block>
+      </view>
+
+      <view class="foot">
+        共 {{total}} 条记录。五胡十六国、五代、十国三块默认折叠，点段头展开：十六国与十国是列表，
+        按开国年从早到晚排，同年开国的用同色左边线并成一组；五代展开后与宋辽金夏同一套卡片格子，
+        右上角 1—5 是先后次序，不是并立。
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 详情抽屉 -->
+  <view class="mask {{sheet.show ? 'on' : ''}}" bindtap="onCloseSheet"></view>
+  <view class="sheet {{sheet.show ? 'on' : ''}}" catchtap="noop">
+    <view class="sheet-bar"></view>
+    <view class="sheet-top">
+      <view class="sheet-title-wrap">
+        <view class="sheet-name">{{sheet.name}}</view>
+        <view class="sheet-span">{{sheet.yearLabel}} · {{sheet.span}}</view>
+      </view>
+      <view class="sheet-close" bindtap="onCloseSheet">收起</view>
+    </view>
+    <view class="sheet-cap">{{sheet.capital}}</view>
+    <scroll-view class="sheet-body" scroll-y="{{true}}">
+      <view wx:if="{{sheet.brief}}" class="sheet-brief">{{sheet.brief}}</view>
+      <view class="sheet-detail">{{sheet.detail}}</view>
+    </scroll-view>
+  </view>
+
+  <!-- 首次进入的分步引导：文案与步骤在 config/guide-steps.js 的 dynasty 里 -->
+  <guide-layer id="guideLayer" />
+</view>

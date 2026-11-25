@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "articleOverlay": "/components/articleOverlay/articleOverlay"
+  },
+  "navigationBarTitleText": "个人中心 - 世慧屋"
+}

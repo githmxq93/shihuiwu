@@ -1,0 +1,593 @@
+/* 自助注销账号页 —— 宣纸暖调（对齐 app.wxss 全局令牌），不依赖 CSS 变量 */
+page {
+  background: var(--bg-primary);
+}
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  /* 宣纸质感：细点纹理（与参考稿 body 的背景一致） */
+  background-image: radial-gradient(rgba(139, 115, 85, 0.16) 1rpx, transparent 1rpx);
+  background-size: 48rpx 48rpx;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-primary);
+}
+
+/* ---------------- 加载 / 失败占位 ---------------- */
+.state-box {
+  padding: 160rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.state-text {
+  font-size: var(--fs-28);
+  color: #7A756D;
+}
+
+.state-btn {
+  margin-top: 32rpx;
+  padding: 16rpx 48rpx;
+  border-radius: var(--radius);
+  border: 1rpx solid var(--text-muted);
+  color: var(--text-muted);
+  font-size: var(--fs-28);
+  background: var(--bg-card);
+}
+
+/* ---------------- 警示区 ---------------- */
+.warn-card {
+  margin: 20rpx 20rpx 0 20rpx;
+  padding: 28rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(139,107,74,0.04);
+  border-left: 6rpx solid var(--accent-vermillion);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.warn-icon {
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--accent-vermillion);
+  color: var(--bg-elevated);
+  font-size: var(--fs-26);
+  font-weight: 600;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.warn-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.warn-title {
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--accent-vermillion);
+  margin-bottom: 10rpx;
+}
+
+.warn-desc {
+  font-size: var(--fs-26);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* ---------------- 通用卡片 ---------------- */
+.card {
+  margin: 20rpx 20rpx 0 20rpx;
+  padding: 28rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(139,107,74,0.04);
+}
+
+.card-title {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20rpx;
+}
+
+/* ---------------- 说明条目 ---------------- */
+.lose-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10rpx 0;
+}
+
+.lose-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: #B2ACA2;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.lose-text {
+  font-size: 28rpx;
+  color: #7A756D;
+  line-height: 1.5;
+}
+
+/* ---------------- 表单 ---------------- */
+.field-label-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field-label {
+  font-size: 28rpx;
+  color: var(--text-primary);
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.field-hint {
+  font-size: var(--fs-24);
+  color: #B2ACA2;
+}
+
+.field-question {
+  font-size: 28rpx;
+  color: var(--text-muted);
+  background: #F7F4EF;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+  line-height: 1.5;
+}
+
+.field-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 84rpx;
+  padding: 0 24rpx;
+  background: var(--bg-primary);
+  border: 1rpx solid #F2EFE9;
+  border-radius: 12rpx;
+  font-size: var(--fs-28);
+  color: var(--text-primary);
+  margin-bottom: 24rpx;
+}
+
+.field-ph {
+  color: #B2ACA2;
+  font-size: 28rpx;
+}
+
+/* 验证码行：输入框 + 按钮横向排列（用 margin 而非 gap） */
+.code-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.code-input {
+  flex: 1;
+  margin-bottom: 0;
+  margin-right: 16rpx;
+}
+
+.code-btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  padding: 0 24rpx;
+  flex-shrink: 0;
+  border-radius: 12rpx;
+  border: 1rpx solid var(--text-muted);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: var(--fs-26);
+  text-align: center;
+}
+
+.code-btn-disabled {
+  border-color: #F2EFE9;
+  color: #B2ACA2;
+  background: #F7F4EF;
+}
+
+.field-note {
+  font-size: var(--fs-24);
+  color: #B2ACA2;
+  line-height: 1.6;
+  padding: 8rpx 0 16rpx 0;
+}
+
+/* ---------------- 勾选确认 ---------------- */
+.agree-row {
+  margin: 28rpx 24rpx 0 24rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.agree-box {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #B2ACA2;
+  background: var(--bg-card);
+  margin-right: 14rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agree-box-on {
+  background: var(--accent-vermillion);
+  border-color: var(--accent-vermillion);
+}
+
+.agree-tick {
+  color: var(--bg-elevated);
+  font-size: var(--fs-24);
+  line-height: 1;
+}
+
+.agree-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #7A756D;
+}
+
+/* ---------------- 底部按钮 ---------------- */
+.actions {
+  margin: 40rpx 20rpx 0 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.btn {
+  height: 92rpx;
+  line-height: 92rpx;
+  text-align: center;
+  border-radius: 16px;
+  font-size: var(--fs-30);
+  font-weight: 500;
+}
+
+.btn-danger {
+  background: var(--bg-card);
+  border: 1rpx solid var(--accent-vermillion);
+  color: var(--accent-vermillion);
+  font-weight: 600;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+}
+
+.btn-ghost {
+  margin-top: 20rpx;
+  background: #F2EBE1;
+  border: 1rpx solid #F2EBE1;
+  color: var(--text-muted);
+}
+
+.bottom-space {
+  height: 60rpx;
+}
+
+/* ============================================================
+   完成页（注销申请已提交 / 冷静期中）
+   —— 按 个人中心/注销/注销.txt 的「情感化沉浸版」重做：
+      波纹对勾图标 → 倒计时大卡片 → 三段时间轴 → 底部固定操作栏
+   ============================================================ */
+
+/* ---------------- 状态头部 ---------------- */
+.hero-section {
+  padding: 48rpx 40rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* 渐变圆 + 外圈扩散波纹（纯 CSS，不依赖 svg） */
+.success-icon {
+  position: relative;
+  width: 144rpx;
+  height: 144rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-gold-light) 0%, var(--accent-gold) 100%);
+  box-shadow: 0 16rpx 48rpx rgba(139, 107, 74, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 48rpx;
+}
+
+.success-ripple {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: rgba(139, 107, 74, 0.15);
+  animation: ripple 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* 纯 CSS 对勾：右下两条边旋转 45°；用动画模拟"描边出现" */
+.success-check {
+  width: 22rpx;
+  height: 42rpx;
+  border-right: 6rpx solid var(--bg-card);
+  border-bottom: 6rpx solid var(--bg-card);
+  transform: rotate(45deg) translate(-6rpx, -8rpx);
+  animation: checkIn 0.45s ease 0.25s both;
+}
+
+@keyframes checkIn {
+  from { opacity: 0; transform: rotate(45deg) translate(-6rpx, -8rpx) scale(0.4); }
+  to { opacity: 1; transform: rotate(45deg) translate(-6rpx, -8rpx) scale(1); }
+}
+
+.status-title {
+  font-size: var(--fs-40);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  margin-bottom: 16rpx;
+}
+
+/* 副标题做成危险色 pill：「账号尚未注销，数据仍然保留」是纠偏的关键信息 */
+.status-pill {
+  padding: 8rpx 24rpx;
+  border-radius: 40rpx;
+  background: #FCF2F1;
+  font-size: var(--fs-26);
+  font-weight: 500;
+  color: var(--accent-vermillion);
+}
+
+/* ---------------- 倒计时大卡片（视觉焦点） ---------------- */
+.countdown-card {
+  position: relative;
+  overflow: hidden;
+  margin: 32rpx 40rpx 40rpx;
+  padding: 48rpx 40rpx;
+  background: var(--bg-card);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 40rpx;
+  box-shadow: 0 16rpx 48rpx rgba(139, 107, 74, 0.08);
+  text-align: center;
+}
+
+/* 卡片右下角的水墨装饰圆 */
+.countdown-card::after {
+  content: '';
+  position: absolute;
+  right: -60rpx;
+  bottom: -60rpx;
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 107, 74, 0.05) 0%, transparent 70%);
+}
+
+.countdown-label {
+  display: block;
+  font-size: var(--fs-26);
+  color: #7A756D;
+  letter-spacing: 0;
+  margin-bottom: 16rpx;
+}
+
+.countdown-number {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.cd-num {
+  font-size: 96rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.cd-unit {
+  font-size: var(--fs-32);
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 12rpx;
+}
+
+.countdown-deadline {
+  margin-top: 32rpx;
+  padding-top: 32rpx;
+  border-top: 2rpx dashed #F0EDE8;
+  font-size: var(--fs-24);
+  color: #B2ACA2;
+}
+
+.cd-strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ---------------- 时间轴 ---------------- */
+.timeline-section {
+  position: relative;
+  margin: 0 40rpx;
+  padding-left: 24rpx;
+}
+
+/* 垂直中线（left 与节点圆心对齐） */
+.timeline-section::before {
+  content: '';
+  position: absolute;
+  left: 36rpx;
+  top: 20rpx;
+  bottom: 20rpx;
+  width: 4rpx;
+  background: #F0EDE8;
+}
+
+.tl-item {
+  position: relative;
+  padding-left: 64rpx;
+  padding-bottom: 48rpx;
+}
+
+.tl-dot {
+  position: absolute;
+  left: 0;
+  top: 8rpx;
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 6rpx solid #F0EDE8;
+  background: var(--bg-card);
+}
+
+/* 已完成：实心木质棕 */
+.tl-completed .tl-dot {
+  border-color: var(--text-muted);
+  background: var(--text-muted);
+}
+
+/* 进行中：空心 + 光晕 */
+.tl-active .tl-dot {
+  border-color: var(--text-muted);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 8rpx rgba(139, 107, 74, 0.15);
+}
+
+/* 未来：灰边空心（与默认一致，显式写出便于阅读） */
+.tl-future .tl-dot {
+  border-color: #F0EDE8;
+  background: var(--bg-card);
+}
+
+/* 时间轴右侧内容体（标题行 + 描述） */
+.tl-body {
+  min-width: 0;
+}
+
+.tl-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.tl-title {
+  font-size: var(--fs-28);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tl-time {
+  font-size: var(--fs-22);
+  color: #B2ACA2;
+}
+
+.tl-desc {
+  display: block;
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: #7A756D;
+}
+
+.tl-strong {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ---------------- 底部固定操作栏 ---------------- */
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  padding: 32rpx 40rpx calc(32rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  /* 渐变遮罩让内容"淡出"到按钮后面；容器本身不拦截点击，只有按钮可点 */
+  background: linear-gradient(180deg, rgba(244, 237, 225, 0) 0%, rgba(244, 237, 225, 0.95) 40%, var(--bg-primary) 100%);
+  pointer-events: none;
+}
+
+.action-bar .btn {
+  pointer-events: auto;
+}
+
+/* 主按钮：木质棕渐变 + 微光扫过（撤回是恢复性动作，不用朱砂红危险色） */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--accent-gold-light) 0%, var(--accent-gold) 100%);
+  border: none;
+  color: var(--bg-elevated);
+  font-weight: 600;
+  box-shadow: 0 16rpx 32rpx rgba(139, 107, 74, 0.25);
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-primary:active::before {
+  left: 100%;
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 4rpx 16rpx rgba(139, 107, 74, 0.2);
+}
+
+/* 次级按钮：透明 + 灰字 */
+.btn-secondary {
+  margin-top: 20rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: transparent;
+  border: none;
+  color: #7A756D;
+  font-size: var(--fs-28);
+  font-weight: 500;
+}
+
+.btn-secondary:active {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* 给固定操作栏留出空间，避免最后一段被遮 */
+.done-bottom-space {
+  height: 340rpx;
+}

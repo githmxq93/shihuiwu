@@ -1,0 +1,17 @@
+<view class="nav-bar {{dark ? 'nav-bar--ink' : ''}} {{solid && title ? 'nav-bar--solid' : ''}}" style="padding-top: {{safeAreaTop}}px; height: {{safeAreaTop + 44}}px; box-sizing: border-box;">
+  <view class="nav-inner" style="{{actionText ? 'padding-right:' + menuRight + 'px;' : ''}}">
+    <view class="nav-back" wx:if="{{showBack}}" bindtap="onBack">
+      <text class="nav-back-icon">‹</text>
+    </view>
+    <view class="nav-title">{{title}}</view>
+    <view class="nav-placeholder" wx:if="{{showBack}}"></view>
+    <!-- 右侧动作（可选）：不传 actionText 时整块不渲染，对既有 24 个页面零影响 -->
+    <view
+      wx:if="{{actionText}}"
+      class="nav-action {{actionDisabled ? 'nav-action--disabled' : ''}}"
+      bindtap="onAction"
+      hover-class="{{actionDisabled ? 'none' : 'nav-action--hover'}}"
+      hover-stay-time="80"
+    >{{actionText}}</view>
+  </view>
+</view>

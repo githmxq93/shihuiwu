@@ -1,0 +1,9 @@
+{
+  "usingComponents": {
+    "articleOverlay": "/components/articleOverlay/articleOverlay",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  },
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "navigationBarTitleText": "世慧屋 - 历史人物关系图谱与五千年大事年表"
+}

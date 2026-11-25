@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "中国历代战役史 - 著名战役年代、人物与经过",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  }
+}

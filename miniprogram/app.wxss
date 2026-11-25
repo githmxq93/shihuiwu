@@ -1,0 +1,320 @@
+page {
+  /* ===== 博物馆暖调令牌（2026-09 改版） =====
+     纸底 #F4EDE1 / 米白卡 #FBF7EF / 暖描边 #DCCDB2 / 墨棕正文 #3D2E1F
+     次级 #75654f / 赭石强调 #B5713A / 深棕磁贴 #3D2E1F */
+  --bg-deep: #ede4d3;
+  --bg-primary: #f4ede1;
+  --bg-secondary: #efe7d9;
+  --bg-card: #fbf7ef;
+  --bg-card-hover: #f5eedf;
+  --bg-elevated: #fffdf7;
+  /* 导航栏背景：与 --bg-primary 同源的暖纸渐变 + 模糊（历史注释保留：
+     17 个页面因 navBar 组件变量失效改为手写 .nav-bar，此变量为多数派形态） */
+  --bg-nav: linear-gradient(180deg, #f4ede1 0%, #f4ede1 60%, rgba(244, 237, 225, 0) 100%);
+  --text-primary: #3d2e1f;
+  /* 次级文字保留 #6e5d48（不复用 --text-muted）：
+     admin 的 chips / 按钮 / 徽标等 15 处落点底色为 --bg-deep #ede4d3，
+     #75654f 在该底上仅 4.46:1，低于 4.5；#6e5d48 为 5.01:1。 */
+  --text-secondary: #6e5d48;
+  --text-muted: #75654f;
+  /* 2026-11-06 补：此前被页面引用但全局未定义，var() 声明会静默失效。
+     --text-inverse 用于强调底色上的反白文字；
+     --text-tertiary 与 stats.wxss 原 fallback 同值，补上后不再依赖 fallback。 */
+  --text-tertiary: rgba(61, 46, 31, 0.72);
+  --text-inverse: #fbf7ef;
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif;
+  --accent-gold: #b5713a;
+  /* 金色「文字」专用：纸底 5.72:1 / 卡底 5.26:1，达到 4.5:1。
+     --accent-gold 只用于描边、渐变、底色与图标，不再直接写字（纸底仅 3.65:1）。 */
+  --accent-gold-ink: #8f5326;
+  --accent-gold-light: #c98b4f;
+  --accent-glow: rgba(181, 113, 58, 0.12);
+  --accent-vermillion: #a63b2a;
+  --accent-jade: #b5713a;
+  /* 深棕磁贴/锚点卡（反白文字） */
+  --tile-deep: #3d2e1f;
+  --tile-deep-text: #f4ede1;
+  --tile-deep-muted: #b3a48a;
+  --border-subtle: rgba(61, 46, 31, 0.07);
+  --border-color: rgba(61, 46, 31, 0.16);
+  --border-glow: rgba(181, 113, 58, 0.1);
+  --shadow-card: 0 2rpx 8rpx rgba(61, 46, 31, 0.08);
+  --shadow-glow: 0 0 24rpx rgba(181, 113, 58, 0.05);
+  --radius: 16rpx;
+  --radius-lg: 28rpx;
+  /* ===== 2026-11-14 设计 token 补齐（全站规范化 B2） =====
+     以下变量与各页原有硬编码同值，替换后渲染结果不变，只为收敛口径。 */
+  /* 深色头：渐变三色 + 下沿收边 */
+  --head-grad-top: #332820;
+  --head-grad-mid: #241c15;
+  --head-grad-bottom: #17120e;
+  --head-edge: #17120e;
+  /* 字号阶梯：20–40rpx 偶数档；18/42/44 等档位未纳入，保持原字面值 */
+  --fs-20: 20rpx;
+  --fs-22: 22rpx;
+  --fs-24: 24rpx;
+  --fs-26: 26rpx;
+  --fs-28: 28rpx;
+  --fs-30: 30rpx;
+  --fs-32: 32rpx;
+  --fs-34: 34rpx;
+  --fs-36: 36rpx;
+  --fs-38: 38rpx;
+  --fs-40: 40rpx;
+  /* 间距阶梯：4 的倍数，覆盖 padding / margin / gap 的常用档 */
+  --sp-4: 4rpx;
+  --sp-8: 8rpx;
+  --sp-12: 12rpx;
+  --sp-16: 16rpx;
+  --sp-20: 20rpx;
+  --sp-24: 24rpx;
+  --sp-32: 32rpx;
+  /* 圆角补充 */
+  --radius-sm: 8rpx;
+  --radius-pill: 999rpx;
+  /* 最小热区：88rpx = 44px @375pt（WCAG 2.5.5） */
+  --tap-min: 88rpx;
+  /* 自定义 tabBar 高度：100rpx = 50px（不含安全区） */
+  --tabbar-h: 100rpx;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: var(--fs-28);
+  line-height: 1.8;
+  min-height: 100vh;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 全局衬线标题：各页面 .hero-title / .section-title / .nav-title 均未显式
+   设 font-family，app.wxss 全局规则即可生效（页面 wxss 同名规则仅覆盖
+   其显式声明的属性，font-family 无冲突） */
+.hero-title,
+.section-title,
+.nav-title,
+.hero-title-accent {
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* 通用加载失败提示（各页面共享） */
+.error-retry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  gap: 24rpx;
+}
+.error-retry-text {
+  font-size: var(--fs-28);
+  color: var(--text-muted);
+  text-align: center;
+}
+.error-retry-btn {
+  margin-top: 16rpx;
+  padding: 20rpx 48rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, var(--accent-gold-light), var(--accent-gold));
+  color: var(--bg-elevated);
+  font-size: var(--fs-28);
+  font-weight: 600;
+}
+
+/* 通用加载中骨架（各页面共享）
+   用途：专题页首次进入时内容区尚无任何数据，弱网下会整片空白，
+   用骨架占位告知「正在加载」而非「页面坏了」。
+   判定顺序固定为 loadFailed → loading → isEmpty → 内容，勿调换。 */
+.skeleton-wrap {
+  padding: 48rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+.skeleton-card {
+  padding: 28rpx 24rpx;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1rpx solid rgba(139, 115, 85, 0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+.skeleton-line {
+  height: 26rpx;
+  border-radius: 8rpx;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 115, 85, 0.10) 25%,
+    rgba(139, 115, 85, 0.18) 37%,
+    rgba(139, 115, 85, 0.10) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+.skeleton-line-title {
+  height: 34rpx;
+  width: 52%;
+}
+.skeleton-line-short {
+  width: 72%;
+}
+.skeleton-hint {
+  padding: 8rpx 0 32rpx;
+  text-align: center;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* 通用空数据态（请求成功但内容为空，区别于加载失败）
+   [注意] 前缀用 sk- 而非 empty-：admin-pkg 的 articles/figures/messages 各自定义了 `.empty-state`
+      （页面 wxss 优先级高于 app.wxss），其中 topics.wxml 用了 `.empty-state` 但 topics.wxss 没有定义，
+      若全局再定义同名类会**意外改变后台页外观**，故改名规避。 */
+.sk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  gap: 16rpx;
+}
+.sk-empty-icon {
+  font-size: 64rpx;
+  opacity: 0.45;
+}
+.sk-empty-text {
+  font-size: var(--fs-28);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* 通用小节标题：暖竖条 + 衬线标题 + 右侧「全部 ›」 */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 36rpx 0 20rpx;
+}
+.section-header-bar {
+  width: 6rpx;
+  height: 30rpx;
+  border-radius: 3rpx;
+  background: var(--accent-gold);
+  flex-shrink: 0;
+}
+.section-header-title {
+  font-size: var(--fs-32);
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+}
+.section-header-more {
+  margin-left: auto;
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+}
+
+/* ===== 底部安全区统一收口 =====
+   2026-11-05 修正：原「page .bottom-spacer { height: calc(80rpx + env(...)) }」
+   特异性 (0,1,1) 高于各页面级 .bottom-spacer (0,1,0)，会把 six-degrees 的
+   300px、treaty/liberation 的 150rpx、detail/query/topic-list 的 140rpx
+   等一并压成 80rpx，导致回顶按钮 / FAB / tabBar 遮挡末尾内容。
+   现改为只做 min-height 兜底（无页面级定义的页面也留出手势条），
+   各页留白由页面级规则自行声明 calc(原值 + env(safe-area-inset-bottom))。
+   批量改写脚本：_ui_layout_fix.cjs */
+page .bottom-spacer {
+  min-height: env(safe-area-inset-bottom);
+}
+
+/* 自定义 tabBar 占位（原生 tabBar 会自动留位，自定义的需手动补） */
+.tabbar-space { height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+
+/* ===== P0-1 合规：用纯 CSS 形状替代 emoji 功能图标 =====
+   小程序 WXML 不支持内联 <svg>；emoji 作功能图标违反规范。
+   以下全局类用边框/阴影/变形绘制形状；旧类保留以承袭布局（间距/对齐）。
+   2026-11-14 清理 !important：仅保留会被页面组合类同属性覆盖的 6 条
+   （.css-net/.css-warn 的 color/font-size、.css-star 的 display/宽/高/背景），
+   其余页面无同名规则，属冗余，已去除。 */
+.css-ring {
+  display: inline-block;
+  width: 44rpx;
+  height: 44rpx;
+  box-sizing: border-box;
+  border: 4rpx solid var(--accent-gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.css-warn,
+.css-net {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  /* 保留：详情页 .load-state-glyph / 关系图 .state-icon 同属性设 76rpx / 64rpx 与深金色，
+     徽标需固定 34rpx 反白字，否则会被页面规则改小或改成深色 */
+  color: var(--bg-elevated) !important;
+  font-size: var(--fs-34) !important;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.css-moon {
+  display: inline-block;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  box-shadow: inset 13rpx 7rpx 0 0 var(--accent-gold);
+  flex-shrink: 0;
+}
+.css-star {
+  /* 保留：专题页 .footnote-icon 设 60rpx 圆形底与卡片色背景，
+     星形须固定为 22rpx 金色方块，否则会被撑大并失去金色 */
+  display: inline-block !important;
+  width: 22rpx !important;
+  height: 22rpx !important;
+  background: var(--accent-gold) !important;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  margin-right: 12rpx;
+}
+.css-check {
+  display: inline-block;
+  width: 28rpx;
+  height: 15rpx;
+  box-sizing: border-box;
+  border-left: 5rpx solid var(--accent-gold);
+  border-bottom: 5rpx solid var(--accent-gold);
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+}
+.css-tri-down,
+.css-tri-up {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.css-tri-down {
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-top: 10rpx solid var(--text-muted);
+}
+.css-tri-up {
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-bottom: 10rpx solid var(--text-muted);
+}

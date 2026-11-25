@@ -1,0 +1,138 @@
+<view class="page">
+  <view class="bg-grain"></view>
+  <nav-bar title="{{yearLabel}}年 · 谁在场" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <scroll-view class="body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}"
+               scroll-top="{{scrollTopVal}}" scroll-with-animation="{{true}}" bindscroll="onBodyScroll">
+    <view class="nav-spacer" style="height: {{navBarHeight}}px;"></view>
+
+    <!-- 加载态 -->
+    <view wx:if="{{loading}}" class="sk-wrap">
+      <view class="sk-head"></view>
+      <view class="sk-card" wx:for="{{skeletonRows}}" wx:key="*this">
+        <view class="sk-line w30"></view><view class="sk-line w80"></view><view class="sk-line w55"></view>
+      </view>
+    </view>
+
+    <!-- 失败态 -->
+    <view wx:elif="{{loadFailed}}" class="err-card">
+      <view class="err-mark">!</view>
+      <view class="err-t">{{errText || '人物记载加载失败'}}</view>
+      <view class="err-b">该年可能暂无可定年的人物记载，或网络暂不可用。</view>
+      <view class="err-btn" wx:if="{{year}}" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <block wx:else>
+      <!-- 深色年份头 + 三态计数 -->
+      <view class="whead">
+        <view class="wh-glow"></view>
+        <view class="wh-watermark">{{yearLabel}}</view>
+        <view class="wh-top">
+          <view class="wh-year">{{yearLabel}}</view>
+          <view class="wh-era">{{eraText}}</view>
+          <view class="wh-seal">{{ganzhi}}</view>
+        </view>
+        <view class="wh-ask">这一年，谁在场</view>
+        <view class="wh-acts" id="guide-wp-acts-hd">
+          <view class="wh-act is-born">
+            <view class="wa-l"><view class="wa-dot"></view>登场 · 出生</view>
+            <view class="wa-n">{{counts.birth}}</view>
+          </view>
+          <view class="wh-act is-alive">
+            <view class="wa-l"><view class="wa-dot"></view>在场 · 有记载</view>
+            <view class="wa-n">{{aliveTotal}}</view>
+          </view>
+          <view class="wh-act is-dead">
+            <view class="wa-l"><view class="wa-dot"></view>离场 · 去世</view>
+            <view class="wa-n">{{counts.death}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 三幕：登场 / 在场 / 离场 -->
+      <view class="acts" id="guide-wp-acts">
+        <!-- 第一幕：登场 -->
+        <view class="act-card c-born">
+          <view class="ac-h">
+            <view class="ac-t">登场</view>
+            <view class="ac-s">{{yearLabel}} 年出生 · 共 {{counts.birth}} 人</view>
+            <view class="ac-n">{{counts.birth}}</view>
+          </view>
+          <view class="row" wx:for="{{bornView}}" wx:key="id" data-id="{{item.id}}" hover-class="row-hover" bindtap="onTapPerson">
+            <view class="r-name">{{item.name}}</view>
+            <view class="r-life">{{item.life}}</view>
+            <view class="r-meta">{{item.meta}}</view>
+          </view>
+          <view class="row-empty" wx:if="{{!bornAll.length}}">该年暂无出生记载</view>
+          <view class="ac-more" wx:if="{{bornAll.length > 6}}" bindtap="onToggleBorn">
+            {{bornExpanded ? '收起' : '展开 ' + bornAll.length + ' 人'}}<text class="am-caret">{{bornExpanded ? '▴' : '▾'}}</text>
+          </view>
+        </view>
+
+        <!-- 第二幕：在场（带收敛旋钮） -->
+        <view class="act-card c-alive">
+          <view class="ac-h">
+            <view class="ac-t">在场</view>
+            <view class="ac-s">该年有记载 · 共 {{aliveTotal}} 人</view>
+            <view class="ac-n">{{aliveTotal}}</view>
+          </view>
+
+          <view class="conv" id="guide-wp-conv" wx:if="{{convTabs.length}}">
+            <view class="conv-b {{conv === item.key ? 'on' : ''}}" wx:for="{{convTabs}}" wx:key="key" data-key="{{item.key}}" bindtap="onSwitchConv">{{item.label}} {{item.n}}</view>
+          </view>
+          <view class="conv-note">{{aliveNote}}</view>
+
+          <view class="row" wx:for="{{aliveView}}" wx:key="id" data-id="{{item.id}}" hover-class="row-hover" bindtap="onTapPerson">
+            <view class="r-name">{{item.name}}</view>
+            <view class="r-life">{{item.life}}</view>
+            <view class="r-meta">{{item.meta}}</view>
+          </view>
+          <view class="row-empty" wx:if="{{!aliveAll.length}}">该年暂无可展示的人物记载</view>
+          <view class="ac-more" wx:if="{{aliveAll.length > 8}}" bindtap="onToggleAlive">
+            {{aliveExpanded ? '收起' : '展开 ' + aliveAll.length + ' 人'}}<text class="am-caret">{{aliveExpanded ? '▴' : '▾'}}</text>
+          </view>
+        </view>
+
+        <!-- 第三幕：离场 -->
+        <view class="act-card c-dead">
+          <view class="ac-h">
+            <view class="ac-t">离场</view>
+            <view class="ac-s">{{yearLabel}} 年离世 · 共 {{counts.death}} 人</view>
+            <view class="ac-n">{{counts.death}}</view>
+          </view>
+          <view class="row" wx:for="{{deadView}}" wx:key="id" data-id="{{item.id}}" hover-class="row-hover" bindtap="onTapPerson">
+            <view class="r-name">{{item.name}}</view>
+            <view class="r-life">{{item.life}}</view>
+            <view class="r-meta">{{item.meta}}</view>
+          </view>
+          <view class="row-empty" wx:if="{{!deadAll.length}}">该年暂无离世记载</view>
+          <view class="ac-more" wx:if="{{deadAll.length > 6}}" bindtap="onToggleDead">
+            {{deadExpanded ? '收起' : '展开 ' + deadAll.length + ' 人'}}<text class="am-caret">{{deadExpanded ? '▴' : '▾'}}</text>
+          </view>
+        </view>
+
+        <!-- 底部事件条：人物之外，留一条事件线索 -->
+        <view class="evbar" wx:if="{{events.length}}">
+          <view class="evbar-h">
+            <text class="evbar-t">{{eventTitle}}</text>
+            <text class="evbar-n">共 {{eventTotal}} 条</text>
+          </view>
+          <view class="chips">
+            <text class="chip" wx:for="{{events}}" wx:key="*this">{{item}}</text>
+            <text class="chip more" wx:if="{{eventMore > 0}}">+{{eventMore}}</text>
+          </view>
+        </view>
+
+        <view class="foot">
+          <text class="foot-b">口径</text>「在场」指该年有记载（出生 / 离世 / 任职 / 登第 / 要事任一），不等于严格「在世」；每类只取接口前 40 条预览，按记载分数排序。生卒缺失一律写「待补」，不按 0 岁或「至今」推算。
+        </view>
+      </view>
+    </block>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 使用引导（文案唯一来源：config/guide-steps.js::whoPresent）
+       本页主体是 scroll-view，引导要滚锚点时由页面换算成 scroll-top 来滚 -->
+  <guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />
+</view>

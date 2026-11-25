@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "年份查询 - 年号、干支、公元、伊斯兰历、佛历、民国纪年对照",
+  "navigationStyle": "custom",
+  "backgroundColor": "#f4ede1",
+  "backgroundColorTop": "#f4ede1",
+  "backgroundColorBottom": "#f4ede1",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  }
+}

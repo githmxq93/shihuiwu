@@ -1,0 +1,384 @@
+<nav-bar safeAreaTop="{{safeAreaTop}}" dark="{{true}}" />
+
+<!-- 塌陷后的 36px 标题条：fixed 在导航栏下方，滚过 hero 才落下来 -->
+<!-- 收缩态下搜索药丸不再占吸顶高度，改由标题条右侧这枚圆钮承担入口（截图红线位置） -->
+<view class="titlebar {{collapsed ? 'show' : ''}}" style="top:{{navTop}}px" bindtap="onFoldSearch">
+  <text class="tb-t">大事年表</text>
+  <view class="fab {{hasQuery ? 'has' : ''}}" wx:if="{{collapsed}}" hover-class="fab-hover" catchtap="onTapFab">
+    <view class="fab-ic"></view>
+    <!-- 有输入时给一个带深色描边的实心点：靠形状与描边辨识，不只靠颜色 -->
+    <view class="fab-dot" wx:if="{{hasQuery}}"></view>
+  </view>
+</view>
+
+<view class="page">
+  <!-- ═══════ hero：随页滚走，滚过后只剩上面的窄条 ═══════ -->
+  <view class="hero" style="padding-top:{{heroPadTop}}px">
+    <view class="hero-kicker">年表为骨 · 战史为注</view>
+    <view class="hero-t">大事年表</view>
+    <view class="hero-sub">{{rangeLabel}} · 年表与战史库按年混排</view>
+    <view class="hero-meta">
+      <view class="hm"><text class="hm-b">{{total}}</text><text class="hm-s">件大事</text></view>
+      <view class="hm"><text class="hm-b">{{years}}</text><text class="hm-s">个年份</text></view>
+      <view class="hm"><text class="hm-b">7</text><text class="hm-s">大时代</text></view>
+      <view class="hm"><text class="hm-b">{{worlds}}</text><text class="hm-s">条世界史</text></view>
+    </view>
+    <view id="guide-timeline-note" class="hero-note">先先秦，后秦汉。点按展开：纪事给概要，战役给战果与背景；点开是完整档案。筛选在年代尺行右侧，年份可直接跳。</view>
+  </view>
+
+  <!-- ═══════ 吸顶区：药丸搜索 + 年代尺按钮 + 年代尺 ═══════ -->
+  <view class="erawrap {{rulerOpen ? 'open' : ''}}" id="erawrap" style="top:{{searchTop}}px">
+    <!-- 收缩态把这一行移出吸顶流（吸顶高度随之少 42px）；展开态由下方 .sfloat 浮层接管 -->
+    <view id="guide-timeline-search" class="searchbar" wx:if="{{!collapsed}}">
+      <template is="searchbox" data="{{query: query, hasQuery: hasQuery, foundLabel: foundLabel, focus: false}}" />
+    </view>
+
+    <view id="guide-timeline-rulerbar" class="rulerbar">
+      <view class="ruler-toggle {{hint ? 'hint' : ''}} {{rulerOpen ? 'on' : ''}}" hover-class="rt-hover" bindtap="onToggleRuler">
+        <view class="rlicon"></view>
+        <text class="rt-t">{{rulerOpen ? '收起年代尺' : '展开年代尺，按年份滑动'}}</text>
+        <text class="rt-cv">{{rulerOpen ? '▴' : '▾'}}</text>
+      </view>
+      <!-- 筛选入口：合进这一行，不增加吸顶高度；面板是浮层 -->
+      <view class="tool {{filterN ? 'on' : ''}}" hover-class="tool-hover" bindtap="onToggleFilter">
+        <text class="tool-t">筛选</text>
+        <text class="tool-n" wx:if="{{filterN}}">{{filterN}}</text>
+      </view>
+      <!-- 近现代放大：1912 后在原比例下只有 7.9px，单独给一个细分入口 -->
+      <view class="tool {{rulerZoom ? 'on' : ''}}" hover-class="tool-hover" bindtap="onToggleRulerZoom">
+        <text class="tool-t">{{rulerZoom ? '全览' : '近现代'}}</text>
+      </view>
+    </view>
+
+    <!-- 筛选浮层：分类 / 只看里程碑 / 年份直跳。绝对定位挂在吸顶区下沿，不占吸顶流 -->
+    <block wx:if="{{filterOpen}}">
+      <view class="fmask" bindtap="onToggleFilter"></view>
+      <view class="fpanel">
+        <view class="fp-h">
+          <text class="fp-t">筛选</text>
+          <text class="fp-x" catchtap="onToggleFilter">收起 ▴</text>
+        </view>
+        <view class="fp-k">分类</view>
+        <view class="fp-cats">
+          <view
+            wx:for="{{cats}}"
+            wx:key="index"
+            class="chip {{catOn[item] ? 'on' : ''}}"
+            data-cat="{{item}}"
+            catchtap="onTapCat"
+          >{{item}}<text class="chip-n">{{catCounts[item] || 0}}</text></view>
+        </view>
+        <view class="fp-row">
+          <view class="fp-mile {{mileOnly ? 'on' : ''}}" catchtap="onToggleMile">
+            <view class="fp-box"><text wx:if="{{mileOnly}}">✓</text></view>
+            <text>只看里程碑</text>
+            <text class="fp-n">{{miles}} 条</text>
+          </view>
+          <text class="fp-clear" catchtap="onClearFilter">清空</text>
+        </view>
+        <view class="fp-k">跳到年份</view>
+        <view class="fp-jump">
+          <input class="fp-input" value="{{jumpY}}" bindinput="onJumpInput" confirm-type="go" bindconfirm="onJumpGo" placeholder="如 1937、前221" placeholder-class="fp-ph" />
+          <view class="fp-go" hover-class="fp-go-hover" catchtap="onJumpGo">定位</view>
+        </view>
+      </view>
+    </block>
+
+    <view class="ruler" wx:if="{{rulerOpen}}">
+      <view class="ruler-in">
+        <canvas
+          type="2d"
+          id="ruler"
+          class="ruler-cv"
+          bindtouchstart="onRulerStart"
+          catchtouchmove="onRulerMove"
+          bindtouchend="onRulerEnd"
+          bindtouchcancel="onRulerCancel"
+        ></canvas>
+      </view>
+    </view>
+  </view>
+
+  <!-- ═══════ 收缩态：点圆钮展开的浮层药丸，贴在标题条下沿，不参与吸顶流 ═══════ -->
+  <!-- 透明遮罩在药丸下方：点空白处折回圆钮；遮罩层级低于标题条，圆钮仍可再点一次收起 -->
+  <view class="smask" wx:if="{{collapsed && searchExpanded}}" bindtap="onFoldSearch"></view>
+  <view class="sfloat" wx:if="{{collapsed && searchExpanded}}" style="top:{{navTop + 36}}px">
+    <template is="searchbox" data="{{query: query, hasQuery: hasQuery, foundLabel: foundLabel, focus: searchFocus}}" />
+  </view>
+
+  <!-- ═══════ 列表：7 个时代分段头交替吸顶 ═══════ -->
+  <view class="list">
+    <block wx:for="{{list}}" wx:key="key">
+      <view wx:if="{{item.k === 'h'}}" class="erahead {{item.e === eraCur ? 'on' : ''}}" style="top:{{stickTop}}px">
+        <text class="eh-name">{{item.name}}</text>
+        <text class="eh-n">{{item.count}} 条</text>
+      </view>
+
+      <view
+        wx:else
+        id="r{{item.ri}}"
+        class="row {{item.both ? 'both' : ''}} {{item.warOnly ? 'waronly' : ''}} {{item.open ? 'open' : ''}}"
+        data-li="{{index}}"
+        bindtap="onTapRow"
+        hover-class="row-hover"
+      >
+        <!-- 行首脊线：纯事件不画；纯战役单条金线；双记并列双条（形态即语义，不只靠颜色） -->
+        <view class="rail" wx:if="{{item.both}}">
+          <view class="rail-b"></view>
+          <view class="rail-b2" wx:if="{{!item.warOnly}}"></view>
+        </view>
+        <view class="yc {{item.hitY ? 'hit' : ''}}">
+          <text wx:if="{{!item.same}}">{{item.yLabel}}</text>
+          <text class="rng" wx:if="{{!item.same && item.yEnd}}">{{item.yEnd}}</text>
+        </view>
+        <view class="bd">
+          <view class="r1">
+            <text class="nm"><text wx:for="{{item.tp}}" wx:for-item="p" wx:key="i" class="{{p.h ? 'hl' : ''}}">{{p.t}}</text></text>
+            <text class="tag tg-dual" wx:if="{{item.both && !item.warOnly}}">战史双记</text>
+            <text class="tag tg-war" wx:if="{{item.warOnly}}">战役</text>
+            <text class="tag mj" wx:if="{{item.major}}">重大</text>
+            <text class="tag tg-kid" wx:if="{{item.kidN}}">含 {{item.kidN}} 场子战役</text>
+          </view>
+          <view class="r2" wx:if="{{!item.open}}"><text wx:for="{{item.dp}}" wx:for-item="p" wx:key="i" class="{{p.h ? 'hl' : ''}}">{{p.t}}</text></view>
+
+          <!-- 展开区（简要）：一句概要 + 事实签 + 双记指路条 + 完整档案入口。
+               全文、纪年、同年、邻条、分类分布全部在抽屉里，两层不重复同一段话。
+               整块点按 → 纪事抽屉；战史指路条覆盖为战史抽屉；纯事件同样有这一层，无死区 -->
+          <view
+            class="det"
+            wx:if="{{item.open}}"
+            catchtap="onOpenSheet"
+            data-type="chron"
+            data-li="{{index}}"
+          >
+            <view class="brf"><text wx:for="{{item.sum}}" wx:for-item="p" wx:key="i" class="{{p.h ? 'hl' : ''}}">{{p.t}}</text></view>
+            <!-- 纯战役：第二个短句只放背景首句，与战果分开；明细在抽屉 -->
+            <view class="brf2" wx:if="{{item.warOnly && item.wintro.length}}"><text class="brf2-k">背景</text><text wx:for="{{item.wintro}}" wx:for-item="p" wx:key="i" class="{{p.h ? 'hl' : ''}}">{{p.t}}</text></view>
+            <view class="facts">
+              <text class="f" wx:if="{{item.cat}}">{{item.cat}}</text>
+              <text class="f" wx:if="{{item.loc}}">{{item.loc}}</text>
+              <text class="f" wx:if="{{item.world}}">世界史</text>
+              <text class="f mj" wx:if="{{item.mile}}">里程碑</text>
+            </view>
+
+            <!-- 子战役清单：父事件是纪事，子战役只在这一层出现，不独立成行、不占年份。
+                 每条按「年份 · 名称 / 地点 · 战果」两行排，点开是战史抽屉（含类别码）。
+                 搜索命中子战役时，父行自动展开并高亮对应条目（kidHi）。 -->
+            <view class="kids" wx:if="{{item.kidN}}">
+              <view class="kids-h">
+                <text class="kids-k">子战役</text>
+                <text class="kids-n">{{item.kidN}} 条</text>
+              </view>
+              <view
+                class="kid {{item.kidHi === ki ? 'hi' : ''}}"
+                wx:for="{{item.kids}}"
+                wx:for-item="k"
+                wx:for-index="ki"
+                wx:key="name"
+                id="k{{item.ri}}-{{ki}}"
+                catchtap="onOpenKid"
+                data-li="{{index}}"
+                data-ki="{{ki}}"
+              >
+                <view class="kid-l1">
+                  <text class="kid-y">{{k.y}}</text>
+                  <text class="kid-n">{{k.name}}</text>
+                  <!-- 身份签：事件型子项用（如 763「结局」、八王之乱 3 条「政变」） -->
+                  <text class="kid-tag" wx:if="{{k.tag}}">{{k.tag}}</text>
+                  <text class="kid-loc" wx:if="{{k.loc}}">{{k.loc}}</text>
+                  <text class="kid-go">›</text>
+                </view>
+                <view class="kid-l2">
+                  <text class="kid-r">{{k.res}}</text>
+                </view>
+              </view>
+            </view>
+
+            <!-- 双记：只留「战役名 · 时间」指路条，战役明细（地点/战果/背景）全部在抽屉里 -->
+            <view
+              class="warlink"
+              wx:if="{{item.both}}"
+              catchtap="onOpenSheet"
+              data-type="war"
+              data-li="{{index}}"
+            >
+              <text class="wl-k">战史</text>
+              <text class="wl-n">{{item.cpNameStr}}</text>
+              <text class="wl-t">{{item.cpTimeStr}}</text>
+              <text class="wl-go">›</text>
+            </view>
+
+            <view class="more"><text>{{item.warOnly ? '完整档案 · 战役全字段' : '完整档案 · 纪年 / 同年 / 邻条'}}</text><text class="more-go">›</text></view>
+          </view>
+        </view>
+        <text class="chev">›</text>
+      </view>
+    </block>
+
+    <view class="empty" wx:if="{{emptyText}}">
+      <view class="empty-t">{{emptyText}}</view>
+      <view class="empty-s">换个更短的词，或直接输入年份，如 1937、前221</view>
+    </view>
+
+    <view class="foot">
+      <view class="foot-l">{{total}} 件大事 · {{years}} 个年份 · 7 大时代 · {{both}} 条战史双记</view>
+      <view class="foot-l" wx:if="{{campaignFail}}">战史库未取到，本次仅显示纪事；网络恢复后重进即可补齐双记与战役条目。</view>
+      <view class="foot-l" wx:else>战史库 {{campTotal}} 条：{{both}} 条双记 + {{foldN}} 条折叠为子战役 + {{campOnly}} 条按年并入{{undatedN ? ' · 另 ' + undatedN + ' 条年份待定' : ''}}。</view>
+      <view class="foot-l">年代尺为导航：密度柱始终按全量 {{total}} 条计算，不随搜索与筛选变化。</view>
+    </view>
+  </view>
+</view>
+
+<!-- ═══════ 半屏抽屉：纪事 / 战史 ═══════
+     口径与历代帝王页一致：高度由 JS 按 min(52%, 屏高 − 导航 − 72) 算好写 px；
+     下拉抓手超过 80px 关闭，点遮罩关闭，内部独立滚动。抽屉不碰 list，手风琴状态不受影响。
+     抽屉是「完整档案」：纪年、纪事全文、战史全字段、同年、前后、分类分布；
+     展开区只给首句概要 + 事实签，两层不重复同一段话。 -->
+<view class="sheet-mask" wx:if="{{sheetOpen}}" bindtap="onCloseSheet" catchtouchmove="onNoop"></view>
+<view
+  class="sheet {{sheetDragging ? 'is-dragging' : ''}}"
+  wx:if="{{sheetOpen}}"
+  style="height:{{sheetH}}px;{{sheetDragging ? 'transform: translateY(' + sheetDrag + 'px);' : ''}}"
+  catchtap="onNoop"
+>
+  <view class="sheet-grab" bindtouchstart="onGrabStart" catchtouchmove="onGrabMove" bindtouchend="onGrabEnd">
+    <view class="sheet-grab-bar"></view>
+  </view>
+
+  <view class="sheet-body">
+    <scroll-view class="sheet-scroll" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+      <view class="sheet-main">
+        <view class="sheet-meta">
+          <text class="sheet-yr">{{sheet.year}}</text>
+          <text class="sheet-era">{{sheet.era}}</text>
+          <text class="sheet-gz" wx:if="{{sheet.gz}}">{{sheet.gz}}年</text>
+        </view>
+        <view class="sheet-name">{{sheet.title}}</view>
+        <view class="sheet-tags" wx:if="{{sheet.tags.length}}">
+          <text class="sheet-tag" wx:for="{{sheet.tags}}" wx:key="index">{{item}}</text>
+        </view>
+
+        <!-- 纪年：政权 / 年号 / 在位。数据源 server/static-data/era-names.json；
+             取不到或是先秦、民国等年号表外的年份，退成一行说明，不猜。
+             说明并进段头右侧：省一行，双记首屏才装得下纪事与战史全字段。
+             子战役抽屉不带纪年（年份可能是一个区间，纪年属于父事件） -->
+        <block wx:if="{{!sheet.kid}}">
+          <view class="sheet-h">
+            <text>纪年</text>
+            <text class="sh-n" wx:if="{{sheet.eraNote}}">{{sheet.eraNote}}</text>
+          </view>
+          <view class="era-row" wx:for="{{sheet.eraRows}}" wx:key="era">
+            <text class="era-regime">{{item.regime}}</text>
+            <text class="era-name">{{item.era}}</text>
+            <text class="era-ruler">{{item.ruler || '—'}}</text>
+          </view>
+        </block>
+
+        <!-- 纪事全文：全文只在这里出现一次（展开区只显示首句概要） -->
+        <block wx:if="{{sheet.chron}}">
+          <view class="sheet-h">纪事</view>
+          <view class="sheet-text">{{sheet.chron}}</view>
+        </block>
+
+        <!-- 战史：战役名 / 时间 / 地点 / 战果 / 背景 / 类别码。
+             段头收进卡内（与列表里的战史卡同一套），双记时纪事段 + 战史卡
+             两段能同屏出现，不会「只看到一半」 -->
+        <block wx:if="{{sheet.war}}">
+          <view class="sheet-camp">
+            <view class="sheet-camp-h">
+              <text class="sheet-camp-k">战史</text>
+              <text class="sheet-camp-mj" wx:if="{{sheet.war.major}}">重大</text>
+              <text class="sheet-h-note" wx:if="{{sheet.warOnly && !sheet.kid}}">仅存于战史库</text>
+            </view>
+            <view class="sheet-camp-name">{{sheet.war.name}}</view>
+            <view class="sheet-grid">
+              <view class="sheet-row">
+                <text class="sheet-k">时间</text>
+                <text class="sheet-v">{{sheet.war.time || '待补'}}</text>
+              </view>
+              <view class="sheet-row">
+                <text class="sheet-k">地点</text>
+                <text class="sheet-v">{{sheet.war.location || '待补'}}</text>
+              </view>
+              <view class="sheet-row sheet-row-res">
+                <text class="sheet-k">战果</text>
+                <text class="sheet-v">{{sheet.war.result || '待补'}}</text>
+              </view>
+              <!-- 类别码按 MIL:OFF 原样列出，多码之间用 · 分隔（数据层已按词表存数组） -->
+              <view class="sheet-row" wx:if="{{sheet.war.codes.length}}">
+                <text class="sheet-k">类别</text>
+                <text class="sheet-v sheet-codes">{{sheet.war.codeStr}}</text>
+              </view>
+            </view>
+            <view class="sheet-sub-h" wx:if="{{sheet.war.intro}}">背景</view>
+            <view class="sheet-intro" wx:if="{{sheet.war.intro}}">{{sheet.war.intro}}</view>
+          </view>
+        </block>
+
+        <!-- 上下文三段：默认收起，点段头展开。双记首屏因此能压到 400px 上下，
+             想看「同年 / 前后 / 分布」再展开，不额外抬高抽屉 -->
+        <view class="sheet-h sh-toggle" bindtap="onToggleSheetCtx" data-k="same" wx:if="{{!sheet.kid}}">
+          <text>同年</text>
+          <text class="sh-n">{{sheet.sameN}} 条</text>
+          <text class="sh-cv">{{sheetCtx.same ? '▾' : '▸'}}</text>
+        </view>
+        <block wx:if="{{sheetCtx.same}}">
+          <view class="sheet-note" wx:if="{{!sheet.sameN}}">同年没有其他条目</view>
+          <view class="sheet-note" wx:else>另有 {{sheet.sameN}} 条{{sheet.sameN > 3 ? '，列前 3' : ''}}</view>
+          <view class="ctx-i" wx:for="{{sheet.sameList}}" wx:key="index">{{item}}</view>
+        </block>
+
+        <view class="sheet-h sh-toggle" bindtap="onToggleSheetCtx" data-k="neigh" wx:if="{{!sheet.kid}}">
+          <text>前后</text>
+          <text class="sh-cv">{{sheetCtx.neigh ? '▾' : '▸'}}</text>
+        </view>
+        <block wx:if="{{sheetCtx.neigh}}">
+          <view class="neigh" wx:if="{{sheet.prev}}">
+            <text class="neigh-k">上一条</text>
+            <text class="neigh-v">{{sheet.prev}}</text>
+          </view>
+          <view class="neigh" wx:if="{{sheet.next}}">
+            <text class="neigh-k">下一条</text>
+            <text class="neigh-v">{{sheet.next}}</text>
+          </view>
+          <view class="sheet-note" wx:if="{{!sheet.prev && !sheet.next}}">本条在年表两端，没有相邻条目</view>
+        </block>
+
+        <block wx:if="{{sheet.dist}}">
+          <view class="sheet-h sh-toggle" bindtap="onToggleSheetCtx" data-k="dist">
+            <text>分布</text>
+            <text class="sh-cv">{{sheetCtx.dist ? '▾' : '▸'}}</text>
+          </view>
+          <view class="sheet-note" wx:if="{{sheetCtx.dist}}">{{sheet.dist}}</view>
+        </block>
+      </view>
+    </scroll-view>
+    <view class="sheet-fade"></view>
+  </view>
+</view>
+
+<!-- 搜索药丸：吸顶常驻与收缩态浮层共用同一份结构，避免两处逻辑漂移 -->
+<template name="searchbox">
+  <view class="sbox">
+    <text class="shint" wx:if="{{!query}}">查</text>
+    <view class="sicon"></view>
+    <input
+      class="sinput"
+      value="{{query}}"
+      type="text"
+      placeholder="年份、事件名或地点，如 1937、长平"
+      placeholder-class="sph"
+      confirm-type="search"
+      maxlength="24"
+      focus="{{focus}}"
+      bindinput="onInput"
+      bindconfirm="onConfirm"
+      bindblur="onSearchBlur"
+    />
+    <text class="qcnt" wx:if="{{hasQuery}}">{{foundLabel}}</text>
+    <view class="qclr" wx:if="{{hasQuery}}" bindtap="onClear">×</view>
+    <view class="qgo" hover-class="qgo-hover" bindtap="onQuery">查询</view>
+  </view>
+</template>
+
+<guide-layer id="guideLayer" />

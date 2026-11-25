@@ -1,0 +1,737 @@
+/* 博物馆暖调 · 节日文化（2026-11-14 A+B 合并版）
+   1) 深色头 + 四块金色磁贴 + 四类 tab + 吸顶十二月方块条；
+   2) 12 个月竖向长卷，月头互斥展开，卡间细分割线（不做独立阴影卡）；
+   3) 展开后按当前分类只渲染对应段落：节令行 / 民俗双列格 / 民族条 / 地方行。
+   口径：1rpx = 0.5px（375 宽），字号一律偶数 rpx，letter-spacing 全为 0；
+   正文 #33261a 对纸底 12:1，次要 #4a3826 10.4:1，弱化 #75654f 4.8:1，均 ≥4.5:1。
+   注意：不引入 backdrop-filter —— 2026-10-03 真机白屏专项结论。 */
+
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(166, 59, 42, 0.14) 0%, transparent 42%),
+    radial-gradient(circle at 8% 22%, rgba(181, 113, 58, 0.10) 0%, transparent 35%),
+    radial-gradient(circle at 92% 68%, rgba(166, 59, 42, 0.09) 0%, transparent 40%),
+    linear-gradient(180deg, var(--bg-deep) 0%, #e6d9c0 45%, var(--bg-deep) 100%);
+  color: #33261a;
+}
+
+.page-scroll {
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ===== 深色头：四块金色磁贴 ===== */
+.hero {
+  position: relative;
+  padding: 32rpx 32rpx 26rpx;
+  color: #fff7e8;
+  background:
+    radial-gradient(120% 90% at 88% 0%, rgba(207, 138, 75, 0.22), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+}
+
+.hero-kicker {
+  font-size: var(--fs-22);
+  line-height: 1.4;
+  color: rgba(255, 247, 232, 0.78);
+  letter-spacing: 0;
+}
+
+.hero-title {
+  margin-top: 8rpx;
+  font-family: var(--font-serif);
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: #fff7e8;
+}
+
+.hero-title-accent {
+  color: #e9c79b;
+}
+
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: var(--fs-24);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: rgba(255, 247, 232, 0.82);
+}
+
+/* 四块磁贴：142 / 162 / 48 / 29 */
+.hero-tiles {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 22rpx;
+}
+
+.ht {
+  flex: 1;
+  box-sizing: border-box;
+  padding: 14rpx 12rpx 12rpx;
+  border-radius: var(--radius);
+  background: rgba(255, 247, 232, 0.06);
+  border: 1rpx solid rgba(255, 236, 200, 0.14);
+}
+
+.ht-n {
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #e9c79b;
+}
+
+.ht-l {
+  margin-top: 8rpx;
+  font-size: var(--fs-20);
+  line-height: 1;
+  letter-spacing: 0;
+  color: rgba(255, 247, 232, 0.74);
+}
+
+/* ===== 四类 tab：方案 A 描边胶囊（贴在深色头下沿） =====
+   未选 = 米白实底 + #8a4f1c 34% 描边，选中 = 深棕实底 #241c15 + 米金字。
+   目的：四项看起来是「可点的按钮」，不再像一行分类统计文字。
+   行高 = 留白 14rpx×2 + 胶囊 68rpx（+1rpx 底边），比上一版多 2rpx ≈ 1px；
+   首屏条目数不变（实测 12 条，末条距底仍有 19px 余量）。 */
+.cats {
+  display: flex;
+  gap: 12rpx;
+  padding: 14rpx 24rpx;
+  background: #f0e6d6;
+  border-bottom: 1rpx solid rgba(107, 90, 69, 0.12);
+}
+
+.cat {
+  position: relative;
+  flex: 1;
+  height: 68rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid rgba(138, 79, 28, 0.34);
+  background: #fbf6ec;
+  box-shadow: inset 0 2rpx 0 rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+/* 分类页签：视觉 68rpx，热区补到 88rpx（44px），宽度四等分 83px；
+   上下留白各 14rpx，纵向各外扩 10rpx 后仍落在留白内（实测热区 44.0px）。 */
+.cat::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+/* 类名为主：28rpx / 600 / #3a2c1d（胶囊底 #fbf6ec 上 12.51:1，行底上 10.91:1）；
+   数字为辅：24rpx / 400 / 斜体衬线 / #7a5227（胶囊底上 6.36:1），字号与字重都压过类名一头 */
+.cat-name {
+  font-size: var(--fs-28);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #3a2c1d;
+}
+
+.cat-num {
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #7a5227;
+}
+
+/* 按下：底色压深 + 内阴影（对应效果图的 :active），选中态不受影响（类选择器权重更高） */
+.cat-hover {
+  background: #f1e3cd;
+  border-color: rgba(138, 79, 28, 0.52);
+  box-shadow: inset 0 6rpx 16rpx rgba(74, 56, 38, 0.22);
+}
+
+/* 选中：深棕实底 + 米金字（类名 15.75:1，数字 10.47:1） */
+.cat.is-on {
+  background: var(--head-grad-mid);
+  border-color: var(--head-grad-mid);
+  box-shadow: 0 12rpx 24rpx -20rpx rgba(36, 28, 21, 0.8);
+}
+
+.cat.is-on .cat-name {
+  color: #fff7e8;
+  font-weight: 700;
+}
+
+.cat.is-on .cat-num {
+  color: #e9c79b;
+  font-weight: 600;
+}
+
+/* ===== 滚动态窄标题条（44px = 88rpx） =====
+   fixed 覆盖、不进文档流：出现/消失只改 opacity / transform，高度恒定 88rpx，
+   滚动过程中 scrollTop 与各段 offsetTop 都不受影响（不需要二次重测）。
+   层级：正文 < 窄条 60 < nav-bar 100。关闭态 pointer-events:none，手指可穿透继续滑动。 */
+.stick-hd {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 32rpx;
+  background: linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #fff7e8;
+  opacity: 0;
+  transform: translateY(-12rpx);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.stick-hd.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== 十二月方块条：随内容滚走，不再吸顶 ===== */
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 18rpx 22rpx;
+  background: #f2e9da;
+  border-bottom: 1rpx solid rgba(107, 90, 69, 0.12);
+}
+
+.chip {
+  position: relative;
+  flex: 1;
+  height: 56rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14rpx;
+  border: 1rpx solid rgba(107, 90, 69, 0.16);
+  background: rgba(255, 253, 247, 0.55);
+  font-family: var(--font-serif);
+  font-size: var(--fs-24);
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #4a3826;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+/* 月份方块：高度 56rpx → 热区 88rpx（44px），上下各 16rpx 仍在 18rpx 留白内。
+   12 个月等分一行，宽度约 53rpx（27px），横向无可扩空间（间距仅 6rpx），
+   属 17 处中宽度未到 44px 的三处之一。 */
+.chip::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+/* 当前月：暖金底 + 深棕字（9.76:1）。
+   2026-11-14 由「深底金字」改来：上方分类胶囊选中已是 #241c15 深块，
+   若月份条当前月也用深底，首屏会并排出现两个深块、互相抢注意力；
+   改成暖金填充后，两者用「实底 vs 暖金」区分，月份条结构与等分宽度均未动。 */
+.chip.is-on {
+  background: #e7d0a8;
+  border-color: var(--accent-gold-ink);
+  color: #33261a;
+  font-weight: 700;
+}
+
+/* 该分类下本月无条目（保留「变浅」语义，但不再压到看不清：0.50） */
+.chip.is-zero {
+  opacity: 0.5;
+}
+
+/* ===== 十二月长卷 ===== */
+.bands {
+  padding-bottom: 2rpx;
+}
+
+.anchor {
+  pointer-events: none;
+}
+
+.band {
+  border-bottom: 1rpx solid rgba(107, 90, 69, 0.12);
+  background:
+    radial-gradient(120% 150% at 100% 50%, rgba(181, 113, 58, 0.10), transparent 62%),
+    #faf5ea;
+}
+
+/* 月头：大序号 / 月名+农历 / 英文 / 金色项数 + 分项 / chevron */
+.mhead {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 22rpx 26rpx;
+  box-sizing: border-box;
+}
+
+.mhead-hover {
+  background: rgba(181, 113, 58, 0.06);
+}
+
+.mno {
+  flex: none;
+  width: 68rpx;
+  font-family: var(--font-serif);
+  font-size: var(--fs-40);
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #a87545;
+}
+
+.mtit {
+  flex: 1;
+  min-width: 0;
+}
+
+.mt-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.mt-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-36);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: #33261a;
+}
+
+.mt-lunar {
+  font-size: var(--fs-20);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.mt-en {
+  margin-top: 6rpx;
+  font-size: var(--fs-20);
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.mright {
+  flex: none;
+  text-align: right;
+}
+
+.mtot {
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.mtot-u {
+  margin-left: 4rpx;
+  font-size: var(--fs-22);
+  font-weight: 400;
+  color: #4a3826;
+}
+
+.mbrk {
+  margin-top: 8rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mbrk-l {
+  font-size: var(--fs-22);
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: #4a3826;
+}
+
+.mbrk-l.is-dim {
+  color: var(--text-muted);
+}
+
+.chev {
+  flex: none;
+  width: 18rpx;
+  height: 18rpx;
+  margin-left: 6rpx;
+  border-right: 4rpx solid var(--text-muted);
+  border-bottom: 4rpx solid var(--text-muted);
+  transform: translateY(-4rpx) rotate(45deg);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.band.is-open .chev {
+  transform: translateY(4rpx) rotate(-135deg);
+  border-color: var(--accent-gold-ink);
+}
+
+/* 该分类下本月为 0：序号与月名变浅，仍可点（展开给一句说明） */
+.band.is-zero .mno,
+.band.is-zero .mt-name {
+  opacity: 0.5;
+}
+
+/* ===== 展开区 ===== */
+.mbody {
+  padding: 0 26rpx 26rpx;
+  box-sizing: border-box;
+}
+
+/* 分组小标：标题 + 条数 + 细线 */
+.glabel {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 0 10rpx;
+}
+
+.glabel::after {
+  content: "";
+  flex: 1;
+  height: 1rpx;
+  background: rgba(107, 90, 69, 0.12);
+}
+
+.gl-t {
+  font-size: var(--fs-22);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.gl-n {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+/* 节令条目：日期 — 竖脊圆点 — 名称 — 类型签 */
+.alist {
+  position: relative;
+}
+
+.ev {
+  display: grid;
+  grid-template-columns: 140rpx 32rpx 1fr auto;
+  align-items: center;
+  min-height: 80rpx;
+  box-sizing: border-box;
+}
+
+.ev-d {
+  padding-right: 4rpx;
+  font-size: var(--fs-22);
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.ev-sp {
+  position: relative;
+  align-self: stretch;
+}
+
+.ev-sp::before {
+  content: "";
+  position: absolute;
+  left: 14rpx;
+  top: 0;
+  bottom: 0;
+  width: 2rpx;
+  background: rgba(107, 90, 69, 0.20);
+}
+
+.ev-sp::after {
+  content: "";
+  position: absolute;
+  left: 8rpx;
+  top: 50%;
+  margin-top: -7rpx;
+  width: 14rpx;
+  height: 14rpx;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 3rpx solid #8b7a63;
+}
+
+.ev-n {
+  padding-right: 16rpx;
+  font-size: var(--fs-28);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: #33261a;
+}
+
+.ev-tag {
+  flex: none;
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  background: rgba(107, 90, 69, 0.08);
+  border: 1rpx solid rgba(107, 90, 69, 0.18);
+}
+
+/* 类型签配色：节气 / 法定 / 传统 */
+.ev.k-solar .ev-tag {
+  color: #5c7040;
+  background: rgba(92, 112, 64, 0.10);
+  border-color: rgba(92, 112, 64, 0.30);
+}
+
+.ev.k-solar .ev-sp::after {
+  border-color: #5c7040;
+}
+
+.ev.k-holiday .ev-tag {
+  color: #9c3f2c;
+  background: rgba(156, 63, 44, 0.09);
+  border-color: rgba(156, 63, 44, 0.34);
+}
+
+.ev.k-holiday .ev-sp::after {
+  border-color: #9c3f2c;
+}
+
+.ev.k-traditional .ev-tag {
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.12);
+  border-color: rgba(181, 113, 58, 0.34);
+}
+
+.ev.k-traditional .ev-sp::after {
+  border-color: var(--accent-gold-ink);
+}
+
+.ev:first-child .ev-sp::before {
+  top: 24rpx;
+}
+
+/* 民俗：双列格，8 条封顶 */
+.folk {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+}
+
+.fcell {
+  height: 56rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 16rpx;
+  border-radius: var(--radius);
+  border: 1rpx solid rgba(107, 90, 69, 0.12);
+  background: rgba(255, 253, 247, 0.72);
+  font-size: var(--fs-24);
+  line-height: 1;
+  letter-spacing: 0;
+  color: #4a3826;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 核心传统节日 */
+.fcell.is-core {
+  background: #f7e7df;
+  border-color: rgba(156, 63, 44, 0.28);
+  color: #9c3f2c;
+  font-weight: 700;
+}
+
+.more {
+  width: 100%;
+  height: 64rpx;
+  margin-top: 12rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  border: 1rpx dashed rgba(181, 113, 58, 0.38);
+  background: rgba(255, 253, 247, 0.5);
+  font-size: var(--fs-22);
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.more-hover {
+  background: rgba(181, 113, 58, 0.10);
+}
+
+/* 民族节庆 */
+.er {
+  padding: 16rpx 0;
+  border-bottom: 1rpx dashed rgba(107, 90, 69, 0.12);
+}
+
+.er:last-child {
+  border-bottom: 0;
+}
+
+.er-top {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.er-n {
+  font-size: var(--fs-28);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: #33261a;
+}
+
+.er-tag {
+  flex: none;
+  padding: 2rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.10);
+  border: 1rpx solid rgba(181, 113, 58, 0.24);
+}
+
+.er-meta {
+  margin-top: 6rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+/* 地方特色节庆 */
+.lr {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx dashed rgba(107, 90, 69, 0.12);
+}
+
+.lr:last-child {
+  border-bottom: 0;
+}
+
+.lr-n {
+  font-size: var(--fs-26);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: #33261a;
+}
+
+.lr-r {
+  flex: none;
+  padding: 2rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  background: rgba(61, 46, 31, 0.05);
+}
+
+.lr-t {
+  margin-left: auto;
+  flex: none;
+  font-size: var(--fs-22);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+/* 空分类 / 空月份 */
+.empty {
+  padding: 28rpx 4rpx 8rpx;
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+/* ===== 页脚 / 其它 ===== */
+.footnote {
+  padding: 28rpx 32rpx 0;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.bottom-spacer {
+  height: 60rpx;
+}
+
+.to-top {
+  position: fixed;
+  right: 32rpx;
+  bottom: 64rpx;
+  width: 84rpx;
+  height: 84rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(51, 38, 26, 0.92);
+  box-shadow: 0 12rpx 28rpx -12rpx rgba(51, 38, 26, 0.6);
+  z-index: 40;
+}
+
+.to-top-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  margin-top: 8rpx;
+  border-left: 4rpx solid #fff7e8;
+  border-top: 4rpx solid #fff7e8;
+  transform: rotate(45deg);
+}

@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "沙盘推演",
+  "backgroundColor": "#efe2c6",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  }
+}

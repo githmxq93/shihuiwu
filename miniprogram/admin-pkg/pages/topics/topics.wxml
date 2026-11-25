@@ -1,0 +1,136 @@
+<import src="../../../templates/admin-nav/admin-nav.wxml" />
+<view class="page-wrapper">
+  <!-- 自定义导航栏 -->
+  <template is="admin-nav" data="{{title: '专题管理', safeAreaTop: safeAreaTop, emptyRightClass: 'nav-placeholder'}}" />
+
+  <!-- 主内容区 -->
+  <scroll-view class="content-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}" refresher-enabled="{{true}}" refreshertriggered="{{refreshing}}" bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore">
+    <view class="content-inner">
+      <!-- 加载状态 -->
+      <view class="error-retry" wx:if="{{loadFailed}}">
+        <text class="error-retry-text">数据加载失败，请检查网络后重试</text>
+        <view class="error-retry-btn" bindtap="onRefresh">重新加载</view>
+      </view>
+
+      <view class="loading-tip" wx:elif="{{loading}}">
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-state" wx:elif="{{topics.length === 0}}">
+        <text class="empty-icon">卷</text>
+        <text class="empty-text">暂无专题分类</text>
+        <text class="empty-hint">点击下方按钮创建第一个专题</text>
+      </view>
+
+      <!-- 专题分类列表 -->
+      <view class="topic-list" wx:else>
+        <view class="topic-card" wx:for="{{topics}}" wx:for-item="topic" wx:key="key" data-key="{{topic.key}}">
+          <!-- 卡片头部 -->
+          <view class="topic-card-header" bindtap="onToggleExpand" data-key="{{topic.key}}">
+            <view class="topic-icon">卷</view>
+            <view class="topic-info">
+              <view class="topic-title-row">
+                <text class="topic-title">{{topic.title}}</text>
+                <text class="topic-count">{{topic.articles ? topic.articles.length : 0}} 篇</text>
+              </view>
+              <text class="topic-desc">{{topic.description}}</text>
+            </view>
+            <text class="topic-expand-arrow {{topic._expanded ? 'expanded' : ''}}">›</text>
+          </view>
+
+          <!-- 操作按钮行 -->
+          <view class="topic-actions">
+            <view class="topic-action-btn edit" bindtap="onEditTopic" data-key="{{topic.key}}">
+              <text class="action-text">编辑分类</text>
+            </view>
+            <view class="topic-action-btn delete" bindtap="onDeleteTopic" data-key="{{topic.key}}">
+              <text class="action-text">删除分类</text>
+            </view>
+          </view>
+
+          <!-- 文章列表（展开） -->
+          <view class="articles-section {{topic._expanded ? 'expanded' : ''}}">
+            <view class="articles-divider"></view>
+
+            <view class="article-item" wx:for="{{topic.articles || []}}" wx:for-item="article" wx:key="id" data-key="{{topic.key}}" data-article-id="{{article.id}}">
+              <view class="article-main">
+                <view class="article-title-row">
+                  <text class="article-seq">#{{index + 1}}</text>
+                  <text class="article-title">{{article.title}}</text>
+                  <text class="article-pin-badge" wx:if="{{article.isPinned}}">已置顶</text>
+                </view>
+                <view class="article-meta">
+                  <text class="article-meta-item" wx:if="{{article.author}}">{{article.author}}</text>
+                  <text class="article-meta-item" wx:if="{{article.era}}">{{article.era}}</text>
+                </view>
+              </view>
+              <view class="article-actions">
+                <view class="article-action-btn {{article.isPinned ? 'unpin' : 'pin'}}" bindtap="onTogglePin" data-key="{{topic.key}}" data-article-id="{{article.id}}" data-pinned="{{article.isPinned}}">
+                  <text>{{article.isPinned ? '取消置顶' : '置顶'}}</text>
+                </view>
+                <view class="article-action-btn edit" bindtap="onEditArticle" data-key="{{topic.key}}" data-article-id="{{article.id}}">
+                  <text>编辑</text>
+                </view>
+                <view class="article-action-btn delete" bindtap="onDeleteArticle" data-key="{{topic.key}}" data-article-id="{{article.id}}">
+                  <text>删除</text>
+                </view>
+              </view>
+            </view>
+
+            <!-- 新增文章按钮 -->
+            <view class="add-article-btn" bindtap="onAddArticle" data-key="{{topic.key}}">
+              <text class="add-article-icon">＋</text>
+              <text class="add-article-text">新增文章</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 底部浮动新增专题按钮 -->
+  <view class="fab-btn" bindtap="onAddTopic">
+    <text class="fab-icon">＋</text>
+    <text class="fab-text">新增专题分类</text>
+  </view>
+
+  <!-- 弹窗遮罩 -->
+  <view class="modal-overlay {{modalVisible ? 'show' : ''}}" bindtap="onCloseModal">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{modalTitle}}</text>
+        <text class="modal-close" bindtap="onCloseModal">✕</text>
+      </view>
+      <view class="modal-body">
+        <view class="form-field" wx:for="{{formFields}}" wx:for-item="field" wx:key="name">
+          <text class="form-label">{{field.label}}<text class="form-required" wx:if="{{field.required}}">*</text></text>
+          <input
+            wx:if="{{field.type === 'text'}}"
+            class="form-input"
+            type="text"
+            placeholder="{{field.placeholder}}"
+            value="{{field.value}}"
+            bindinput="onFormInput"
+            data-field="{{field.name}}"
+          />
+          <textarea
+            wx:elif="{{field.type === 'textarea'}}"
+            class="form-textarea"
+            placeholder="{{field.placeholder}}"
+            value="{{field.value}}"
+            bindinput="onFormInput"
+            data-field="{{field.name}}"
+          />
+        </view>
+        <view class="form-error" wx:if="{{formError}}">{{formError}}</view>
+      </view>
+      <view class="modal-footer">
+        <view class="modal-btn cancel" bindtap="onCloseModal">取消</view>
+        <view class="modal-btn confirm" bindtap="onConfirmModal">确定</view>
+      </view>
+    </view>
+  </view>
+</view>

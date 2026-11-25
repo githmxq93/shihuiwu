@@ -1,0 +1,389 @@
+<page-meta root-background-color="#f4ede1" />
+<wxs module="stackWxs" src="./stack.wxs"></wxs>
+<view class="page" bindtap="closeEmperorDropdown">
+  <!-- ===== Nav Bar ===== -->
+  <view class="nav-bar" style="padding-top: {{safeAreaTop}}px; height: {{safeAreaTop + 44}}px;">
+    <view class="nav-bar-inner" style="height:44px;"></view>
+  </view>
+
+  <!-- ===== Loading State（B 方案：420ms 快转，超时由 showSkeleton 接管撤罩显骨架） ===== -->
+  <view class="loading-mask" wx:if="{{loading && exactMatches.length === 0 && relatedMatches.length === 0 && carouselFigures.length === 0 && !showSkeleton}}">
+    <view class="loading-spinner">
+      <view class="spinner"></view>
+      <text class="loading-text">世慧屋载入中...</text>
+    </view>
+  </view>
+
+  <!-- ===== Main Content ===== -->
+  <scroll-view class="content-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}" lower-threshold="50" scroll-top="{{scrollTopVal}}" bindscroll="onContentScroll" refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}" refresher-default-style="none" bindrefresherrefresh="onRefresherRefresh">
+    <view class="hero-section">
+      <view class="main-title">
+        <view class="title-text">世慧屋</view>
+      </view>
+
+      <!-- 筛选条件展示条已移除：筛选入口 UI 早已不存在，此条永远不满足显示条件 -->
+
+      <!-- 搜索框：胶囊内左侧为「搜索范围」触发器（点开下方下拉面板），右侧为输入框、放大镜与清除按钮 -->
+      <!-- 面板展开时用实测高度撑开下边距（margin-bottom），把下方统计条与卡片整体下推，避免面板压住卡片 -->
+      <view id="guide-search" class="search-box" style="{{emperorDropdownOpen && empPanelPad ? 'margin-bottom:' + empPanelPad + 'px;' : ''}}">
+        <view
+          id="guide-emp-filter"
+          class="emp-trigger {{emperorDropdownOpen ? 'emp-trigger-open' : ''}}"
+          catchtap="toggleEmperorDropdown"
+        >
+          <text class="emp-trigger-text">{{emperorFilterLabel}}</text>
+          <view class="emp-trigger-arrow css-tri-up"></view>
+        </view>
+        <input class="search-input" type="text" placeholder="搜索名人、朝代或关键词" placeholder-class="search-placeholder" value="{{searchQuery}}" bindinput="onSearchInput" bindfocus="onSearchFocus" bindblur="onSearchBlur" bindconfirm="onSearchConfirm" confirm-type="search" />
+        <view class="search-icon">
+          <view class="search-icon-circle"></view>
+          <view class="search-icon-handle"></view>
+        </view>
+        <view class="search-clear" wx:if="{{searchQuery}}" bindtap="onClearSearch">✕</view>
+
+        <!-- 输入联想（自动补全）：/api/figures/autocomplete 命中的人物，点选即检索。
+             catchtap 阻止冒泡到页面根节点（那里负责「点面板外收起范围面板」）；
+             浮层与「搜索范围」面板互斥（输入时范围面板已收起） -->
+        <view class="sug-dropdown" wx:if="{{showSuggests && suggests.length}}" catchtap="onSugPanelTap">
+          <view
+            class="sug-item"
+            wx:for="{{suggests}}"
+            wx:key="id"
+            data-index="{{index}}"
+            hover-class="sug-item-hover"
+            catchtap="onTapSuggest"
+          >
+            <text class="sug-name">{{item.name}}</text>
+            <view class="sug-meta">
+              <text class="sug-dynasty" wx:if="{{item.dynasty}}">{{item.dynasty}}</text>
+              <view class="sug-icon"></view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 搜索范围下拉面板（全部 / 帝王 / 非帝王，与 Web 端同文案同口径）：
+             仅对「有关键词的检索结果」生效；无关键词时触发器置灰不可点，首页随机展示不受影响。
+             catchtap：面板内点击不冒泡到页面根节点（页面根节点的 bindtap 负责「点面板外收起」） -->
+        <view class="emp-dropdown" wx:if="{{emperorDropdownOpen}}" catchtap="closeEmperorDropdown">
+          <view class="emp-dropdown-list">
+            <view
+              wx:for="{{emperorFilterOptions}}"
+              wx:key="label"
+              class="emp-dropdown-item {{emperorFilter === item.value ? 'emp-dropdown-item-selected' : ''}} {{item.value === '1' ? 'emp-item-emperor' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="onEmperorFilterTap"
+            >
+              <view class="emp-item-badge">{{item.icon}}</view>
+              <text class="emp-item-label">{{item.label}}</text>
+            </view>
+          </view>
+          <!-- 无关键词时选择可保存，但筛选要等有搜索词才生效 -->
+          <view class="emp-dropdown-hint" wx:if="{{!searchQuery}}">输入关键词后，本筛选才生效</view>
+        </view>
+      </view>
+
+      <view class="stats-bar" wx:if="{{statsReady}}">
+        <text class="stats-text">已收录 {{figuresCount > 0 ? figuresCount : '……'}} 位名人</text>
+        <text class="stats-sep">|</text>
+        <text class="stats-text">纵览历代人物</text>
+      </view>
+  </view>
+
+  <!-- 旧 3×4 skeleton-grid 已移除：它被 loading-mask 全程盖住（死 UI），
+       且形状与真实首屏（整宽牌堆大卡）不符。现行骨架见 mfc-section /
+       article-section 内的 sk-* 块（B 方案：快转 mask + 结构镜像骨架兜底）。 -->
+
+  <view class="error-retry" wx:if="{{showRetry}}">
+    <text class="error-retry-text">数据加载失败，请检查网络后重试</text>
+    <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <!-- ===== 乱序牌堆（20 条 · 顶卡拖走循环） =====
+       加载态 B 方案：区块容器在骨架期也渲染（section header 立即可见），
+       内容位在「真实牌堆 / 结构骨架」间 wx:if-wx:elif 原位切换 ⇒ 数据到位零跳变 -->
+  <view wx:if="{{!searchQuery && (carouselFigures.length > 0 || showSkeleton)}}" class="mfc-section">
+    <view class="mfc-header">
+      <view class="section-header mfc-section-header">
+        <view class="section-header-bar"></view>
+        <text class="section-header-title">历史人物</text>
+      </view>
+    </view>
+
+    <!-- 乱序牌堆：顶卡左右拖走露出下一张，N 张循环（轻触顶卡进详情） -->
+    <block wx:if="{{carouselFigures.length > 0}}">
+    <view class="stack-wrap home-fade-in">
+      <view
+        class="stack-card {{item._dragging ? 'stack-card-dragging' : ''}}"
+        wx:for="{{carouselFigures}}"
+        wx:key="_ukey"
+        style="{{item._style}}"
+        data-sidx="{{index}}"
+        data-id="{{item.id}}"
+        data-ox="{{item._ox}}"
+        data-oy="{{item._oy}}"
+        data-rot="{{item._rot}}"
+        data-winw="{{winW}}"
+        bindtouchstart="{{stackWxs.touchStart}}"
+        bindtouchmove="{{stackWxs.touchMove}}"
+        bindtouchend="{{stackWxs.touchEnd}}"
+        bindtouchcancel="{{stackWxs.touchCancel}}"
+      >
+        <view class="stack-tag stack-tag-left" style="opacity: {{item._tagL}};">留在牌堆</view>
+        <view class="stack-tag stack-tag-right" style="opacity: {{item._tagR}};">滑走 ›</view>
+        <view class="stack-avatar-col">
+          <view class="stack-avatar" style="background: {{item.avatarGradient}};">
+            <!-- 有真实图片头像才显示图；否则一律姓名首字（不用 emoji 字形） -->
+            <image wx:if="{{item.avatarImage}}" class="stack-avatar-img" src="{{item.avatarImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="onAvatarError" data-index="{{index}}" />
+            <text wx:else class="stack-avatar-char">{{item.avatarChar}}</text>
+          </view>
+        </view>
+        <view class="stack-info-col">
+          <view class="stack-name-row">
+            <text class="stack-name">{{item.name}}</text>
+            <text wx:if="{{item.years}}" class="stack-years">{{item.years}}</text>
+          </view>
+          <view class="stack-divider"></view>
+          <text class="stack-intro-label">基 本 介 绍</text>
+          <text class="stack-intro">{{item.intro}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="stack-hint">
+      <text class="mfc-hint-text">按住最上面的卡片左右拖动松手 · {{carouselFigures.length}} 位人物循环</text>
+    </view>
+    </block>
+
+    <!-- 牌堆骨架：372rpx 纸卡镜像（圆头像 + 名称/年份条 + 分隔线 + 简介三行） -->
+    <view wx:elif="{{showSkeleton}}" class="sk-stack-card">
+      <view class="sk-stack-avatar sk-shimmer"></view>
+      <view class="sk-stack-info">
+        <view class="sk-line sk-line-name sk-shimmer"></view>
+        <view class="sk-line sk-line-years sk-shimmer"></view>
+        <view class="sk-divider"></view>
+        <view class="sk-line sk-line-intro sk-shimmer"></view>
+        <view class="sk-line sk-line-intro sk-shimmer"></view>
+        <view class="sk-line sk-line-intro sk-shimmer"></view>
+      </view>
+    </view>
+  </view>
+
+    <!-- ===== 特色功能磁贴（深棕反白） ===== -->
+    <view wx:if="{{!searchQuery}}" id="guide-features" class="feature-section">
+      <view class="section-header">
+        <view class="section-header-bar"></view>
+        <text class="section-header-title">快速查询</text>
+      </view>
+      <view id="guide-feature-grid" class="feature-grid">
+        <view class="feature-tile" hover-class="feature-tile-hover" hover-stay-time="80" bindtap="onNavPage" data-url="/timeline-pkg/pages/calendar/calendar">
+          <view class="feature-tile-name">年份查询</view>
+          <view class="feature-tile-desc">年号 · 干支 · 七历对照</view>
+          <view class="feature-tile-glyph">纪</view>
+        </view>
+        <view class="feature-tile" hover-class="feature-tile-hover" hover-stay-time="80" bindtap="onNavPage" data-url="/timeline-pkg/pages/timeline/timeline">
+          <view class="feature-tile-name">大事年表</view>
+          <view class="feature-tile-desc">某年发生了什么</view>
+          <view class="feature-tile-glyph">年</view>
+        </view>
+        <view class="feature-tile" hover-class="feature-tile-hover" hover-stay-time="80" bindtap="onNavPage" data-url="/pages/dynasty-timeline/dynasty-timeline">
+          <view class="feature-tile-name">朝代时间轴</view>
+          <view class="feature-tile-desc">纵览五千年更迭</view>
+          <view class="feature-tile-glyph">朝</view>
+        </view>
+        <view class="feature-tile" hover-class="feature-tile-hover" hover-stay-time="80" bindtap="onNavPage" data-url="/pages/emperors/emperors">
+          <view class="feature-tile-name">历代帝王</view>
+          <view class="feature-tile-desc">各朝帝王 · 在位时间</view>
+          <view class="feature-tile-glyph">帝</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 特别专题快速入口（专题页「特别专题」里的铭记历史，仅首页快捷入口） ===== -->
+    <view wx:if="{{!searchQuery}}" class="special-topic-section">
+      <view class="section-header">
+        <view class="section-header-bar"></view>
+        <text class="section-header-title">特别专题</text>
+      </view>
+      <view class="feature-grid">
+        <view class="feature-tile feature-tile-wide" hover-class="feature-tile-hover" hover-stay-time="80" bindtap="onNavPage" data-url="/topic-pkg/pages/remember/remember">
+          <view class="feature-tile-name">铭记历史</view>
+          <view class="feature-tile-desc">1931—1945 时间线与档案</view>
+          <view class="feature-tile-glyph">忆</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 专题文章（只列最近发布的 10 篇，不显示分类标签） =====
+         卡片视觉与「专题」页文章列表同风格（编号 + 标题/摘要/标签 + 箭头）。
+         加载态 B 方案：容器在骨架期也渲染，内容位在「真实列表 / 文章骨架」间原位切换 -->
+    <view wx:if="{{!searchQuery && (latestArticles.length > 0 || showSkeleton)}}" class="article-section">
+      <view class="section-header">
+        <view class="section-header-bar"></view>
+        <text class="section-header-title">专题文章</text>
+      </view>
+      <view class="article-list home-fade-in" wx:if="{{latestArticles.length > 0}}">
+        <view
+          class="article-item"
+          hover-class="article-item-hover"
+          hover-stay-time="80"
+          wx:for="{{latestArticles}}"
+          wx:key="id"
+          data-index="{{index}}"
+          bindtap="onOpenArticle"
+        >
+          <view class="article-num">{{item.indexLabel}}</view>
+          <view class="article-main">
+            <view class="article-title">{{item.title}}</view>
+            <view class="article-summary" wx:if="{{item.summaryClean}}">{{item.summaryClean}}</view>
+            <view class="article-foot">
+              <text class="article-badge" wx:if="{{item.era}}">{{item.era}}</text>
+              <text class="article-badge article-badge-ghost" wx:else>{{item.categoryLabel}}</text>
+              <text class="article-figures" wx:if="{{item.figuresText}}">
+                <text class="article-figures-ico">⇥</text>关联：{{item.figuresText}}
+              </text>
+            </view>
+          </view>
+          <text class="article-arrow">›</text>
+        </view>
+      </view>
+      <!-- 文章骨架：镜像 .article-item（编号 + 标题条 + 摘要两行 + 徽标条）×3 -->
+      <view wx:elif="{{showSkeleton}}" class="sk-article-list">
+        <view class="sk-article-item" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+          <view class="sk-line sk-article-num sk-shimmer"></view>
+          <view class="sk-article-main">
+            <view class="sk-line sk-line-title sk-shimmer"></view>
+            <view class="sk-line sk-line-text sk-shimmer"></view>
+            <view class="sk-line sk-line-text sk-shimmer"></view>
+            <view class="sk-line sk-line-badge sk-shimmer"></view>
+          </view>
+        </view>
+      </view>
+      <!-- 列表收尾：末卡之后的留白 + 一行纯提示（无跳转、无按钮）。
+           只在有文章数据的纯浏览态渲染；搜索态整块 article-section 不渲染，
+           加载态被 loading-mask 盖住，骨架期走 wx:elif 分支，均不会出现 -->
+      <view class="article-list-end" wx:if="{{latestArticles.length > 0}}">
+        <text class="article-list-end-text">到底了 · 更多文章点专题</text>
+      </view>
+    </view>
+
+    <block wx:if="{{searchQuery}}">
+      <!-- 旧式「单候选自动跳转」小横幅：仅在 matched 存在且非多选卡片时出现；
+           多选卡片场景无 matched 字段，必须隐藏，否则会渲染出空的「已为你匹配「」」 -->
+      <view wx:if="{{searchHint.matched && (!searchHint.candidates || searchHint.candidates.length < 2)}}" class="search-correction-hint">
+        <text class="search-correction-text">未找到「{{searchHint.original}}」，已为你匹配「{{searchHint.matched}}」</text>
+      </view>
+
+      <view wx:if="{{searchHint.candidates.length >= 2}}" class="sp-card">
+        <view class="sp-head">
+          <view class="sp-dot"></view>
+          <view class="sp-head-text">
+            <text class="sp-title">未找到「{{searchHint.original}}」</text>
+            <text class="sp-sub">你是不是想找以下人物？点选即可查看</text>
+          </view>
+        </view>
+        <view class="sp-grid">
+          <view class="sp-person" hover-class="sp-person-hover" hover-stay-time="80" wx:for="{{searchHint.candidates}}" wx:key="id" bindtap="onPickCorrection" data-alias="{{item.alias}}">
+            <view class="sp-avatar">{{item._char}}</view>
+            <view class="sp-info">
+              <view class="sp-name">{{item.name}}</view>
+              <view class="sp-meta">
+                <text wx:if="{{item.dynasty}}" class="sp-dyn">{{item.dynasty}}</text>
+                <text class="sp-tag">匹配「{{item.alias}}」</text>
+              </view>
+            </view>
+            <view class="sp-go">选择 ›</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{exactMatches.length > 0}}">
+        <view class="search-section-header">
+          <view class="section-header">
+            <view class="section-header-bar"></view>
+            <text class="section-header-title">搜索结果</text>
+          </view>
+          <text class="section-header-count">共 {{exactMatches.length}} 位</text>
+        </view>
+        <!-- 同名多人（≥2 位）：先点选一位人物，再看其关系网，避免同时展示两套关系造成混淆 -->
+        <view wx:if="{{exactMatches.length > 1}}" class="search-pick-hint">
+          <text wx:if="{{selectedMatchId}}" class="search-pick-hint-text">当前查看：{{pickedMatchName}}（点其他卡片可切换）；进详情请点「详情 ›」</text>
+          <text wx:else class="search-pick-hint-text">找到 {{exactMatches.length}} 位同名人物，请点选其中一位查看关系网；进详情请点「详情 ›」</text>
+        </view>
+
+        <view class="sr-list">
+          <!-- ≥2 位时：点卡片=选择人物（只看此人关系网）；仅 1 位时=进详情（同旧版） -->
+          <view class="sr-card {{item._picked ? 'sr-card-picked' : ''}}" hover-class="sr-card-hover" hover-stay-time="80" wx:for="{{exactMatches}}" wx:key="id" bindtap="onSearchCardTap" data-id="{{item.id}}">
+            <view class="sr-avatar">{{item._char}}</view>
+            <view class="sr-body">
+              <view class="sr-name">{{item.name}}</view>
+              <view class="sr-badges">
+                <text wx:if="{{item.dynasty}}" class="sr-badge">{{item.dynasty}}</text>
+                <text wx:if="{{item.nationality}}" class="sr-badge">{{item.nationality}}</text>
+                <text wx:if="{{item._picked}}" class="sr-picked-badge">查看中</text>
+              </view>
+            </view>
+            <view wx:if="{{exactMatches.length > 1}}" class="sr-detail-btn" catchtap="onTapFigure" data-id="{{item.id}}">详情 ›</view>
+            <text wx:else class="sr-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{relatedMatches.length > 0}}">
+        <view class="search-section-header related-header">
+          <view class="section-header">
+            <view class="section-header-bar"></view>
+            <text class="section-header-title">{{pickedMatchName ? pickedMatchName + ' 的关系' : '相关人员'}}</text>
+          </view>
+          <text class="section-header-count">共 {{relatedMatches.length}} 位</text>
+        </view>
+        <view class="sr-list">
+          <view class="sr-card rel-card" hover-class="sr-card-hover" hover-stay-time="80" wx:for="{{relatedMatches}}" wx:key="id" bindtap="onTapFigure" data-id="{{item.id}}">
+            <view class="sr-avatar rel-avatar">{{item._char}}</view>
+            <view class="sr-body">
+              <view class="sr-name">{{item.name}}</view>
+              <view class="rel-meta">
+                <text wx:if="{{item.dynasty}}">{{item.dynasty}}</text>
+                <text wx:if="{{item.dynasty && item.nationality}}"> · </text>
+                <text wx:if="{{item.nationality}}">{{item.nationality}}</text>
+                <text wx:if="{{(item.dynasty || item.nationality) && item._relationDesc}}"> · </text>
+                <text wx:if="{{item._relationDesc}}">{{item._relationDesc}}</text>
+              </view>
+            </view>
+            <text wx:if="{{item._relationType}}" class="rel-badge {{item._relClass}}">{{item._relationType}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="empty-state" wx:elif="{{!loading && exactMatches.length === 0 && relatedMatches.length === 0 && searchQuery}}">
+      <text class="empty-text">未找到相关内容</text>
+      <text class="empty-hint">试试其他关键词或调整筛选条件</text>
+    </view>
+    <view class="empty-state" wx:elif="{{!loading && exactMatches.length === 0 && relatedMatches.length === 0}}">
+      <text class="empty-text">未找到匹配的名人</text>
+      <text class="empty-hint">试试其他关键词或筛选条件吧</text>
+    </view>
+
+    <view class="tabbar-space"></view>
+  </scroll-view>
+
+  <!-- ===== Back to Top ===== -->
+  <view class="back-top-btn {{showBackTop ? 'back-top-show' : ''}}" bindtap="onBackToTop">
+    <text class="back-top-icon">↑</text>
+  </view>
+
+  <!-- ===== 文章浮层：与专题页 / 人物页同一个组件 =====
+       点文章就地浮起（圆角面板 + 抓手 + 两档拖动 + 遮罩），首页本身留在底下透出，
+       不再 navigateTo 到整页。深链 / 分享仍走 pages/article 兜底。 -->
+  <articleOverlay
+    currentArticle="{{currentArticle}}"
+    home-text="返回"
+    bind:close="onCloseArticle"
+    bind:nav="onOverlayNav"
+    wx:if="{{currentArticle}}"
+  />
+
+  <!-- 全站首次使用引导：步骤与文案见 config/guide-steps.js；
+       scrollto 用于把四宫格滚进视口（页面主体是 scroll-view，组件改不了它的滚动位置） -->
+  <guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />
+</view>

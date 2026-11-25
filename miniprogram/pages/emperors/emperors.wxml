@@ -1,0 +1,239 @@
+<view class="ep-page">
+  <nav-bar
+    title="历代帝王"
+    safeAreaTop="{{safeAreaTop}}"
+    dark="{{true}}"
+    actionText="朝代"
+    bind:action="onOpenDir"
+  />
+
+  <!-- 深色头：固定常驻。padding-top 由 navH（状态栏 + 44）算出，
+       下方 6 段时期刻度常驻；滚动后标题与副行收起，只留刻度。 -->
+  <view id="epHead" class="ep-head {{compact ? 'is-compact' : ''}}" style="padding-top: {{navH}}px">
+    <view id="epFold" class="h-fold">
+      <view class="h-title">历代帝王</view>
+      <view class="h-sub" wx:if="{{!loading && sectionCount}}">
+        <text class="h-num">{{sectionCount}}</text> 朝 · <text class="h-num">{{totalEmperors}}</text> 位 · 一条时间轴读完
+      </view>
+      <view class="h-sub" wx:else>历代帝王名录</view>
+    </view>
+
+    <view id="guide-eras" class="era-strip">
+      <view
+        wx:for="{{eras}}"
+        wx:key="key"
+        class="era {{item.on ? 'era-on' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onTapEra"
+      >
+        <text class="era-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 34px 吸顶条：替代「左侧年份列吸顶」。固定在头部下沿，随滚动显示当前朝代 -->
+  <view class="sticky {{stickyOn ? 'sticky-on' : ''}}" style="top: {{headH}}px" wx:if="{{curSec}}">
+    <text class="sticky-name">{{curSec.name}}</text>
+    <text class="sticky-yr">{{curSec.years}}</text>
+    <text class="sticky-cnt">{{curSec.count}} 位</text>
+  </view>
+
+  <scroll-view
+    class="page-scroll"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    lower-threshold="300"
+    scroll-top="{{scrollTop}}"
+    scroll-with-animation="{{scrollAnim}}"
+    bindscroll="onScroll"
+    bindscrolltolower="onAppend"
+  >
+    <view class="head-spacer" style="height: {{headSpacerH}}px"></view>
+
+    <view class="skeleton-wrap" wx:if="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <view class="error-retry" wx:elif="{{loadFailed}}">
+      <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <view class="empty-state" wx:elif="{{!viewItems || viewItems.length === 0}}">
+      <view class="empty-text">暂无帝王数据</view>
+    </view>
+
+    <block wx:else>
+      <!-- 窗口化渲染：padTop 补出未渲染内容的总高，滚动位置不会跳 -->
+      <view class="pad-top" style="height: {{padTop}}px"></view>
+
+      <block wx:for="{{viewItems}}" wx:key="key">
+        <!-- 朝代段头：42px 固定高 -->
+        <view wx:if="{{item.kind === 'sec'}}" class="sec">
+          <text class="sec-name">{{item.name}}</text>
+          <text class="sec-yr">{{item.years}}</text>
+          <text class="sec-cnt">{{item.count}} 位</text>
+        </view>
+
+        <!-- 政权索引（十六国 / 五代十国）：先分组（五代 / 十国 / 十六国），
+             组内再列政权；点政权展开该政权的帝王行 -->
+        <view wx:elif="{{item.kind === 'regime'}}" class="regime-groups">
+          <view wx:for="{{item.groups}}" wx:key="key" wx:for-item="g" class="rg-group">
+            <view wx:if="{{g.name}}" class="rg-group-head">
+              <text class="rgg-name">{{g.name}}</text>
+              <text class="rgg-meta">{{g.meta}}</text>
+            </view>
+            <view wx:if="{{g.note}}" class="rgg-note">{{g.note}}</view>
+            <view class="regime-grid">
+              <view
+                wx:for="{{g.regimes}}"
+                wx:key="name"
+                wx:for-item="r"
+                class="regime-chip {{item.open == r.name ? 'regime-chip-on' : ''}}"
+                data-sec="{{item.secId}}"
+                data-name="{{r.name}}"
+                bindtap="onPickRegime"
+                hover-class="regime-chip-hover"
+                hover-stay-time="50"
+              >
+                <text class="rg-name">{{r.name}}</text>
+                <text class="rg-count">{{r.count}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 南朝 / 北朝：段内按政权分支，行缩进；不做全量缩进 -->
+        <view wx:elif="{{item.kind === 'branch' || item.kind === 'subhead'}}" class="branch-head">
+          <text class="branch-name">{{item.name}}</text>
+          <text class="branch-yr">{{item.years}}</text>
+          <text class="branch-cnt">{{item.count}} 位</text>
+        </view>
+
+        <!-- 并存支轴：虚线支轴 + 方点 + 「并存」徽标（北宋 → 辽、南宋 → 西夏）。
+             支轴下面紧跟该政权的帝王行，不再是独立段，也不需要「查看」入口 -->
+        <view wx:elif="{{item.kind === 'peer'}}" class="peer-branch">
+          <view class="pb-dot"></view>
+          <text class="pb-name">{{item.name}}</text>
+          <text class="pb-badge">并存</text>
+          <text class="pb-yr">{{item.years}}</text>
+          <text class="pb-cnt">{{item.count}} 位</text>
+        </view>
+
+        <!-- 帝王行：44px 定高，整行可点，点开底部半屏抽屉 -->
+        <view
+          wx:else
+          class="node {{item.sub ? 'node-sub' : ''}} {{item.id == selId ? 'node-on' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onTapRow"
+          hover-class="node-hover"
+          hover-stay-time="50"
+        >
+          <text class="n-yr">{{item.yr || '待补'}}</text>
+          <view class="n-dot"></view>
+          <text class="n-nm">{{item.tag ? item.tag + '·' : ''}}{{item.name}}</text>
+          <text class="n-dur">{{item.dur}}</text>
+        </view>
+      </block>
+
+      <view class="list-tail" wx:if="{{!allLoaded}}">继续上滑 · 还有 {{remain}} 位</view>
+
+      <block wx:if="{{allLoaded}}">
+        <view class="emp-foot">
+          在位时间段以人工整理的历史年表为准，未收录者按人物事件的「即位 / 退位 / 卒年」自动推定；排序依据即位年份，个别位置可能与史实略有出入。
+        </view>
+        <view class="list-done">共 {{totalEmperors}} 位 · 点击任一帝王查看简介</view>
+      </block>
+    </block>
+
+    <view class="bottom-spacer"></view>
+    <view class="safe-area-bottom"></view>
+  </scroll-view>
+
+  <!-- ── 半屏抽屉：人物介绍 ── -->
+  <view class="sheet-mask" wx:if="{{sheetOpen}}" bindtap="onCloseSheet" catchtouchmove="onNoop"></view>
+  <view
+    class="sheet {{sheetDragging ? 'is-dragging' : ''}}"
+    wx:if="{{sheetOpen}}"
+    style="height: {{sheetH}}px; transform: translateY({{sheetDrag}}px)"
+  >
+    <view class="sheet-grab" bindtouchstart="onGrabStart" catchtouchmove="onGrabMove" bindtouchend="onGrabEnd">
+      <view class="sheet-grab-bar"></view>
+    </view>
+
+    <view class="sheet-body">
+      <scroll-view class="sheet-scroll" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+        <view class="sheet-main">
+          <view class="sheet-name">{{sheet.name}}</view>
+          <view class="sheet-sub" wx:if="{{sheet.sub}}">{{sheet.sub}}</view>
+
+          <view class="sheet-grid">
+            <view class="sheet-cell">
+              <text class="cell-k">生卒</text>
+              <text class="cell-v">{{sheet.life || '待补'}}</text>
+            </view>
+            <view class="sheet-cell">
+              <text class="cell-k">在位</text>
+              <text class="cell-v">{{sheet.reign || '待补'}}<text class="cell-v-sub" wx:if="{{sheet.years}}"> · {{sheet.years}}</text></text>
+            </view>
+            <view class="sheet-cell">
+              <text class="cell-k">年号</text>
+              <text class="cell-v cell-v-era {{sheet.era ? '' : 'cell-v-na'}}">{{sheet.era || '待补'}}</text>
+            </view>
+          </view>
+
+          <view class="sheet-h">简介</view>
+          <view class="sheet-intro" wx:if="{{sheet.intro}}">{{sheet.intro}}</view>
+          <view class="sheet-intro sheet-intro-na" wx:else>暂无收录简介</view>
+
+          <view class="sheet-src">资料源：{{sheet.source || '—'}} · {{sheet.verified ? '已核验' : '未核验'}} · 档案 #{{sheet.id}}</view>
+        </view>
+      </scroll-view>
+      <view class="sheet-fade"></view>
+    </view>
+
+    <view class="sheet-foot">
+      <view class="sheet-btn" bindtap="onOpenSheetFigure" hover-class="sheet-btn-hover">查看完整人物档案</view>
+    </view>
+  </view>
+
+  <!-- ── 朝代直达：保留原 28 个入口，按 6 段分组 ── -->
+  <view class="dir-mask" wx:if="{{dirOpen}}" bindtap="onCloseDir" catchtouchmove="onNoop"></view>
+  <view class="dir-sheet" wx:if="{{dirOpen}}" catchtouchmove="onNoop">
+    <view class="dir-grab"><view class="dir-grab-bar"></view></view>
+    <view class="dir-head">
+      <text class="dir-title">朝代直达</text>
+      <text class="dir-sub">{{sectionCount}} 朝 · 点选即定位</text>
+    </view>
+    <scroll-view class="dir-body" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+      <view class="dir-group" wx:for="{{dirGroups}}" wx:key="key" wx:for-item="g">
+        <view class="dir-era">{{g.name}}</view>
+        <view class="dir-grid">
+          <view
+            wx:for="{{g.list}}"
+            wx:key="id"
+            wx:for-item="d"
+            class="dir-item"
+            data-id="{{d.id}}"
+            bindtap="onPickDynasty"
+            hover-class="dir-item-hover"
+          >
+            <text class="dir-item-name">{{d.name}}</text>
+            <text class="dir-item-count">{{d.count}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="dir-bottom"></view>
+    </scroll-view>
+  </view>
+
+  <!-- 首次进入的分步引导：文案与步骤在 config/guide-steps.js 的 emperors 里 -->
+  <guide-layer id="guideLayer" />
+</view>

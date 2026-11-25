@@ -1,0 +1,187 @@
+<view class="lb-page">
+  <nav-bar title="解放战争" safeAreaTop="{{safeAreaTop}}" />
+
+  <!-- 大区导航：scroll-view 内 position:sticky 不生效 ⇒ fixed 挂在 nav 下方，
+       由 .page-scroll 的 padding-top 给内容让位 -->
+  <view class="era-nav" style="top:{{navH}}px">
+    <scroll-view class="era-nav-scroll" scroll-x="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+      <view class="era-nav-inner">
+        <view
+          wx:for="{{regionTabs}}"
+          wx:key="key"
+          class="era-tab {{activeKey === item.key ? 'active' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onTapRegion"
+          hover-class="era-tab-hover"
+        >
+          <text class="era-tab-name">{{item.name}}</text>
+          <text class="era-tab-count">{{item.cityCount}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view
+    class="page-scroll"
+    style="padding-top:{{navH + 52}}px"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollToId}}"
+    scroll-with-animation="{{true}}"
+    bindscroll="onScroll"
+  >
+    <view id="lib-top" class="hero">
+      <view class="hero-badge">山河重光</view>
+      <view class="hero-title">各地<text class="hero-title-accent">解放战争</text>时间线</view>
+      <view class="hero-subtitle">1945 — 1951 · 从北国到雪域</view>
+      <view class="hero-intro">1945年秋，东北多城率先解放，拉开了解放全国的序幕。此后数年，人民解放军从东北一路向南、向西推进，至1951年西藏和平解放，大陆全境解放。下面按地理大区，梳理每一寸山河重光的时刻；文末另附 {{campaignCount}} 场主要战役的经过。</view>
+
+      <view class="hero-stats">
+        <block wx:for="{{stats}}" wx:key="label" wx:for-index="si">
+          <view class="stat-item">
+            <text class="stat-num">{{item.value}}</text>
+            <text class="stat-label">{{item.label}}</text>
+          </view>
+          <view wx:if="{{si < stats.length - 1}}" class="stat-divider"></view>
+        </block>
+      </view>
+    </view>
+
+    <view class="error-retry" wx:if="{{loadFailed}}">
+      <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <!-- 加载中骨架：弱网下内容区尚无数据，若直接渲染空数组就是整片空白 -->
+    <view class="skeleton-wrap" wx:elif="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <!-- 请求成功但内容为空（区别于加载失败） -->
+    <view class="sk-empty" wx:elif="{{isEmpty}}">
+      <view class="sk-empty-icon">卷</view>
+      <view class="sk-empty-text">暂无相关内容</view>
+    </view>
+
+    <view wx:else>
+      <!-- 切换大区后滚到这里：恰好落在固定导航下方 -->
+      <view id="lib-content" class="content-anchor"></view>
+
+      <view class="content">
+        <!-- 当前大区小结：内凹凹槽 -->
+        <view class="region-panel">
+          <view class="rp-row">
+            <text class="rp-name">{{view.name}}</text>
+            <text class="rp-label">{{view.timeLabel}}</text>
+          </view>
+          <view class="rp-meta">
+            <text>{{view.provinceCount}} 个省级行政区</text>
+            <text class="rp-sep">·</text>
+            <text>{{view.cityCount}} 个城市 / 地区</text>
+          </view>
+        </view>
+
+        <!-- 省份卡片：有下辖城市的可展开，默认折叠 -->
+        <view class="prov-list">
+          <view
+            wx:for="{{view.provinces}}"
+            wx:for-item="p"
+            wx:for-index="pi"
+            wx:key="name"
+            class="prov-card {{p.open ? 'open' : ''}}"
+          >
+            <view
+              class="prov-head"
+              data-i="{{pi}}"
+              bindtap="onToggleProvince"
+              hover-class="{{p.hasCities ? 'prov-head-hover' : 'none'}}"
+            >
+              <view class="prov-top">
+                <text class="prov-name">{{p.name}}</text>
+                <text wx:if="{{p.showTag}}" class="prov-tag">{{view.timeLabel}}</text>
+              </view>
+
+              <view class="prov-time">{{p.time}}</view>
+              <view class="prov-event">{{p.event}}</view>
+              <view wx:if="{{p.intro}}" class="prov-intro">{{p.intro}}</view>
+
+              <view wx:if="{{p.hasCities}}" class="prov-toggle">
+                <text class="pt-count">{{p.cityCount}} 个城市</text>
+                <view class="pt-chev {{p.open ? 'up' : ''}}"></view>
+              </view>
+            </view>
+
+            <!-- 城市明细：内凹槽，与省份卡本体分层 -->
+            <view wx:if="{{p.open && p.hasCities}}" class="city-list">
+              <view wx:for="{{p.cities}}" wx:for-item="city" wx:key="name" class="city-row">
+                <view class="city-dot"></view>
+                <view class="city-main">
+                  <view class="city-line">
+                    <text class="city-name">{{city.name}}</text>
+                    <text class="city-time">{{city.time}}</text>
+                  </view>
+                  <view wx:if="{{city.note}}" class="city-note">{{city.note}}</view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 主要战役：全国维度，整体可折叠，不随大区切换 -->
+        <view class="cm-section">
+          <view class="cm-head" bindtap="onToggleCampaigns" hover-class="cm-head-hover">
+            <view class="cm-bar"></view>
+            <text class="cm-title">主要战役与解放城市</text>
+            <text class="cm-count">{{campaignCount}}</text>
+            <view class="cm-chev {{campaignOpen ? 'up' : ''}}"></view>
+          </view>
+
+          <view wx:if="{{!campaignOpen}}" class="cm-hint">覆盖上党战役、四战四平、三大战役、渡江、西南、一江山岛等 {{campaignCount}} 场，每场均有战役经过，点击展开</view>
+
+          <view wx:if="{{campaignOpen}}" class="cm-body">
+            <view wx:for="{{campaignGroups}}" wx:for-item="g" wx:key="name" class="cm-group">
+              <view class="cm-group-name">{{g.name}}</view>
+              <view class="card-list">
+                <view wx:for="{{g.campaigns}}" wx:for-item="c" wx:key="name" class="cmp-card">
+                  <view class="cmp-top">
+                    <text class="cmp-name">{{c.name}}</text>
+                    <text class="cmp-time">{{c.time}}</text>
+                  </view>
+
+                  <view wx:if="{{c.intro}}" class="cmp-intro">
+                    <view class="cmp-intro-label">战役经过</view>
+                    <view class="cmp-intro-text">{{c.intro}}</view>
+                  </view>
+
+                  <view class="cmp-cities">
+                    <text class="cmp-cities-label">解放城市</text>
+                    <text class="cmp-cities-text">{{c.cities}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="footnote">
+          <view class="footnote-icon css-star"></view>
+          <view class="footnote-text">从1945年东北多城解放到1951年西藏和平解放，人民解放战争在大陆取得完全胜利；1955年一江山岛战役后浙东沿海岛屿全部解放，1997年香港回归、1999年澳门回归，祖国统一大业不断推进。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 回到顶部 -->
+  <view wx:if="{{showTop}}" class="to-top" bindtap="onToTop" hover-class="to-top-hover">
+    <view class="to-top-arrow"></view>
+  </view>
+</view>

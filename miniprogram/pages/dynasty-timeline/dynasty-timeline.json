@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "中国朝代时间轴 - 历代起止年份与帝王世系",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  }
+}

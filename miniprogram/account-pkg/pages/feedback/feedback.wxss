@@ -1,0 +1,776 @@
+/* ============================================================
+   意见反馈页样式（2026-11-14 按 A 细化稿落地）
+   配色：统一暖纸令牌（纸底 / 米白卡 / 赭石 / 朱砂）
+   约定（项目铁律）：不用 CSS 变量、不用 gap、不用 :focus/:not() 等
+   不可靠伪类（一律用 JS 状态类）；单位 rpx；不出现 letter-spacing；
+   字号一律偶数 rpx；正文与辅助色对比度 ≥4.5:1。
+   首屏：375×812 下四张卡底边约 719px，提交栏顶约 714px，
+   上传框（最后一个可点控件）底边约 705px，仍在折线以上。
+   ============================================================ */
+
+.page {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  /* 宣纸质感：细点纹理（与参考稿一致） */
+  background-image: radial-gradient(rgba(139, 115, 85, 0.16) 1rpx, transparent 1rpx);
+  background-size: 48rpx 48rpx;
+}
+
+.content {
+  padding: 0;
+}
+
+/* ============ 未登录 ============ */
+.login-prompt {
+  margin: 40rpx;
+  padding: 64rpx 40rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4rpx 16rpx rgba(139, 107, 74, 0.04);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-icon {
+  font-size: 72rpx;
+  line-height: 1;
+  margin-bottom: 20rpx;
+}
+
+.login-text {
+  font-size: var(--fs-28);
+  color: var(--text-muted);
+  margin-bottom: 40rpx;
+}
+
+.login-btn {
+  width: 100%;
+  height: 96rpx;
+  line-height: 96rpx;
+  margin-top: 32rpx;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #a3652f 0%, var(--accent-gold-ink) 100%);
+  color: var(--bg-elevated);
+  font-size: var(--fs-32);
+  font-weight: 600;
+  box-shadow: 0 12rpx 32rpx rgba(139, 107, 74, 0.28);
+  border: none;
+}
+
+/* 微信一键登录入口 2026-10-15 下线（个人主体不支持该能力）⇒
+   头像选择按钮、昵称输入框、《隐私政策》勾选三套样式随之成为死样式，一并移除。 */
+/* ============ 顶部标签切换（滑块式分段控件，44px 热区） ============ */
+.fb-tabs {
+  position: relative;
+  display: flex;
+  height: 88rpx;
+  box-sizing: border-box;
+  margin: 16rpx 40rpx 24rpx;
+  padding: 8rpx;
+  background: #EFEBE4;
+  border-radius: 24rpx;
+  box-shadow: inset 0 4rpx 8rpx rgba(0, 0, 0, 0.02);
+}
+
+.fb-tab {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+  text-align: center;
+  font-size: var(--fs-28);
+  font-weight: 500;
+  color: var(--text-muted);
+  border-radius: 20rpx;
+  transition: color 0.3s ease;
+}
+
+.fb-tab.is-active {
+  color: var(--bg-elevated);
+  font-weight: 600;
+}
+
+.fb-tab-slider {
+  position: absolute;
+  top: 8rpx;
+  left: 8rpx;
+  width: calc(50% - 8rpx);
+  height: 72rpx;
+  background: linear-gradient(135deg, #a3652f 0%, var(--accent-gold-ink) 100%);
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(143, 83, 38, 0.22);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.fb-tab-slider.is-right {
+  transform: translateX(100%);
+}
+
+/* 内容区：底部留出固定提交栏的空间 */
+.fb-body {
+  padding: 0 40rpx 220rpx;
+}
+
+/* ============ 卡片（间距压缩：内边距 22→14、卡片间距 16→8） ============ */
+.fb-card {
+  position: relative;
+  /* 显式给普通卡片一个低层级，让含下拉的卡片能稳定压在上面 */
+  z-index: 1;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 28rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(139, 107, 74, 0.05);
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+}
+
+/* 字段级错误：整卡描边转朱砂，配合卡内 .fb-errline */
+.fb-card.is-err {
+  border-color: rgba(166, 59, 42, 0.5);
+}
+
+/* 含下拉的卡片压在其他卡片之上（真机上原生输入框另靠"占位推开"兜底，见 .fb-drop-spacer） */
+.fb-card-drop {
+  z-index: 99;
+}
+
+/* 下拉展开时的透明占位：高度由 JS 实测后内联设置（见 feedback.js 的 _measureDropSpacer） */
+.fb-drop-spacer {
+  width: 100%;
+}
+
+.fb-label {
+  font-size: var(--fs-28);
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fb-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.fb-label-main {
+  display: flex;
+  align-items: center;
+}
+
+/* 必填 / 选填 pill：12px，颜色达标，不改变标签字号与字重 */
+.fb-badge {
+  margin-left: 12rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: var(--fs-24);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.fb-badge.is-req {
+  color: var(--accent-gold-ink);
+  background: #f2e7d7;
+}
+
+.fb-badge.is-opt {
+  color: var(--text-muted);
+  background: #f1ebdf;
+}
+
+/* ============ 自定义下拉（反馈类型，48→44px 热区） ============ */
+.fb-drop {
+  position: relative;
+}
+
+.fb-drop-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 28rpx;
+  box-sizing: border-box;
+  background: #FAF9F6;
+  border: 3rpx solid transparent;
+  border-radius: 20rpx;
+  transition: all 0.25s ease;
+}
+
+.fb-drop-trigger.is-open {
+  background: var(--bg-card);
+  border-color: var(--text-muted);
+  box-shadow: 0 0 0 8rpx rgba(139, 107, 74, 0.08);
+}
+
+.fb-drop-value {
+  font-size: var(--fs-28);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 纯 CSS 三角箭头（参考稿用 svg，小程序里用边框三角，避免额外图片资源） */
+.fb-drop-arrow {
+  width: 0;
+  height: 0;
+  border-left: 12rpx solid transparent;
+  border-right: 12rpx solid transparent;
+  border-top: 14rpx solid var(--text-muted);
+  transition: transform 0.25s ease;
+}
+
+.fb-drop-arrow.is-open {
+  transform: rotate(180deg);
+  border-top-color: var(--text-muted);
+}
+
+/* 列表不设 max-height：选项只有 5 个，高度必须完整露出。
+   [注意] 之前写了 max-height: 480rpx，真机上 text 默认行高更大 → 第 5 项「注销账号」
+   正好被 overflow: hidden 裁掉半截（截图里"下拉看不到下面的一项"就是它）。
+   overflow: hidden 仅用于裁剪圆角，不再承担限高职责。 */
+.fb-drop-list {
+  position: absolute;
+  top: calc(100% + 16rpx);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg-card);
+  border: 2rpx solid #F0EDE8;
+  border-radius: 20rpx;
+  box-shadow: 0 16rpx 48rpx rgba(139, 107, 74, 0.14);
+  overflow: hidden;
+}
+
+.fb-drop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 28rpx;
+  border-top: 2rpx solid #F7F4EF;
+}
+
+/* 首项不要分隔线：用类名控制，避免依赖 :first-child 之类结构伪类 */
+.fb-drop-item.is-first {
+  border-top: none;
+}
+
+.fb-drop-item.is-active {
+  background: var(--bg-secondary);
+}
+
+/* 显式定行高：行高不确定会让每项高度随机型浮动，占位高度就测不准 */
+.fb-drop-item-text {
+  font-size: var(--fs-28);
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.fb-drop-item.is-active .fb-drop-item-text {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.fb-drop-check {
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* 「注销账号」风险提示 */
+.fb-note {
+  margin-top: 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: var(--radius);
+  background: rgba(217, 142, 72, 0.1);
+  border: 2rpx solid rgba(217, 142, 72, 0.32);
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: #B4762F;
+}
+
+/* ============ 输入框（标签已移到卡内独立一行，不再浮动） ============ */
+.fb-float-wrap {
+  position: relative;
+}
+
+.fb-textarea,
+.fb-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #FAF9F6;
+  border: 3rpx solid transparent;
+  border-radius: 20rpx;
+  font-size: var(--fs-28);
+  color: var(--text-primary);
+  transition: all 0.25s ease;
+}
+
+.fb-textarea {
+  /* 132→128px：为 375×812 且状态栏 47–50px 的机型留出首屏余量 */
+  height: 256rpx;
+  padding: 24rpx 28rpx 56rpx;
+  line-height: 1.6;
+}
+
+.fb-input {
+  height: 88rpx;
+  padding: 0 28rpx;
+}
+
+/* 聚焦态：白底 + 木质棕描边 + 柔光圈（由 JS 状态类驱动） */
+.fb-float-wrap.is-active .fb-textarea,
+.fb-float-wrap.is-active .fb-input {
+  background: var(--bg-card);
+  border-color: var(--text-muted);
+  box-shadow: 0 0 0 8rpx rgba(139, 107, 74, 0.08);
+}
+
+/* 字段级错误态：朱砂描边 + 浅红底，优先于聚焦态（写在后面覆盖） */
+.fb-textarea.is-err,
+.fb-input.is-err {
+  border-color: var(--accent-vermillion);
+  background: #fdf7f5;
+  box-shadow: none;
+}
+
+/* 占位符颜色（#7d6a52 在米白卡上约 4.9:1） */
+.fb-ph {
+  color: #7d6a52;
+}
+
+.fb-counter {
+  position: absolute;
+  right: 28rpx;
+  bottom: 16rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  font-family: monospace;
+  pointer-events: none;
+  transition: color 0.3s;
+}
+
+.fb-counter.is-warn {
+  color: #B4762F;
+}
+
+.fb-counter.is-danger {
+  color: var(--accent-vermillion);
+  font-weight: 600;
+}
+
+/* 字段级错误行：12px 朱砂红 + 14px 圆形感叹号，紧贴字段下方 */
+.fb-errline {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 16rpx;
+  font-size: var(--fs-24);
+  line-height: 1.5;
+  color: var(--accent-vermillion);
+}
+
+.fb-errline-ico {
+  flex: none;
+  width: 28rpx;
+  height: 28rpx;
+  margin: 2rpx 12rpx 0 0;
+  border-radius: 50%;
+  background: var(--accent-vermillion);
+  color: var(--bg-elevated);
+  font-size: var(--fs-20);
+  font-weight: 700;
+  line-height: 28rpx;
+  text-align: center;
+}
+
+/* ============ 截图上传 ============ */
+.fb-upload-box {
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 20rpx;
+  background: #FAF9F6;
+  border: 3rpx dashed #cfc3b1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+}
+
+.fb-upload-hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-muted);
+  color: var(--text-muted);
+  transform: scale(0.96);
+}
+
+.fb-upload-plus {
+  font-size: 48rpx;
+  line-height: 1;
+  margin-bottom: 8rpx;
+  color: inherit;
+}
+
+.fb-upload-text {
+  font-size: var(--fs-24);
+  font-weight: 500;
+  color: inherit;
+}
+
+.fb-preview {
+  position: relative;
+  width: 176rpx;
+  height: 176rpx;
+}
+
+.fb-preview-img {
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 20rpx;
+}
+
+/* 删除按钮：热区 44×44px（88rpx），视觉圆点仍 24px（48rpx） */
+.fb-preview-del {
+  position: absolute;
+  top: -28rpx;
+  right: -28rpx;
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.fb-preview-del-dot {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: rgba(44, 40, 36, 0.8);
+  color: var(--bg-elevated);
+  font-size: var(--fs-24);
+}
+
+/* ============ 底部固定提交栏 ============ */
+.fb-submit-area {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 16rpx 40rpx;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(244, 237, 225, 0) 0%, rgba(244, 237, 225, 0.96) 38%, var(--bg-primary) 100%);
+}
+
+.fb-submit-btn {
+  width: 100%;
+  height: 96rpx;
+  line-height: 96rpx;
+  text-align: center;
+  border-radius: 24rpx;
+  background: linear-gradient(180deg, #a3652f 0%, var(--accent-gold-ink) 100%);
+  color: var(--bg-elevated);
+  font-size: var(--fs-32);
+  font-weight: 600;
+  box-shadow: 0 12rpx 32rpx rgba(143, 83, 38, 0.24);
+  transition: all 0.2s ease;
+}
+
+.fb-submit-hover {
+  transform: scale(0.97);
+  box-shadow: 0 6rpx 16rpx rgba(143, 83, 38, 0.2);
+}
+
+.fb-submit-btn.is-disabled {
+  opacity: 0.6;
+}
+
+/* 键盘弹起：提交栏变贴键盘的 56px 实底工具条（左计数、右提交），不再用渐变盖输入区 */
+.fb-submit-area.is-kb {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 112rpx;
+  padding: 12rpx 40rpx;
+  box-sizing: border-box;
+  background: var(--bg-primary);
+  border-top: 2rpx solid #e4dacb;
+  box-shadow: 0 -8rpx 24rpx rgba(139, 107, 74, 0.08);
+}
+
+.fb-kb-count {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.fb-submit-area.is-kb .fb-submit-btn {
+  width: auto;
+  min-width: 152rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 40rpx;
+  font-size: var(--fs-30);
+  border-radius: 20rpx;
+  box-shadow: 0 6rpx 16rpx rgba(143, 83, 38, 0.2);
+}
+
+/* ============ 反馈历史 ============ */
+.fb-filters {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20rpx;
+}
+
+/* 筛选 chip：高度 44px，热区达标，视觉仍是胶囊 */
+.fb-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 32rpx;
+  margin: 0 16rpx 16rpx 0;
+  border-radius: 999rpx;
+  background: var(--bg-card);
+  border: 2rpx solid #E6DDCF;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+.fb-chip.is-active {
+  background: #f2e7d7;
+  border-color: var(--accent-gold-ink);
+  color: var(--accent-gold-ink);
+  font-weight: 600;
+}
+
+.feedback-list {
+  display: block;
+}
+
+.fb-hist-card {
+  padding: 32rpx 28rpx;
+}
+
+.fb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.fb-meta {
+  display: flex;
+  align-items: center;
+}
+
+.fb-type {
+  font-size: var(--fs-24);
+  font-weight: 600;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  margin-right: 12rpx;
+}
+
+.type-bug {
+  color: var(--accent-vermillion);
+  background: rgba(196, 90, 84, 0.1);
+}
+
+.type-suggestion {
+  color: var(--text-muted);
+  background: rgba(139, 107, 74, 0.1);
+}
+
+.type-content {
+  color: #4A7C8B;
+  background: rgba(74, 124, 139, 0.1);
+}
+
+.type-other {
+  color: var(--text-muted);
+  background: #F2EFEA;
+}
+
+.type-cancel_account {
+  color: #B4762F;
+  background: rgba(217, 142, 72, 0.12);
+}
+
+.fb-status {
+  font-size: var(--fs-24);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.status-pending {
+  color: #B4762F;
+  background: rgba(217, 142, 72, 0.12);
+}
+
+.status-replied {
+  color: var(--text-muted);
+  background: rgba(139, 107, 74, 0.1);
+}
+
+.status-resolved {
+  color: #3d6b41;
+  background: rgba(79, 138, 99, 0.1);
+}
+
+.fb-date {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+
+.fb-content {
+  font-size: var(--fs-28);
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fb-content.expanded {
+  display: block;
+  overflow: visible;
+}
+
+.fb-image-wrap {
+  margin-top: 20rpx;
+}
+
+.fb-image {
+  width: 100%;
+  border-radius: 20rpx;
+}
+
+.fb-reply {
+  margin-top: 24rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 20rpx;
+  background: #F7F4EF;
+  border-left: 6rpx solid var(--text-muted);
+}
+
+.reply-label {
+  font-size: var(--fs-24);
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10rpx;
+}
+
+.reply-text {
+  font-size: var(--fs-26);
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.reply-time {
+  margin-top: 12rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+
+.fb-expand-hint {
+  margin-top: 20rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ============ 历史空态：图标 + 标题 + 说明 + 44px 引导按钮 ============ */
+.fb-empty-card {
+  margin-top: 16rpx;
+  padding: 80rpx 44rpx 64rpx;
+  text-align: center;
+}
+
+.fb-empty-ico {
+  position: relative;
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 32rpx;
+  padding: 28rpx 22rpx 0;
+  box-sizing: border-box;
+  border: 4rpx solid var(--text-muted);
+  border-radius: 12rpx;
+}
+
+.fb-empty-ico-line {
+  height: 4rpx;
+  margin-bottom: 14rpx;
+  border-radius: 4rpx;
+  background: var(--text-muted);
+}
+
+.fb-empty-ico-line.is-short {
+  width: 56%;
+}
+
+.fb-empty-ico-dot {
+  position: absolute;
+  right: -18rpx;
+  bottom: -18rpx;
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: #f2e7d7;
+  border: 4rpx solid var(--accent-gold-ink);
+  color: var(--accent-gold-ink);
+  font-size: var(--fs-24);
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.fb-empty-title {
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fb-empty-desc {
+  margin-top: 12rpx;
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.fb-empty-btn {
+  margin: 32rpx auto 0;
+  width: 296rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: var(--fs-28);
+  font-weight: 600;
+  color: var(--accent-gold-ink);
+  background: #f2e7d7;
+  border: 2rpx solid #dcc5a7;
+  border-radius: 20rpx;
+}
+
+.load-more {
+  padding: 32rpx 0 48rpx;
+  text-align: center;
+}
+
+.load-text {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}

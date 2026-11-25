@@ -1,0 +1,293 @@
+<view class="st-page">
+  <!-- 导航条不放标题：页面里已有大标题「实时看板」，与铭记历史页同口径 -->
+  <nav-bar
+    safeAreaTop="{{safeAreaTop}}"
+    actionText="{{refreshing ? '刷新中' : '刷新'}}"
+    actionDisabled="{{refreshing}}"
+    bind:action="onRefresh"
+  />
+
+  <!-- 顶部不透明遮罩：铺满 0 → navH（状态栏 + 导航条那一带）。
+       nav-bar 的 --bg-nav 是「上不透明、底部 40% 渐隐」的渐变，页面又是整页 scroll-view，
+       正文会一路滚到屏幕最顶端 —— 没有这层就会从导航条下半段透出来（数字与返回键重叠）。
+       底色用页面纸底、不透明、不做毛玻璃；z-index 55：压住滚动内容，低于窄条 60 与章节条 70，更低 nav-bar 的 100。 -->
+  <view class="top-mask" style="height: {{navH}}px;"></view>
+
+  <!-- 收起后的窄标题条：fixed 覆盖，不参与文档流；只淡入淡出、不改高度，滚动坐标不受影响 -->
+  <view class="stick-hd {{hdCompact ? 'on' : ''}}" style="top: {{navH}}px;">实时<text class="stick-hd-accent">看板</text></view>
+
+  <!-- 吸顶章节条：整页滚动时固定在导航下方，收起态再让出窄条高度（内容区里同时保留等高占位，避免跳动） -->
+  <view
+    wx:if="{{chapterFixed && !loading && !loadFailed && !computing}}"
+    class="chapters chapters--fixed"
+    style="top: {{navH + (hdCompact ? 44 : 0)}}px;"
+  >
+    <view class="chap {{activeChapter === 'scale' ? 'on' : ''}}" data-chap="scale" bindtap="onTapChapter">
+      <view class="chap-name">规模</view><view class="chap-sub">存量 · 质量</view>
+    </view>
+    <view class="chap {{activeChapter === 'structure' ? 'on' : ''}}" data-chap="structure" bindtap="onTapChapter">
+      <view class="chap-name">结构</view><view class="chap-sub">朝代 · 性别 · 身份</view>
+    </view>
+    <view class="chap {{activeChapter === 'heat' ? 'on' : ''}}" data-chap="heat" bindtap="onTapChapter">
+      <view class="chap-name">热度</view><view class="chap-sub">榜单 · 更新</view>
+    </view>
+  </view>
+
+  <scroll-view
+    class="page-scroll"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    scroll-top="{{scrollTop}}"
+    bindscroll="onScroll"
+  >
+    <view class="hero" id="mast" style="padding-top: {{navH + 12}}px;">
+      <view class="hero-badge">历史数据中心</view>
+      <view class="hero-title">实时<text class="hero-title-accent">看板</text></view>
+      <view class="hero-subtitle">{{total}} 位人物 · {{relationTotal}} 条关系 · 快照 {{updatedText}}</view>
+    </view>
+
+    <view class="skeleton-wrap" wx:if="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <view class="error-retry" wx:elif="{{computing}}">
+      <view class="error-retry-text">全站统计正在后台计算（通常几十秒），完成后会自动显示</view>
+      <view class="error-retry-btn" bindtap="onRefresh">立即刷新</view>
+    </view>
+
+    <view class="error-retry" wx:elif="{{loadFailed}}">
+      <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <view wx:else class="content">
+      <!-- 章节条（未吸顶时在文档流里） -->
+      <view class="chapters" wx:if="{{!chapterFixed}}">
+        <view class="chap {{activeChapter === 'scale' ? 'on' : ''}}" data-chap="scale" bindtap="onTapChapter">
+          <view class="chap-name">规模</view><view class="chap-sub">存量 · 质量</view>
+        </view>
+        <view class="chap {{activeChapter === 'structure' ? 'on' : ''}}" data-chap="structure" bindtap="onTapChapter">
+          <view class="chap-name">结构</view><view class="chap-sub">朝代 · 性别 · 身份</view>
+        </view>
+        <view class="chap {{activeChapter === 'heat' ? 'on' : ''}}" data-chap="heat" bindtap="onTapChapter">
+          <view class="chap-name">热度</view><view class="chap-sub">榜单 · 更新</view>
+        </view>
+      </view>
+      <view class="chap-ph" wx:if="{{chapterFixed}}"></view>
+
+      <!-- ============ 01 规模 ============ -->
+      <view id="sec-scale" class="chap-sec">
+        <view class="tile">
+          <view class="tgrid">
+            <view class="tg">
+              <view class="tnum">{{total}}</view>
+              <view class="tlab">已收录人物</view>
+              <view class="tsub">全库合计</view>
+            </view>
+            <view class="tg">
+              <view class="tnum">{{relationTotal}}</view>
+              <view class="tlab">人物关系</view>
+              <view class="tsub">人均 <text class="tb">{{relationAvg}}</text> 条</view>
+            </view>
+            <view class="tg">
+              <view class="tnum">{{totalWorks}}</view>
+              <view class="tlab">收录作品</view>
+              <view class="tsub"><text class="tb">{{worksFigures}}</text> 人有作品</view>
+            </view>
+            <view class="tg">
+              <view class="tnum">{{totalEvents}}</view>
+              <view class="tlab">重要事件</view>
+              <view class="tsub"><text class="tb">{{eventsFigures}}</text> 人有事件</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="sec">
+          <view class="sec-h">数据体检<text class="sec-note">核心字段填充率 · 7 项</text></view>
+        </view>
+        <view class="health">
+          <view class="hhead">
+            <text class="ht">数据库现在缺什么</text>
+            <text class="hv">{{completenessAvg}}</text>
+          </view>
+          <view wx:for="{{health}}" wx:key="n" class="hrow">
+            <text class="hn">{{item.n}}</text>
+            <view class="htr"><view class="hfl {{item.low ? 'low' : ''}}" style="width: {{item.w}}%;"></view></view>
+            <text class="hp">{{item.p}}%</text>
+          </view>
+          <view class="hmore">本卡只回答「字段填了多少」；男女比例见结构章。</view>
+          <view class="tag-new">新增</view>
+        </view>
+
+        <view class="sec">
+          <view class="sec-h">史料支撑<text class="sec-note">这些数字从哪来</text></view>
+          <view class="tag-new">新增</view>
+        </view>
+        <view class="src">
+          <view class="srch">
+            <text class="srcLabel">累计史料条目</text>
+            <text class="srcbig">{{srcTotal}}<text class="srcunit">条</text></text>
+          </view>
+          <view wx:for="{{srcKinds}}" wx:key="name" class="srow">
+            <text class="sk">{{item.name}}</text>
+            <view class="tr"><view class="fl" style="width: {{item.w}}%;"></view></view>
+            <text class="vv">{{item.v}}</text>
+          </view>
+          <view class="srcn">覆盖 {{srcFigures}} 位人物 · 主要来源{{srcBooks}}</view>
+        </view>
+
+        <view class="read">本段只讲存量：有多少人、覆盖多少人、还缺什么。朝代与性别分布去「结构」，榜单与更新去「热度」，三处不重复同一组数字。</view>
+      </view>
+
+      <!-- ============ 02 结构 ============ -->
+      <view id="sec-structure" class="chap-sec">
+        <view class="sec">
+          <view class="sec-h"><text class="sec-num">02</text>朝代构成<text class="sec-note">{{dynastyExpanded ? '全部 ' + dynastyCount + ' 个 · 按人数降序' : '人数 TOP9 · 共 ' + dynastyCount + ' 个朝代'}}</text></view>
+        </view>
+
+        <block wx:if="{{!dynastyExpanded}}">
+          <view wx:for="{{dynasties}}" wx:key="name" class="row">
+            <text class="row-nm">{{item.name}}</text>
+            <view class="tr"><view class="fl" style="width: {{item.barPercent}}%;"></view></view>
+            <text class="row-v">{{item.count}}</text>
+          </view>
+          <view class="exw">
+            <view class="exn">{{dynastyNote}}</view>
+            <view class="exbtn" hover-class="exbtn-hover" bindtap="onToggleDynasty">展开全部 {{dynastyCount}} 个朝代<text class="tag-new">新增</text></view>
+          </view>
+        </block>
+
+        <block wx:else>
+          <view class="dwrap">
+            <!-- 内层滚动：catchtouchmove 把纵向手势留在框内，避免和整页滚动抢 -->
+            <scroll-view
+              class="dgrid-scroll"
+              scroll-y="{{true}}"
+              enhanced="{{true}}"
+              bounces="{{false}}"
+              show-scrollbar="{{false}}"
+              catchtouchmove="onNoop"
+            >
+              <view class="dgrid">
+                <view wx:for="{{dynastiesAll}}" wx:key="name" class="dg {{item.hi ? 'hi' : ''}}">
+                  <text class="dg-n">{{item.name}}</text>
+                  <text class="dg-v">{{item.count}}</text>
+                </view>
+              </view>
+            </scroll-view>
+            <view class="dbar">
+              <text class="dbar-note">按人数降序，框内滑动看其余；不占整页高度。</text>
+              <view class="dback" bindtap="onToggleDynasty">收起</view>
+            </view>
+          </view>
+        </block>
+
+        <view class="sec">
+          <view class="sec-h">性别构成<text class="sec-note">全库 {{total}} 人</text></view>
+          <view class="tag-new">新增</view>
+        </view>
+        <view class="gcard">
+          <view class="gbar">
+            <view class="gm" style="width: {{genderBar.m}}%;"></view>
+            <view class="gf" style="width: {{genderBar.f}}%;"></view>
+            <view class="gu" style="width: {{genderBar.u}}%;"></view>
+          </view>
+          <view class="gleg">
+            <view wx:for="{{gender}}" wx:key="key" class="gitem">
+              <view class="glab"><view class="gdot" style="background: {{item.color}};"></view>{{item.label}}</view>
+              <view class="gval">{{item.v}}<text class="gp">{{item.p}}%</text></view>
+            </view>
+          </view>
+          <view class="gnote">「未知」是接口 unknownGender 原值（未考 / 未录入），不是估算；本卡只讲男女比例，填充率归规模段体检卡。</view>
+        </view>
+
+        <view class="sec">
+          <view class="sec-h">身份构成<text class="sec-note">{{cloudNote}}</text></view>
+        </view>
+        <view class="cloud">
+          <view
+            wx:for="{{tagsVisible}}"
+            wx:key="tag"
+            class="wc wc-t{{item.tone}}"
+            style="font-size: {{item.size}}rpx;"
+          >{{item.tag}}<text class="wc-cnt">{{item.cnt}}</text></view>
+        </view>
+        <view wx:if="{{tagsAll.length > 10}}" class="cloud-toggle" bindtap="onToggleCloud">
+          {{cloudExpanded ? '收起' : '展开全部 ' + tagsAll.length + ' 个身份词'}}
+        </view>
+
+        <view class="read">读法：先看集中度（TOP9 占 {{srcTop9Pct}}%<text wx:if="{{qingMingPct}}">，清 + 明 {{qingMingPct}}%</text>），再看性别（男 {{genderBar.m}}%），最后看身份词——<text wx:if="{{tagCovPct}}">只有 {{tagCovPct}}% 的人有标签，</text>别把词云当全库构成。</view>
+      </view>
+
+      <!-- ============ 03 热度 ============ -->
+      <view id="sec-heat" class="chap-sec">
+        <view class="up">
+          <view class="upn">
+            <view class="up-item"><text class="upv">{{newToday}}</text><text class="upl">今日新增</text></view>
+            <view class="up-item"><text class="upv">{{newThisWeek}}</text><text class="upl">本周新增</text></view>
+            <view class="up-item"><text class="upv">{{todayViews}}</text><text class="upl">今日浏览</text></view>
+          </view>
+          <view class="ups"><text class="upsb">快照 {{updatedText}}</text>每小时刷新</view>
+        </view>
+
+        <view class="sec">
+          <view class="sec-h"><text class="sec-num">03</text>影响力指数榜<text class="sec-note">浏览 + 关系×10 + 作品×5</text></view>
+          <view class="tag-new">分项新增</view>
+        </view>
+        <view
+          wx:for="{{influence}}"
+          wx:key="id"
+          class="rk"
+          data-id="{{item.id}}"
+          bindtap="onTapFigure"
+          hover-class="{{item.id ? 'rk-hover' : 'none'}}"
+          hover-stay-time="80"
+        >
+          <text class="rk-no">{{item.rank}}</text>
+          <view class="rk-mid">
+            <view class="rk-name">{{item.name}}<text wx:if="{{item.dynasty}}" class="rk-dy">{{item.dynasty}}</text></view>
+            <view class="rk-sub">浏览 <text class="rk-b">{{item.views}}</text> · 关系 <text class="rk-b">{{item.relations}}</text> · 作品 <text class="rk-b">{{item.works}}</text></view>
+          </view>
+          <text class="rk-score">{{item.score}}</text>
+        </view>
+
+        <view class="sec">
+          <view class="sec-h">全库之最<text class="sec-note">6 个维度的极值，不是影响力排序</text></view>
+          <view class="tag-new">新增</view>
+        </view>
+        <view class="ext">
+          <view wx:for="{{extremes}}" wx:key="k" class="ex">
+            <view class="ex-k">{{item.k}}</view>
+            <view class="ex-v">{{item.v}}<text class="ex-d">{{item.d}}</text></view>
+          </view>
+        </view>
+
+        <view class="sec">
+          <view class="sec-h">实时动态<text class="sec-note">{{feedIsSnapshot ? '全库累计（近 7 天无更新记录）' : '近 7 天真实更新记录'}}</text></view>
+        </view>
+        <view class="feed">
+          <view
+            wx:for="{{feed}}"
+            wx:key="id"
+            class="feed-item {{item.isLast ? 'feed-item--last' : ''}}"
+          >
+            <view class="feed-badge feed-badge--{{item.tone}}">{{item.badge}}</view>
+            <view class="feed-text">{{item.text}}</view>
+            <view wx:if="{{item.time}}" class="feed-time">{{item.time}}</view>
+          </view>
+        </view>
+
+        <view class="lim">「今日热度榜」未画：需按日聚合浏览量，目前只有 <text class="lim-b">todayViews</text> 一个当日真值。影响力榜覆盖 <text class="lim-b">{{heatFigures}}</text> 位有浏览记录的人物（全库 {{heatPct}}%），不是全库票选。</view>
+      </view>
+    </view>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+</view>

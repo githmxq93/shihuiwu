@@ -1,0 +1,179 @@
+page {
+  background: var(--bg-primary);
+  min-height: 100vh;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.nav-bar {
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-bottom: 1rpx solid var(--border-subtle);
+  padding-top: 88rpx;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+}
+
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 8rpx 16rpx;
+  flex-shrink: 0;
+}
+
+.back-arrow {
+  font-size: var(--fs-40);
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+
+.back-text {
+  font-size: var(--fs-28);
+  color: var(--accent-gold-ink);
+}
+
+.nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--fs-32);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.nav-right {
+  width: 120rpx;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-logout {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  padding: 8rpx 16rpx;
+}
+
+.nav-logout:active {
+  color: #f87171;
+}
+
+.scroll-wrap {
+  flex: 1;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding: 32rpx 32rpx 48rpx;
+}
+
+/* 分组语义容器：内边距由外层 .scroll-wrap 统一提供，这里不额外加 padding，
+   仅显式声明块级（原先该类在 WXML 里被使用但 WXSS 无定义，规范上属"无用类"） */
+.dashboard-section {
+  display: block;
+}
+
+.welcome-text {
+  margin-bottom: 40rpx;
+}
+
+.welcome-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: block;
+  letter-spacing: 0;
+}
+
+.welcome-desc {
+  font-size: var(--fs-28);
+  color: var(--text-muted);
+  margin-top: 12rpx;
+  display: block;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+}
+
+.admin-card {
+  background: var(--bg-elevated);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: 24rpx;
+  padding: 40rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  transition: all 0.2s;
+}
+
+.admin-card:active {
+  transform: scale(0.97);
+  border-color: var(--accent-gold-ink);
+  box-shadow: 0 4rpx 24rpx rgba(181, 113, 58, 0.12);
+}
+
+.card-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+
+.card-icon-figures {
+  background: rgba(95, 168, 217, 0.12);
+}
+
+.card-icon-topics {
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.card-icon-articles {
+  background: rgba(245, 215, 110, 0.12);
+}
+
+.card-icon-users {
+  background: rgba(192, 132, 252, 0.12);
+}
+
+/* 消息管理（与 Web 端「消息管理」一致的暖橙，区别于其它模块） */
+.card-icon-messages {
+  background: rgba(251, 146, 60, 0.14);
+}
+
+.card-icon {
+  font-size: 48rpx;
+  line-height: 1;
+}
+
+.card-label {
+  font-size: var(--fs-28);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.card-desc {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}

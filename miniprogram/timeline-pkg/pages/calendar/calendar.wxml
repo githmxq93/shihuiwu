@@ -1,0 +1,292 @@
+<view class="cal-page">
+  <nav-bar safeAreaTop="{{safeAreaTop}}" dark="{{true}}" />
+
+  <!-- 深色头部：与详情页/世系页/足迹页同一套口径；本页定高 100vh + scroll-view，
+       头部 fixed 常驻，滚动容器内用 .head-spacer 让出同高，正文不会被遮。 -->
+  <view class="cal-head-wrap">
+    <view class="cal-head" id="calHead" style="padding-top:{{navBarHeight}}px">
+      <view class="cal-head-row">
+        <view class="cal-head-nm">
+          <view class="cal-head-nameline">
+            <text class="cal-head-name">年份查询</text>
+          </view>
+          <text class="cal-head-sub">一个年份，七种纪年</text>
+        </view>
+        <text class="cal-head-tag">历法</text>
+      </view>
+
+      <!-- 检索在头部内：深色半透明底 + 内嵌查询按钮。
+           之前检索框在头下方一张浅色卡里，与详情页/世系页的深色头口径不一致。 -->
+      <view id="guide-cal-search" class="cal-search">
+        <text class="cal-search-ico">查</text>
+        <input
+          class="cal-search-input"
+          value="{{q}}"
+          placeholder="年份、年号或朝代，如 1279、唐"
+          placeholder-class="cal-search-ph"
+          confirm-type="search"
+          bindinput="onInput"
+          bindconfirm="onSearch"
+        />
+        <view class="cal-search-clear" wx:if="{{q}}" bindtap="onClear">✕</view>
+        <view class="cal-search-go" bindtap="onSearch">查询</view>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}" scroll-top="{{bodyScrollTop}}">
+    <view class="head-spacer" style="height: {{headH}}px;"></view>
+
+    <!-- 输入建议：输入「唐」这类朝代名时主查询必然落空，
+         这里直接把开国/鼎盛/亡国摆出来点选。
+         走文档流而非浮层：本页在 scroll-view 里，绝对定位面板容易被裁。 -->
+    <view class="cal-sugg" wx:if="{{suggOpen && suggRows.length > 0}}">
+      <block wx:for="{{suggRows}}" wx:key="key">
+        <view class="cal-sugg-head" wx:if="{{item.kind === 'head'}}">
+          <text class="cal-sugg-name">{{item.name}}</text>
+          <text class="cal-sugg-span">{{item.spanText}}</text>
+          <text class="cal-sugg-tag" wx:if="{{item.derived}}">年号表范围</text>
+        </view>
+        <view
+          class="cal-sugg-row"
+          wx:else
+          data-q="{{item.query}}"
+          bindtap="onPickSugg"
+          hover-class="cal-sugg-row-hover"
+        >
+          <text class="cal-sugg-kind">{{item.label}}</text>
+          <text class="cal-sugg-year">{{item.yearText}}</text>
+          <text class="cal-sugg-note">{{item.note}}</text>
+        </view>
+      </block>
+    </view>
+
+    <!-- 空态：一句用法 + 三张指路卡（怎么输），底部一行交代能算什么。
+         只在没结果、也没落空时出现，结果页不再占据结果位。 -->
+    <view class="cal-empty" wx:if="{{!result && !miss}}">
+      <view class="cal-lead">输入年份、年号，或只写朝代名。</view>
+
+      <view id="guide-cal-card-1" class="cal-card">
+        <text class="cal-card-no">01</text>
+        <view class="cal-card-main">
+          <view class="cal-card-title">公元数字</view>
+          <view class="cal-card-desc">直接输年份；公元前在数字前加「前」。</view>
+          <view class="cal-card-egs">
+            <view class="cal-card-eg cal-card-eg-key" data-q="1279" bindtap="onPick" hover-class="cal-card-eg-hover">1279</view>
+            <view class="cal-card-eg" data-q="前200" bindtap="onPick" hover-class="cal-card-eg-hover">前 200</view>
+            <view class="cal-card-eg" data-q="公元前200" bindtap="onPick" hover-class="cal-card-eg-hover">公元前 200</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="cal-card">
+        <text class="cal-card-no">02</text>
+        <view class="cal-card-main">
+          <view class="cal-card-title">年号 + 年数</view>
+          <view class="cal-card-desc">带年数最准；只写年号名也认，会列出同名候选。</view>
+          <view class="cal-card-egs">
+            <view class="cal-card-eg cal-card-eg-key" data-q="祥兴二年" bindtap="onPick" hover-class="cal-card-eg-hover">祥兴二年</view>
+            <view class="cal-card-eg" data-q="贞观元年" bindtap="onPick" hover-class="cal-card-eg-hover">贞观元年</view>
+            <view class="cal-card-eg" data-q="开元" bindtap="onPick" hover-class="cal-card-eg-hover">开元</view>
+          </view>
+        </view>
+      </view>
+
+      <view id="guide-cal-card-3" class="cal-card">
+        <text class="cal-card-no">03</text>
+        <view class="cal-card-main">
+          <view class="cal-card-title">朝代名</view>
+          <view class="cal-card-desc">先给开国、鼎盛、亡国三个参照年，点选再查。</view>
+          <view class="cal-card-egs">
+            <view class="cal-card-eg cal-card-eg-key" data-q="唐" bindtap="onPick" hover-class="cal-card-eg-hover">唐</view>
+            <view class="cal-card-eg" data-q="明朝" bindtap="onPick" hover-class="cal-card-eg-hover">明朝</view>
+          </view>
+        </view>
+      </view>
+
+      <view id="guide-cal-legend" class="cal-legend">
+        <view class="cal-legend-title">本页可算</view>
+        <view class="cal-legend-line">年号 · 干支 · 公元 · 伊斯兰历 · 佛历 · 民国 · 日本</view>
+      </view>
+      <view class="cal-foot">纪年换算为工具性推算，史事系年请以正史本纪为准。</view>
+    </view>
+
+    <!-- 结果 -->
+    <view class="cal-result" wx:if="{{result}}">
+      <!-- 主角一：公元年份 + 干支 -->
+      <view class="cal-hero">
+        <view class="cal-hero-main">
+          <view class="cal-hero-year">
+            <text class="cal-hero-unit">{{result.primary.prefix}}</text>
+            <text class="cal-hero-num">{{result.primary.num}}</text>
+            <text class="cal-hero-unit">年</text>
+          </view>
+          <!-- 干支细目沿用旧版「庚寅·寅支·属虎」的口径，不再只剩「属虎」 -->
+          <view class="cal-hero-sub" wx:if="{{result.ganzhi.ganzhi}}">{{result.ganzhi.ganzhi}}年 · {{result.ganzhi.zhi}}支 · 属{{result.ganzhi.zodiac}}</view>
+          <!-- 旧版「公元纪年」格的口径副行，收到主卡最后一行，不丢内容 -->
+          <view class="cal-hero-note">儒略历／格里高利历同系</view>
+        </view>
+        <view class="cal-seal">
+          <text class="cal-seal-gz">{{result.ganzhi.ganzhi}}</text>
+          <text class="cal-seal-zodiac">{{result.ganzhi.zodiac}}</text>
+        </view>
+        <!-- 距今：钉在主卡右下角（绝对定位，不参与卡内流式布局，卡高不变） -->
+        <view class="cal-ago" wx:if="{{result.agoText}}">{{result.agoText}}</view>
+      </view>
+
+      <!-- 本年纪年体系（有特殊标注才有，如 337 年前凉境内沿用建兴、对东晋奉咸康） -->
+      <view class="cal-anno" wx:if="{{result.annotationNote}}">
+        <view class="cal-anno-title">本年纪年体系</view>
+        <view class="cal-anno-text">{{result.annotationNote}}</view>
+      </view>
+
+      <!-- 主角二：年号卡。主条在上，同年并立收进同一张卡的下半区，
+           用虚线分界并把字号降一档——两块不再各占一张等大的卡。 -->
+      <view class="cal-eracard {{result.eras[0].alt ? 'cal-eracard-alt' : ''}}" wx:if="{{result.eras.length > 0}}">
+        <view class="cal-eracap">
+          <text class="cal-eracap-rg">{{result.eras[0].regime}}</text>
+          <text class="cal-eracap-tag">年号</text>
+          <text class="cal-scope cal-scope-{{result.eras[0].scopeCls}}" wx:if="{{result.eras[0].scope}}">{{result.eras[0].scope}}</text>
+          <text class="cal-alt-tag" wx:if="{{result.eras[0].alt}}">异说</text>
+        </view>
+        <view class="cal-eraname">{{result.eras[0].label}}</view>
+        <view class="cal-erameta">{{result.eras[0].metaLine}}</view>
+        <view class="cal-eranote" wx:if="{{result.eras[0].note}}">{{result.eras[0].note}}</view>
+        <view class="cal-scopenote" wx:if="{{result.eras[0].scopeNote}}">
+          <text class="cal-scopenote-text">{{result.eras[0].scopeNote}}</text>
+        </view>
+
+        <view class="cal-erarow-sub" wx:for="{{result.parallel}}" wx:key="key">
+          <view class="cal-eracap">
+            <text class="cal-eracap-rg">{{item.regime}} · 同年并立</text>
+            <text class="cal-scope cal-scope-{{item.scopeCls}}" wx:if="{{item.scope}}">{{item.scope}}</text>
+            <text class="cal-alt-tag" wx:if="{{item.alt}}">异说</text>
+          </view>
+          <view class="cal-eraname cal-eraname-sub">{{item.label}}</view>
+          <view class="cal-erameta">{{item.metaLine}}</view>
+          <view class="cal-scopenote" wx:if="{{item.scopeNote}}">
+            <text class="cal-scopenote-text">{{item.scopeNote}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="cal-eracard cal-eracard-none" wx:else>
+        该年没有收录在行用中的年号（先秦无年号，或已超出收录范围）
+      </view>
+
+      <!-- 只写年号名 / 同名年号消歧 -->
+      <view class="cal-alt" wx:if="{{result.bareEra || result.candidates.length > 0}}">
+        <view class="cal-alt-hint" wx:if="{{result.bareEra}}">
+          没指定年数，先按<text class="cal-alt-kw">元年</text>显示（{{result.normalized}}）。要查某一年，加上年数即可，如「祥兴二年」。
+        </view>
+        <block wx:if="{{result.candidates.length > 0}}">
+          <view class="cal-alt-title">同名年号，另一个政权也用过</view>
+          <view class="cal-alt-chips">
+            <view
+              class="cal-alt-chip {{item.active ? 'is-active' : ''}}"
+              wx:for="{{result.candidates}}"
+              wx:key="key"
+              data-q="{{item.query}}"
+              bindtap="onPick"
+              hover-class="{{item.active ? '' : 'cal-alt-chip-hover'}}"
+            >
+              <text class="cal-alt-chip-regime">{{item.regime}}</text>
+              <text class="cal-alt-chip-span">{{item.span}}</text>
+            </view>
+          </view>
+        </block>
+      </view>
+
+      <!-- 次级：其余四历。2×2 小格，值仍独占一行放大；格即入口，
+           点任一格弹出该历法的换算口径（不再每行挂一个小问号）。 -->
+      <view class="cal-via" wx:if="{{result.jpVia}}">按日本年号解析</view>
+      <view class="cal-more">
+        <view class="cal-more-head">
+          <text class="cal-more-title">其余纪年</text>
+          <text class="cal-more-tip">点任一格看换算口径</text>
+        </view>
+        <view class="cal-more-grid">
+          <view
+            class="cal-more-cell {{item.off ? 'cal-more-cell-off' : ''}}"
+            wx:for="{{result.otherCells}}"
+            wx:key="key"
+            data-key="{{item.key}}"
+            bindtap="onOpenSheet"
+            hover-class="cal-more-cell-hover"
+          >
+            <text class="cal-more-label">{{item.label}}</text>
+            <!-- 口径副行按 F 的排法跟在值后面（F 的 .ms 是 .mv 内联子元素），
+                 不再单独占一行 —— 之前独立成行，每格比效果图高约 19px，观感偏「旧版三行格」 -->
+            <view class="cal-more-value">{{item.value}}<text class="cal-more-sub" wx:if="{{item.sub}}">{{item.sub}}</text></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 日本纪年并存多条：南北朝（1331—1392）或 2019 年平成 31 年 + 令和元年 -->
+      <view class="cal-parallel" wx:if="{{result.jpList.length > 0}}">
+        <view class="cal-parallel-label">日本纪年</view>
+        <view class="cal-parallel-item" wx:for="{{result.jpList}}" wx:key="key">
+          <view class="cal-parallel-head">
+            <text class="cal-parallel-era">{{item.label}}</text>
+            <text class="cal-jp-court {{item.courtCls}}" wx:if="{{item.showCourt}}">{{item.court}}</text>
+          </view>
+          <text class="cal-parallel-meta">{{item.meta}}</text>
+          <view class="cal-scopenote" wx:if="{{item.note}}">
+            <text class="cal-scopenote-text">{{item.note}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 日本纪年不可用（645 年前 / 654—700 年号中断）时说明原因，不留空白 -->
+      <view class="cal-jp-empty" wx:if="{{result.jpEmptyNote}}">{{result.jpEmptyNote}}</view>
+
+      <!-- 关联内容 -->
+      <view class="cal-related" wx:if="{{result.relatedText}}" bindtap="onGoTimeline" hover-class="cal-related-hover">
+        <text class="cal-related-text">{{result.relatedText}}</text>
+        <text class="cal-related-link">看这一年 ›</text>
+      </view>
+
+      <view class="cal-foot">纪年换算为工具性推算，史事系年请以正史本纪为准。</view>
+    </view>
+
+    <!-- 未匹配 -->
+    <view class="cal-miss" wx:if="{{miss && !loading && !suggOpen}}">
+      <view class="cal-miss-msg">{{miss.message}}</view>
+      <view class="cal-miss-hint">可以输入 1279、前200、公元前200、祥兴二年、唐</view>
+      <view class="cal-miss-chips" wx:if="{{miss.suggestions.length > 0}}">
+        <view
+          class="cal-miss-chip"
+          wx:for="{{miss.suggestions}}"
+          wx:key="key"
+          data-q="{{item.q}}"
+          bindtap="onPick"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="safe-area-bottom"></view>
+  </scroll-view>
+
+  <!-- 换算口径浮层：蒙层 + 贴底卡片，点蒙层或右上角关闭 -->
+  <view class="cal-sheet {{sheetShown ? 'is-open' : ''}}" wx:if="{{sheetDoc}}">
+    <view class="cal-sheet-mask" bindtap="onCloseSheet" catchtouchmove="noop"></view>
+    <view class="cal-sheet-panel" catchtap="noop">
+      <view class="cal-sheet-head">
+        <view class="cal-sheet-heading">
+          <view class="cal-sheet-eyebrow">换算口径</view>
+          <view class="cal-sheet-title">{{sheetDoc.title}}</view>
+        </view>
+        <view class="cal-sheet-close" bindtap="onCloseSheet" hover-class="cal-sheet-close-hover">✕</view>
+      </view>
+      <view class="cal-sheet-tagline">{{sheetDoc.tagline}}</view>
+      <scroll-view class="cal-sheet-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+        <view class="cal-sheet-point" wx:for="{{sheetDoc.points}}" wx:key="h">
+          <view class="cal-sheet-h">{{item.h}}</view>
+          <view class="cal-sheet-d">{{item.d}}</view>
+        </view>
+        <view class="cal-sheet-foot">纪年换算为工具性推算，史事系年请以正史本纪为准。</view>
+      </scroll-view>
+    </view>
+  </view>
+</view>
+
+<guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />

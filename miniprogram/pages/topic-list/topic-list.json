@@ -1,0 +1,9 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  },
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "light",
+  "navigationBarTitleText": "历史人物专题与朝代故事 - 世慧屋"
+}

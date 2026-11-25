@@ -1,0 +1,23 @@
+<!-- 后台公共返回栏（结构模板）
+     收敛 admin-pkg 六页原先四套手写写法：
+       users / topics   → 透明渐变 + nav-placeholder
+       articles / messages → 实底 + 空 nav-right
+       figures / dashboard → 实底 + nav-right 退出按钮
+     视觉仍由各页 .nav-* 样式决定，本模板只统一 DOM 结构与安全区注入方式。
+     参数：title（标题来源）/ safeAreaTop（真实状态栏高度，px）/
+           emptyRightClass（无右侧操作时的占位类名）/ rightText（有值时渲染退出按钮）。
+     返回与退出固定走页面的 onBack / onLogout，行为与抽组件前一致。 -->
+<template name="admin-nav">
+  <view class="nav-bar" style="padding-top: {{safeAreaTop}}px;">
+    <view class="nav-inner">
+      <view class="nav-back" bindtap="onBack">
+        <text class="back-arrow">‹</text>
+        <text class="back-text">返回</text>
+      </view>
+      <text class="nav-title">{{title}}</text>
+      <view class="{{rightText ? 'nav-right' : emptyRightClass}}">
+        <text wx:if="{{rightText}}" class="nav-logout" bindtap="onLogout">{{rightText}}</text>
+      </view>
+    </view>
+  </view>
+</template>

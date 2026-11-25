@@ -1,0 +1,1488 @@
+page {
+  --pull-down-bg: var(--bg-primary, #ede4d3);
+}
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-primary) 30%, var(--bg-secondary) 100%);
+  overflow: hidden;
+}
+
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-primary) 60%, transparent 100%);
+  /* 原 backdrop-filter: blur(10px) 已移除（2026-10-03 真机切页白屏专项）：
+     fixed 全宽元素 + backdrop-filter 会让真机合成器为整页建立 backdrop root 并离屏取样，
+     首帧被拖慢约 1 秒；而本元素背景自上而下是「不透明 → 渐隐透明」，模糊只在渐隐条带
+     可见，视觉增益极小。四个 tab 页各有一个同类元素，对应「每个页面首次进入都白屏」。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-bar-inner {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 16rpx;
+}
+
+.content-scroll {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hero-section {
+  padding: 0 32rpx;
+  padding-top: 240rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-title {
+  margin-bottom: 48rpx;
+  text-align: center;
+  padding: 30rpx 0;
+  min-height: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.title-text {
+  font-size: 72rpx;
+  font-weight: 900;
+  line-height: 1.2;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, 'PingFang SC', serif;
+  background: linear-gradient(180deg, var(--accent-gold-light) 0%, var(--accent-gold) 40%, #a8833d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0;
+  filter: drop-shadow(0 0 24rpx rgba(181, 113, 58, 0.2));
+  position: relative;
+}
+
+.title-text::after {
+  content: '世慧屋';
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  background: none;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 40rpx rgba(181, 113, 58, 0.2), 0 0 80rpx rgba(181, 113, 58, 0.08);
+}
+
+.search-box {
+  position: relative; /* 承载「搜索范围」下拉面板的绝对定位 */
+  /* 必须高于人名牌堆卡片的内联 z-index（100 + 牌堆序号，拖动时 999），
+     否则面板浮层会被卡片盖住（仅在 .content-scroll 内部比较层级，不会盖住 fixed 导航栏） */
+  z-index: 210;
+  width: 100%;
+  max-width: 650rpx;
+  height: 88rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-color);
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 32rpx;
+  margin-bottom: 32rpx;
+  box-sizing: border-box;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-card);
+}
+
+.search-box:focus-within {
+  border-color: var(--accent-gold-ink);
+  border-width: 2rpx;
+  box-shadow: 0 0 32rpx var(--accent-glow), 0 0 60rpx rgba(181, 113, 58, 0.04);
+  background: var(--bg-card-hover);
+  transform: translateY(-2rpx);
+}
+
+/* 搜索图标：CSS 放大镜（去 emoji），置于输入框右侧 */
+.search-icon {
+  position: relative;
+  width: 32rpx;
+  height: 32rpx;
+  margin-left: 16rpx;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.search-icon-circle {
+  width: 22rpx;
+  height: 22rpx;
+  border: 4rpx solid var(--text-muted);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.search-icon-handle {
+  position: absolute;
+  right: 2rpx;
+  bottom: 2rpx;
+  width: 12rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--text-muted);
+  transform: rotate(45deg);
+}
+
+/* ====== 特色功能磁贴（深棕反白） ====== */
+.feature-section {
+  margin-top: 36rpx;
+  padding: 0 40rpx;
+}
+.feature-grid {
+  display: flex;
+  gap: 24rpx;
+}
+.feature-tile {
+  position: relative;
+  flex: 1;
+  box-sizing: border-box;
+  padding: 32rpx 28rpx;
+  background: var(--tile-deep);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.feature-tile-hover {
+  opacity: 0.92;
+}
+.feature-tile-name {
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--tile-deep-text);
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+}
+.feature-tile-desc {
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  color: var(--tile-deep-muted);
+}
+.feature-tile-glyph {
+  position: absolute;
+  right: -6rpx;
+  bottom: -22rpx;
+  font-size: 120rpx;
+  line-height: 1;
+  font-family: var(--font-serif);
+  color: rgba(244, 237, 225, 0.08);
+  pointer-events: none;
+}
+
+/* ====== 快捷入口（2026-11-10 已移除：图谱/足迹入口收敛到详情页 dock） ====== */
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font-size: var(--fs-28);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.search-placeholder {
+  color: #8a6a46;               /* 4.65:1（原 rgba(181,113,58,.35) 仅 2.3:1） */
+  font-size: var(--fs-26);
+}
+
+/* ===== 输入联想浮层（自动补全） =====
+   视觉与「搜索范围」面板（.emp-dropdown）同族：同 top、同圆角、同暗底，
+   但更窄的内边距与更高的 z-index（两者互斥出现，层级只为保险） */
+.sug-dropdown {
+  position: absolute;
+  top: 100rpx;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8rpx;
+  background: rgba(45, 40, 40, 0.97);
+  border: 2rpx solid rgba(200, 168, 106, 0.2);
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.4);
+  z-index: 70;
+  overflow: hidden;
+}
+
+.sug-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 20rpx;
+  border-radius: var(--radius);
+}
+
+.sug-item-hover {
+  background: rgba(200, 168, 106, 0.12);
+}
+
+.sug-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-28);
+  color: rgba(255, 246, 225, 0.92);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sug-meta {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.sug-dynasty {
+  font-size: var(--fs-22);
+  color: rgba(200, 168, 106, 0.75);
+  margin-right: 12rpx;
+}
+
+/* 右侧小箭头（斜向 ↗ 感的 CSS 角标），提示「点选即进入该人物」 */
+.sug-icon {
+  width: 12rpx;
+  height: 12rpx;
+  border-top: 2rpx solid rgba(200, 168, 106, 0.6);
+  border-right: 2rpx solid rgba(200, 168, 106, 0.6);
+  transform: rotate(45deg);
+}
+
+
+.search-clear {
+  position: relative;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-20);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-left: 12rpx;
+}
+/* 视觉仍是 20px 圆点，热区用透明伪元素外扩到 88rpx（44px），不占布局 */
+.search-clear::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translate(-50%, -50%);
+}
+
+/* ====== 搜索范围：搜索框内左侧触发器 + 下拉面板（全部 / 帝王 / 非帝王，与 Web 端同文案同口径） ======
+   仅对「有关键词的检索结果」生效；无关键词时也能点开选择，只是暂不参与检索。
+   面板为绝对定位浮层：选中任一项、或点面板外（透明遮罩）即收起。
+   面板高度由 JS 实测后回写到 .search-box 的 margin-bottom（对齐 Web 端「撑开占位」方案），
+   把下方统计条与人物卡片整体下推，避免面板压在卡片上。 */
+.emp-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex-shrink: 0;
+  padding: 6rpx 20rpx;
+  margin-right: 8rpx;
+  background: rgba(61, 46, 31, 0.06);
+  border: 2rpx solid rgba(181, 113, 58, 0.32);
+  border-radius: var(--radius-pill);
+  color: #7a4a22;
+  font-size: var(--fs-24);
+  font-weight: 600;
+}
+/* 胶囊视觉高度不变，热区纵向扩到 88rpx（44px） */
+.emp-trigger::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--tap-min);
+  transform: translateY(-50%);
+}
+
+.emp-trigger-arrow {
+  font-size: 18rpx;
+  opacity: 0.7;
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}
+
+.emp-trigger-open .emp-trigger-arrow {
+  transform: rotate(0deg);
+}
+
+/* 下拉面板：深色 + 大圆角（top = 搜索框 88rpx + 12rpx 间距） */
+.emp-dropdown {
+  position: absolute;
+  top: 100rpx;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16rpx 20rpx;
+  background: rgba(45, 40, 40, 0.96);
+  border: 2rpx solid rgba(200, 168, 106, 0.2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.35);
+  z-index: 60;
+}
+
+.emp-dropdown-list {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+/* 无关键词时的提示行：选择可保存，但筛选要等有搜索词才生效 */
+.emp-dropdown-hint {
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 2rpx solid rgba(200, 168, 106, 0.2);
+  text-align: center;
+  font-size: var(--fs-20);
+  color: rgba(255, 246, 225, 0.55);
+}
+
+/* 选项卡片：字徽在上、文字在下（小程序无法渲染内联 SVG，改用圆形字徽） */
+.emp-dropdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  padding: 14rpx 22rpx;
+  border: 2rpx solid transparent;
+  border-radius: 22rpx;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: var(--fs-24);
+}
+
+.emp-item-badge {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-26);
+  font-family: var(--font-serif);
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2rpx solid rgba(255, 255, 255, 0.14);
+}
+
+.emp-dropdown-item-selected {
+  color: #fff8e8;
+  font-weight: 600;
+  background: rgba(255, 246, 225, 0.12);
+  border-color: rgba(200, 168, 106, 0.55);
+}
+
+/* 「帝王」选中时字徽转金色发光（对应 Web 端金色 SVG 图标） */
+.emp-dropdown-item-selected.emp-item-emperor .emp-item-badge {
+  color: #ffd700;
+  border-color: rgba(255, 215, 0, 0.6);
+  background: rgba(255, 215, 0, 0.12);
+  box-shadow: 0 0 20rpx rgba(255, 215, 0, 0.35);
+}
+
+.stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.stats-text {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.stats-sep {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+  margin: 0 8rpx;
+}
+
+/* ====== 随机人物轮播卡片（20 条 · 无缝循环） ====== */
+/* 与 web 移动端 MobileFigureCarousel 同款视觉：左朝代色竖条 + 玻璃底 + 朝代渐变头像。
+   颜色（竖条渐变 / 标签底色 / 光晕）已在 utils/figure-display.js 预解析为行内 style，
+   因为 WXSS 不支持 CSS 的 color-mix()。 */
+.mfc-section {
+  padding: 0 24rpx;
+  box-sizing: border-box;
+}
+
+.mfc-hint-text {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-text {
+  font-size: var(--fs-32);
+  color: var(--text-secondary);
+  margin-bottom: 12rpx;
+}
+
+.empty-hint {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+/* 底部占位统一交给 app.wxss 的 .tabbar-space（100rpx + 安全区），
+   不再叠加页面级 .bottom-spacer / .safe-area-bottom */
+
+/* ====== Search Section Headers ====== */
+.search-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 32rpx 16rpx;
+}
+/* 搜索区的分区标题复用首页那套「胶囊底座 + 立体红竖线」，
+   但要抹掉首页版为区块间距预留的上下外边距（这里是行内布局，间距由 padding 控制） */
+.search-section-header .section-header {
+  margin: 0;
+}
+
+.related-header {
+  padding-top: 8rpx;
+}
+
+.section-header-count {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* ====== Nav Bar Hamburger ====== */
+
+/* ====== Drawer Overlay ====== */
+
+/* ====== Drawer Sidebar ====== */
+
+/* 真实站点 logo（/icon-512.png），与 Web 端 Drawer 同源；加载失败回退上方「世」字圆徽 */
+
+/* 可折叠分组（对齐 Web 侧边栏） */
+
+/* ====== Dropdown Selector ====== */
+
+.topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 8rpx 16rpx 4rpx;
+}
+
+/* ====== Back to Top Button ====== */
+.back-top-btn {
+  position: fixed;
+  /* 底栏 100rpx + 安全区 + 24rpx 呼吸：全面屏下不再压住底栏「我的」 */
+  bottom: calc(100rpx + env(safe-area-inset-bottom) + 24rpx);
+  right: 30rpx;
+  z-index: 150;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-card-hover));
+  border: 2rpx solid rgba(181, 113, 58, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(40rpx);
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 原 backdrop-filter: blur(12rpx) 已移除：本元素首帧就是 opacity:0 的隐藏态，
+     模糊在可见前零收益，却让首屏多一个 fixed + backdrop-filter 的离屏取样源。 */
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.back-top-show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.back-top-btn:active {
+  transform: scale(0.92);
+}
+
+.back-top-icon {
+  font-size: var(--fs-36);
+  color: var(--accent-gold-ink);
+}
+
+/* ====== Loading State ====== */
+.loading-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 400;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 原 backdrop-filter: blur(16rpx) 已移除：遮罩底色 var(--bg-primary) 是**不透明**的，
+     模糊的是被自己完全盖住的内容 —— 视觉零收益，却强制整屏离屏渲染 + 每次栅格化 */
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40rpx;
+}
+
+.spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 4rpx solid rgba(181, 113, 58, 0.08);
+  border-top-color: var(--accent-gold-ink);
+  border-right-color: rgba(181, 113, 58, 0.2);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: var(--fs-28);
+  color: var(--text-secondary);
+  letter-spacing: 0;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ====== 加载骨架（B 方案：快转 mask + 结构镜像骨架兜底） ======
+   形状逐块镜像真实首屏：.sk-stack-card ↔ .stack-card（372rpx 纸卡），
+   .sk-article-item ↔ .article-item。数据到位时原位切换，零布局跳变。
+   [注意] 类名一律 sk- 前缀：app.wxss 有全局 .skeleton-*（treaty/remember/
+   liberation/campaign 共用）、detail.wxss 另有一套，禁同名纠缠。 */
+.sk-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.sk-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(181, 113, 58, 0.12), transparent);
+  animation: sk-shimmer 1.4s infinite;
+}
+
+@keyframes sk-shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* 骨架通用条 */
+.sk-line {
+  border-radius: 8rpx;
+  background: rgba(62, 43, 38, 0.08);
+}
+.sk-divider {
+  height: 2rpx;
+  margin: 24rpx 0;
+  background: linear-gradient(90deg, #E8E1D9, rgba(232, 225, 217, 0));
+}
+
+/* 牌堆骨架卡（镜像 .stack-card：圆角 40rpx 纸卡 + 四层阴影） */
+.sk-stack-card {
+  display: flex;
+  gap: 28rpx;
+  box-sizing: border-box;
+  width: 100%;
+  height: 372rpx;
+  padding: 40rpx 36rpx;
+  background: radial-gradient(circle at 30% 30%, var(--bg-elevated), var(--bg-card) 50%, var(--bg-secondary));
+  border-radius: 40rpx;
+  box-shadow:
+    0 32rpx 64rpx -16rpx rgba(163, 149, 137, 0.4),
+    0 8rpx 24rpx -4rpx rgba(163, 149, 137, 0.2),
+    inset 4rpx 4rpx 8rpx rgba(255, 255, 255, 1),
+    inset -6rpx -6rpx 16rpx rgba(163, 149, 137, 0.1);
+}
+.sk-stack-avatar {
+  flex-shrink: 0;
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 50%;
+  background: rgba(62, 43, 38, 0.08);
+  border: 3rpx solid rgba(255, 255, 255, 0.9);
+}
+.sk-stack-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 8rpx;
+}
+.sk-line-name { width: 45%; height: 36rpx; }
+.sk-line-years { width: 30%; height: 24rpx; margin-top: 16rpx; }
+.sk-line-intro { width: 100%; height: 22rpx; margin-top: 18rpx; }
+.sk-line-intro:last-child { width: 70%; }
+
+/* 文章骨架卡（镜像 .article-item：白卡 + 编号 + 标题/摘要/徽标） */
+.sk-article-list {
+  display: flex;
+  flex-direction: column;
+}
+.sk-article-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 36rpx 32rpx;
+  margin-bottom: 28rpx;
+  background: radial-gradient(circle at 30% 30%, var(--bg-elevated), #FCFAF8 60%, #F5F2ED);
+  border-radius: 32rpx;
+  box-shadow:
+    0 24rpx 48rpx -12rpx rgba(163, 149, 137, 0.18),
+    0 12rpx 24rpx -8rpx rgba(163, 149, 137, 0.12),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.9);
+}
+.sk-article-num {
+  flex-shrink: 0;
+  width: 44rpx;
+  height: 44rpx;
+  margin-right: 22rpx;
+  border-radius: 8rpx;
+}
+.sk-article-main {
+  flex: 1;
+  min-width: 0;
+  padding: 6rpx 16rpx 0 0;
+}
+.sk-line-title { width: 70%; height: 32rpx; }
+.sk-line-text { width: 100%; height: 22rpx; margin-top: 16rpx; }
+.sk-line-text:last-of-type { width: 85%; }
+.sk-line-badge { width: 24%; height: 34rpx; margin-top: 22rpx; border-radius: 12rpx; }
+
+/* 首屏内容到位时的原位淡入（区块 wx:if 新建时播放一次；刷新不重建则不播） */
+.home-fade-in {
+  animation: home-fade-in 0.28s ease both;
+}
+
+@keyframes home-fade-in {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ====== Error Retry ====== */
+.error-retry {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 120rpx 40rpx; gap: 24rpx;
+}
+.error-retry-text { font-size: var(--fs-28); color: var(--text-secondary, #8a8375); text-align: center; }
+.error-retry-btn {
+  margin-top: 16rpx; padding: 20rpx 48rpx; border-radius: 40rpx;
+  background: var(--accent-gold, var(--accent-gold)); color: #fff; font-size: var(--fs-28); font-weight: 600;
+}
+
+/* ====== 侧边栏头像 ====== */
+
+/* ===== 人物卡牌堆叠（乱序牌堆 · 顶卡拖走 · 循环） ===== */
+.stack-wrap {
+  position: relative;
+  width: 100%;
+  height: 460rpx;
+  margin-top: 8rpx;
+}
+
+.stack-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 372rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: 36rpx;
+  padding: 34rpx 40rpx;
+  box-sizing: border-box;
+  box-shadow: 0 20rpx 60rpx rgba(61, 46, 31, 0.14), 0 4rpx 12rpx rgba(61, 46, 31, 0.08);
+  display: flex;
+  align-items: stretch;
+  transition: transform 0.45s cubic-bezier(0.22, 0.9, 0.3, 1.2), opacity 0.4s ease, box-shadow 0.3s ease;
+}
+
+.stack-card-dragging {
+  transition: box-shadow 0.3s ease;
+  box-shadow: 0 48rpx 96rpx rgba(61, 46, 31, 0.22), 0 12rpx 28rpx rgba(61, 46, 31, 0.1);
+}
+
+/* 左：头像位（圆形 + 朝代小签） */
+.stack-avatar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 140rpx;
+}
+
+.stack-avatar {
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-elevated);
+  font-weight: 700;
+  border: 3rpx solid rgba(255, 253, 247, 0.6);
+  box-shadow: 0 6rpx 16rpx rgba(61, 46, 31, 0.15);
+}
+
+.stack-avatar-img {
+  width: 100%;
+  height: 100%;
+}
+
+.stack-avatar-char {
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+/* 右：信息位 */
+.stack-info-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin-left: 24rpx;
+}
+
+.stack-name-row {
+  display: flex;
+  align-items: baseline;
+}
+
+.stack-name {
+  font-size: var(--fs-36);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+.stack-years {
+  margin-left: 16rpx;
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.stack-divider {
+  height: 1rpx;
+  background: linear-gradient(90deg, #dccdb2, rgba(220, 205, 178, 0));
+  margin: 18rpx 0 14rpx;
+}
+
+.stack-intro-label {
+  font-size: 18rpx;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.stack-intro {
+  font-size: var(--fs-24);
+  line-height: 1.75;
+  color: rgba(61, 46, 31, 0.82);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* 拖拽方向提示签 */
+.stack-tag {
+  position: absolute;
+  top: 28rpx;
+  font-size: var(--fs-24);
+  font-weight: 800;
+  letter-spacing: 0;
+  padding: 8rpx 20rpx;
+  border-radius: 14rpx;
+  border: 3rpx solid currentColor;
+  opacity: 0;
+  background: rgba(251, 247, 239, 0.85);
+  /* WXS 拖拽只回传两档（0/1），显隐的平滑由 CSS 过渡补 */
+  transition: opacity 0.15s ease;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.stack-tag-left {
+  left: 28rpx;
+  color: #8a9a5b;
+  transform: rotate(-12deg);
+}
+
+.stack-tag-right {
+  right: 28rpx;
+  color: var(--accent-gold-ink);
+  transform: rotate(12deg);
+}
+
+.stack-hint {
+  margin-top: 16rpx;
+  text-align: center;
+}
+
+/* ===== 专题文章（最近 10 篇） =====
+   视觉对齐「专题」页文章列表（topic-list 的 .topic-card）：
+   编号 + 标题/摘要/底部标签行 + 箭头；无描边白卡、圆角 24rpx、0 3rpx 14rpx 阴影。
+   [注意] 不用 flex gap（老基础库支持不全），间距一律走 padding/margin */
+.special-topic-section {
+  margin-top: 36rpx;
+  padding: 0 40rpx;
+}
+
+.article-section {
+  margin-top: 36rpx;
+  padding: 0 40rpx;
+}
+.article-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.article-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 32rpx 28rpx;
+  margin-bottom: 24rpx;
+  background: var(--bg-card);
+  border: none;
+  border-radius: 24rpx;
+  box-shadow: 0 3rpx 14rpx rgba(61, 46, 31, 0.08);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.article-item:last-child {
+  margin-bottom: 0;
+}
+.article-item-hover {
+  background: var(--bg-card-hover);
+  box-shadow: 0 6rpx 20rpx rgba(61, 46, 31, 0.13);
+}
+
+/* 编号：补零两位数、衬线、等宽数字（01 02 …） */
+.article-num {
+  flex-shrink: 0;
+  min-width: 44rpx;
+  margin-right: 22rpx;
+  padding-top: 2rpx;
+  font-size: var(--fs-30);
+  font-weight: 700;
+  font-family: var(--font-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.article-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* 右侧留 16rpx 呼吸位，避免长标题换行后贴住箭头
+     （对齐专题页 .special-body 的 padding-right: 16rpx；左侧间距由 .article-num 的 margin-right 提供） */
+  padding: 0 16rpx 0 0;
+}
+
+.article-title {
+  font-family: var(--font-serif);
+  font-size: 32rpx;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* 摘要：3 行截断 */
+.article-summary {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--text-muted);
+  line-height: 1.62;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* 底部：标签靠左、关联人物靠右，同一行 */
+.article-foot {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.article-badge {
+  flex-shrink: 0;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 6rpx 18rpx;
+  border-radius: 8rpx;
+  line-height: 1.3;
+}
+.article-badge-ghost {
+  color: var(--text-muted);
+}
+
+.article-figures {
+  flex: 1;
+  min-width: 0;
+  margin-left: 16rpx;
+  text-align: right;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.article-figures-ico {
+  color: #b3a48a;
+  margin-right: 4rpx;
+}
+
+.article-arrow {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  padding-top: 2rpx;
+  font-size: var(--fs-34);
+  color: #b3a48a;
+}
+
+/* ===== 文章列表收尾（末卡之后的留白 + 一行纯提示） =====
+   量级换算：按 375 宽折算，参考图末卡底 → tabBar 上沿约 100px；
+   现状 .tabbar-space（100rpx + 安全区）滚到底时已提供约 50px 可见留白，
+   本块只补差额：padding-top 78rpx + 行高 42rpx = 120rpx（60px），
+   合计约 110px，落在 100–120px 区间，不与既有底部占位叠加成双份。
+   回顶按钮固定在底栏上方 24rpx、右侧 30rpx、直径 88rpx（375 宽约 x 316–360）；
+   提示文字居中，右边界约 265px，二者纵向有交叠带但横向不重叠，812 / 667 均不压字。 */
+.article-list-end {
+  padding-top: 78rpx;
+  text-align: center;
+}
+
+.article-list-end-text {
+  /* 与文章摘要正文同字号（.article-summary 26rpx），不再压小一档 */
+  font-size: 26rpx;
+  line-height: 42rpx;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* ===== 搜索结果新样式（设计稿：圆头像 + 姓名 + 徽章胶囊的单列白卡） ===== */
+.sr-list {
+  padding: 0 40rpx;
+  margin-top: 20rpx;
+}
+/* 卡片观感对齐首页功能磁贴：大圆角 + 外投影 + 内高光 + hover 上浮；底色/描边仍是原暖白 */
+.sr-card {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1rpx solid #e5dcc9;
+  border-radius: 32rpx;
+  padding: 26rpx 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow:
+    0 20rpx 40rpx -12rpx rgba(163, 149, 137, 0.35),
+    0 10rpx 20rpx -8rpx rgba(163, 149, 137, 0.2),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.9);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.sr-card-hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-4rpx);
+  box-shadow:
+    0 28rpx 48rpx -14rpx rgba(163, 149, 137, 0.45),
+    0 12rpx 24rpx -8rpx rgba(163, 149, 137, 0.25),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.95);
+}
+.sr-avatar {
+  flex-shrink: 0;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c9a468, #a97f3c);
+  color: var(--bg-elevated);
+  font-size: var(--fs-40);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rel-avatar {
+  background: #efe4d0;
+  color: #7a6647;
+}
+.sr-body {
+  flex: 1;
+  min-width: 0;
+  margin-left: 26rpx;
+}
+.sr-name {
+  font-size: var(--fs-34);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.sr-badges {
+  display: flex;
+  margin-top: 12rpx;
+}
+.sr-badge {
+  font-size: var(--fs-22);
+  color: #8f6b3e;
+  background: #f1e6d2;
+  border-radius: 8rpx;
+  padding: 4rpx 14rpx;
+  margin-right: 12rpx;
+}
+.sr-arrow {
+  flex-shrink: 0;
+  font-size: var(--fs-40);
+  color: #c9bca6;
+  margin-left: 16rpx;
+}
+
+/* ===== 同名多人「选择态」（2026-10-13） =====
+   搜索结果 ≥2 位时：卡片可点选（切换当前查看关系网的人物），
+   选中卡片加红棕描边 +「查看中」徽章；详情入口收窄为独立胶囊按钮。 */
+.search-pick-hint {
+  margin: 0 40rpx;
+  padding: 18rpx 24rpx;
+  background: #f7eee2;
+  border: 1rpx dashed #ddc9ab;
+  border-radius: 20rpx;
+}
+.search-pick-hint-text {
+  font-size: var(--fs-24);
+  color: #8f6b3e;
+  line-height: 1.5;
+}
+
+.search-correction-hint {
+  margin: 0 40rpx 20rpx;
+  padding: 18rpx 24rpx;
+  background: #f7eee2;
+  border: 1rpx solid #e3c896;
+  border-left: 6rpx solid var(--accent-gold);
+  border-radius: var(--radius);
+}
+.search-correction-text {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+  line-height: 1.5;
+}
+
+/* ===== 纠错「选择人物」卡片（2026-10-29） =====
+   多候选错字（如「宣桐」同时近 宣统/宣光）时，不再由权重高的项偷偷抢走答案，
+   而是弹出可点选的人物卡，让用户一眼看清并选择。 */
+.sp-card {
+  margin: 0 40rpx 20rpx;
+  padding: 26rpx 28rpx 12rpx;
+  background: var(--bg-elevated);
+  border: 1rpx solid #efe1c8;
+  border-radius: 22rpx;
+  box-shadow: 0 16rpx 36rpx -18rpx rgba(181, 113, 58, .28);
+}
+.sp-head {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 22rpx;
+}
+.sp-dot {
+  flex-shrink: 0;
+  width: 14rpx;
+  height: 14rpx;
+  margin-top: 12rpx;
+  margin-right: 16rpx;
+  border-radius: 50%;
+  background: var(--accent-gold);
+}
+.sp-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.sp-title {
+  display: block;
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+.sp-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+/* 单选列表：一行一个，整行可点，名字完整显示不截断 */
+.sp-grid {
+  display: block;
+}
+.sp-person {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+  padding: 24rpx 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #ede0c8;
+  border-radius: 18rpx;
+}
+.sp-person-hover {
+  background: var(--bg-card-hover);
+  border-color: #d8c39a;
+}
+.sp-avatar {
+  flex-shrink: 0;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c9a468, #a97f3c);
+  color: var(--bg-elevated);
+  font-size: var(--fs-36);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sp-info {
+  flex: 1;
+  min-width: 0;
+  margin-left: 22rpx;
+}
+.sp-name {
+  font-size: var(--fs-32);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  /* 名字完整显示：超长时换行而非省略号，保证「爱新觉罗·溥仪」等一眼看全 */
+  white-space: normal;
+  word-break: break-all;
+}
+.sp-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+}
+.sp-dyn {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #8f6b3e;
+  background: #f1e6d2;
+  border-radius: 6rpx;
+  padding: 3rpx 12rpx;
+  margin-right: 12rpx;
+  margin-bottom: 4rpx;
+}
+.sp-tag {
+  font-size: 22rpx;
+  color: #a3916f;
+  /* 匹配标签完整显示，不截断 */
+  white-space: normal;
+  word-break: break-all;
+}
+/* 右侧「选择 ›」做成明确的按钮样式，点哪张查哪张，一眼可分 */
+.sp-go {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  padding: 12rpx 22rpx;
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--bg-elevated);
+  background: linear-gradient(135deg, #c98b4a, #a9702f);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 6rpx 14rpx -6rpx rgba(169, 112, 47, .5);
+}
+.sr-card-picked {
+  border-color: var(--accent-gold-ink);
+  background: #fdf6ee;
+  box-shadow: 0 20rpx 40rpx -12rpx rgba(181, 113, 58, .32), 0 10rpx 20rpx -8rpx rgba(181, 113, 58, .18), inset 2rpx 2rpx 6rpx rgba(255, 255, 255, .9);
+}
+.sr-picked-badge {
+  font-size: var(--fs-22);
+  color: var(--bg-elevated);
+  background: var(--accent-gold);
+  border-radius: 8rpx;
+  padding: 4rpx 14rpx;
+  margin-right: 12rpx;
+}
+.sr-detail-btn {
+  flex-shrink: 0;
+  font-size: var(--fs-24);
+  color: #8f6b3e;
+  background: #f1e6d2;
+  border: 1rpx solid #e2d3b8;
+  border-radius: var(--radius-pill);
+  padding: 10rpx 20rpx;
+  margin-left: 16rpx;
+}
+.rel-card {
+  padding: 24rpx 28rpx;
+}
+.rel-meta {
+  margin-top: 10rpx;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rel-badge {
+  flex-shrink: 0;
+  font-size: var(--fs-24);
+  border-radius: 10rpx;
+  padding: 8rpx 18rpx;
+  margin-left: 16rpx;
+}
+.rel-badge-pink {
+  color: #b5544a;
+  background: #f9e7e4;
+}
+.rel-badge-blue {
+  color: #4a7db4;
+  background: #e4eef9;
+}
+.rel-badge-purple {
+  color: #6e64b0;
+  background: #eae7f8;
+}
+
+/* =========================================================
+   首页 · 新拟态（Neumorphism）皮肤
+   参考稿：rwz/新拟态/首页新拟态.txt
+   作用域：仅本页。只改「分区标题 / 功能磁贴 / 文章卡 / 牌堆卡」的观感；
+          顶部（世慧屋标题 + 搜索框 + 统计条）与全部交互逻辑保持不变。
+   要点：radial-gradient 径向渐变 + box-shadow 内外双阴影（左上白高光 / 右下灰投影）
+   ========================================================= */
+
+/* 页面底色改为米黄（与参考稿一致） */
+page {
+  --pull-down-bg: #f4ede1;
+  background-color: var(--bg-primary);
+}
+.page {
+  background: var(--bg-primary);
+}
+
+/* ── 统一分区标题：胶囊底座 + 立体红竖线 ── */
+.section-header {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0;
+  margin: 36rpx 0 24rpx;
+  padding: 12rpx 36rpx 12rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    -6rpx -6rpx 16rpx rgba(255, 255, 255, 0.9),
+    8rpx 8rpx 20rpx rgba(163, 149, 137, 0.25),
+    inset 2rpx 2rpx 4rpx rgba(255, 255, 255, 0.8);
+}
+.section-header-bar {
+  width: 10rpx;
+  height: 32rpx;
+  border-radius: 8rpx;
+  background: var(--accent-gold);
+  margin-right: 20rpx;
+  box-shadow:
+    -2rpx -2rpx 4rpx rgba(255, 255, 255, 0.6),
+    4rpx 4rpx 8rpx rgba(163, 149, 137, 0.6);
+}
+.section-header-title {
+  font-size: var(--fs-32);
+  font-weight: bold;
+  color: #4A342E;
+  letter-spacing: 0;
+}
+
+/* ── 区块左右留白统一为 40rpx ── */
+.mfc-section,
+.feature-section,
+.special-topic-section,
+.article-section {
+  padding: 0 40rpx;
+}
+
+/* ── 深色功能磁贴：双列 Grid + 深棕径向渐变 ── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+.feature-tile {
+  height: auto;
+  min-height: 190rpx;
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 30%, #5a4632, var(--tile-deep) 60%, #2d2118);
+  border-radius: 32rpx;
+  box-shadow:
+    0 24rpx 48rpx -12rpx rgba(62, 43, 38, 0.25),
+    0 12rpx 24rpx -8rpx rgba(62, 43, 38, 0.15),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.1);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.feature-tile-hover {
+  opacity: 1;
+  transform: translateY(-4rpx);
+  box-shadow:
+    0 32rpx 56rpx -14rpx rgba(62, 43, 38, 0.32),
+    0 14rpx 28rpx -8rpx rgba(62, 43, 38, 0.18),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.14);
+}
+/* 特别专题只剩一张磁贴时占满整行，避免 2 列网格留出空位 */
+.feature-tile-wide {
+  grid-column: 1 / -1;
+}
+.feature-tile-name {
+  color: var(--bg-elevated);
+  font-size: var(--fs-32);
+  font-weight: bold;
+  letter-spacing: 0;
+}
+.feature-tile-desc {
+  margin-top: 6rpx;
+  color: #A79A94;
+  font-size: var(--fs-22);
+}
+.feature-tile-glyph {
+  color: rgba(255, 255, 255, 0.07);
+}
+
+/* ── 专题文章卡：白底软包光影 ── */
+.article-item {
+  padding: 36rpx 32rpx;
+  margin-bottom: 28rpx;
+  background: radial-gradient(circle at 30% 30%, var(--bg-elevated), #FCFAF8 60%, #F5F2ED);
+  border-radius: 32rpx;
+  box-shadow:
+    0 24rpx 48rpx -12rpx rgba(163, 149, 137, 0.18),
+    0 12rpx 24rpx -8rpx rgba(163, 149, 137, 0.12),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.9);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.article-item-hover {
+  transform: translateY(-4rpx);
+  box-shadow:
+    0 36rpx 60rpx -16rpx rgba(163, 149, 137, 0.28),
+    0 16rpx 32rpx -8rpx rgba(163, 149, 137, 0.16),
+    inset 2rpx 2rpx 8rpx rgba(255, 255, 255, 1);
+}
+.article-num {
+  font-size: 44rpx;
+  color: var(--accent-gold-ink);
+  font-family: Georgia, var(--font-serif);
+}
+.article-title {
+  color: var(--text-primary);
+}
+.article-summary {
+  color: #7A6F6A;
+}
+.article-badge {
+  background: #F0ECE6;
+  color: #6D605A;
+  border-radius: 12rpx;
+}
+.article-figures {
+  color: #A89A92;
+}
+.article-arrow {
+  color: var(--text-muted);
+}
+
+/* ── 历史人物牌堆：厚实卡纸的立体软包 ── */
+.stack-card {
+  background: radial-gradient(circle at 30% 30%, var(--bg-elevated), var(--bg-card) 50%, var(--bg-secondary));
+  border: none;
+  border-radius: 40rpx;
+  box-shadow:
+    0 32rpx 64rpx -16rpx rgba(163, 149, 137, 0.4),
+    0 8rpx 24rpx -4rpx rgba(163, 149, 137, 0.2),
+    inset 4rpx 4rpx 8rpx rgba(255, 255, 255, 1),
+    inset -6rpx -6rpx 16rpx rgba(163, 149, 137, 0.1);
+}
+.stack-card-dragging {
+  box-shadow:
+    0 40rpx 80rpx -16rpx rgba(163, 149, 137, 0.5),
+    0 12rpx 28rpx -6rpx rgba(163, 149, 137, 0.25),
+    inset 4rpx 4rpx 8rpx rgba(255, 255, 255, 1);
+}
+.stack-avatar {
+  border: 3rpx solid rgba(255, 255, 255, 0.9);
+}
+.stack-name {
+  color: var(--text-primary);
+}
+.stack-divider {
+  background: linear-gradient(90deg, #E8E1D9, rgba(232, 225, 217, 0));
+}
+.stack-intro-label {
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+.stack-intro {
+  color: #7A6F6A;
+}
+.stack-tag {
+  background: rgba(255, 255, 255, 0.9);
+}
+.mfc-hint-text {
+  color: var(--text-muted);
+  opacity: 1;
+}
+

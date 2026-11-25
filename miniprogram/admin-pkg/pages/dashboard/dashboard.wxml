@@ -1,0 +1,56 @@
+<import src="../../../templates/admin-nav/admin-nav.wxml" />
+<view class="page-wrapper">
+  <template is="admin-nav" data="{{title: '管理后台', safeAreaTop: safeAreaTop, emptyRightClass: 'nav-right', rightText: '退出'}}" />
+
+  <scroll-view class="scroll-wrap" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <view class="dashboard-section">
+      <view class="welcome-text">
+        <text class="welcome-title">欢迎回来</text>
+        <text class="welcome-desc">请选择需要管理的模块</text>
+      </view>
+
+      <view class="card-grid">
+        <view class="admin-card" bindtap="onGoFigures">
+          <view class="card-icon-wrap card-icon-figures">
+            <text class="card-icon">卷</text>
+          </view>
+          <text class="card-label">人物管理</text>
+          <text class="card-desc">新增、编辑、删除人物</text>
+        </view>
+
+        <view class="admin-card" bindtap="onGoArticles">
+          <view class="card-icon-wrap card-icon-articles">
+            <text class="card-icon">录</text>
+          </view>
+          <text class="card-label">文章管理</text>
+          <text class="card-desc">管理文章内容与分类</text>
+        </view>
+
+        <view class="admin-card" bindtap="onGoTopics">
+          <view class="card-icon-wrap card-icon-topics">
+            <text class="card-icon">目</text>
+          </view>
+          <text class="card-label">专题管理</text>
+          <text class="card-desc">管理专题文章与内容</text>
+        </view>
+
+        <view class="admin-card" bindtap="onGoUsers">
+          <view class="card-icon-wrap card-icon-users">
+            <text class="card-icon">众</text>
+          </view>
+          <text class="card-label">用户管理</text>
+          <text class="card-desc">查看和管理注册用户</text>
+        </view>
+
+        <view class="admin-card" bindtap="onGoMessages">
+          <view class="card-icon-wrap card-icon-messages">
+            <text class="card-icon">信</text>
+          </view>
+          <text class="card-label">消息管理</text>
+          <text class="card-desc">公告、站内信与反馈</text>
+        </view>
+      </view>
+    </view>
+
+  </scroll-view>
+</view>

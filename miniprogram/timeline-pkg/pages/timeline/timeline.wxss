@@ -1,0 +1,1478 @@
+/* ============================================================
+   大事年表（年表 + 战史双记）
+   视觉基准：_design/merge/b-year-book.html（375 宽，px 值 ×2 = rpx）
+     纸底 #f4ede1 · 卡片 #fbf7ef · 墨 #33261a / #75654f
+     金 #c8925a（按钮）/ #b5713a · 朱 #a63b2a · 描边 #dccdb2
+   吸顶：标题条 fixed；搜索区 / 时代分段头 sticky。
+   注意：本页不能出现 overflow:hidden 的祖先，否则 sticky 会退化成普通流。
+   ============================================================ */
+page {
+  background: var(--bg-primary);
+  /* 中文无衬线优先：部分安卓机对 -apple-system / PingFang 全部落空后会回落到
+     衬线字体，20rpx 小字的横画不足 1px 会糊成灰边。这里显式给出本机常见的中文
+     无衬线，避免正文落到宋体。衬线只留给 .hero-t / .wl-n / .sheet-camp-name。 */
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
+    "MiSans", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+.page {
+  background: var(--bg-primary);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ---------------- 塌陷标题条 ---------------- */
+.titlebar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 28rpx;
+  /* [2026-11-14 B1] 末端 #1d160f 并入 --head-grad-bottom，色值全部走 token。 */
+  background: linear-gradient(180deg, var(--head-grad-mid) 0%, var(--head-grad-bottom) 100%);
+  border-bottom: 1rpx solid rgba(255, 236, 200, 0.1);
+  transform: translateY(-100%);
+  transition: transform 0.18s ease;
+}
+
+/* 落下来后不要残留 0 位移的 transform：带 transform 的元素会长期停在合成层上，
+   部分安卓机对它只做灰度抗锯齿。none 让标题条在动画结束后回到普通层。 */
+.titlebar.show {
+  transform: none;
+}
+
+.tb-t {
+  font-size: var(--fs-30);
+  line-height: 1;
+  color: #f3e7d3;
+}
+
+/* ---------------- 收缩态圆钮（标题条右侧） ----------------
+   热区 88rpx（44px）× 88rpx（44px），视觉圆 68rpx（34px）居中；
+   标题条本身只有 36px 高，热区上下各溢出 4px，正好覆盖手指落点。 */
+.fab {
+  position: absolute;
+  right: 16rpx;
+  top: 50%;
+  width: 88rpx;
+  height: 88rpx;
+  margin-top: -44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* 视觉圆：沿用深色头的「微亮底 + 浅描边」，不另造视觉语言 */
+.fab::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 68rpx;
+  height: 68rpx;
+  margin: -34rpx 0 0 -34rpx;
+  border-radius: 50%;
+  background: rgba(255, 247, 232, 0.1);
+  border: 1rpx solid rgba(255, 247, 232, 0.3);
+}
+
+.fab-hover::before {
+  background: rgba(255, 247, 232, 0.2);
+}
+
+/* 放大镜：与搜索行内 .sicon 同一画法，只是放到深底上换成暖白色 */
+/* 3rpx（1.5px）的描边与 13rpx 的柄长都会落在半像素上，圆钮本身又在 fixed 层里，
+   叠起来就是一圈灰边。统一改成偶数 rpx，得到整数 2px / 7px。 */
+.fab-ic {
+  position: relative;
+  width: 26rpx;
+  height: 26rpx;
+  border: 4rpx solid #f3e7d3;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.fab-ic::after {
+  content: '';
+  position: absolute;
+  right: -10rpx;
+  bottom: -10rpx;
+  width: 14rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #f3e7d3;
+  transform: rotate(45deg);
+}
+
+/* 有输入内容：圆钮右上角加实心点，并用深色描边把点从圆底上「抠」出来 —— 
+   靠有无形状 + 描边辨识，不单纯依赖颜色对比 */
+.fab-dot {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #e2a35f;
+  box-shadow: 0 0 0 4rpx var(--head-grad-mid);
+}
+
+.fab.has::before {
+  border-color: rgba(226, 163, 95, 0.85);
+}
+
+/* ---------------- hero ---------------- */
+.hero {
+  position: relative;
+  padding: 48rpx 32rpx 38rpx;
+  background:
+    radial-gradient(120% 90% at 84% 0%, rgba(207, 138, 75, 0.26), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  color: #f6ecda;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.26;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1rpx, transparent 1rpx 6rpx);
+}
+
+.hero-kicker,
+.hero-t,
+.hero-sub,
+.hero-meta,
+.hero-note {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-kicker {
+  font-size: var(--fs-20);
+  color: #c9a06a;
+  margin-bottom: 14rpx;
+}
+
+.hero-t {
+  font-family: var(--font-serif, serif);
+  font-size: 48rpx;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: rgba(246, 236, 218, 0.62);
+}
+
+.hero-meta {
+  display: flex;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid rgba(255, 236, 200, 0.14);
+}
+
+.hm {
+  flex: 1;
+  min-width: 0;
+}
+
+.hm-b {
+  font-size: var(--fs-36);
+  font-weight: 600;
+  color: #e8c896;
+}
+
+.hm-s {
+  margin-left: 6rpx;
+  font-size: 18rpx;
+  color: rgba(246, 236, 218, 0.55);
+}
+
+.hero-note {
+  margin-top: 20rpx;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  color: rgba(246, 236, 218, 0.5);
+}
+
+/* ---------------- 吸顶区 ---------------- */
+.erawrap {
+  position: -webkit-sticky;
+  position: sticky;
+  z-index: 40;
+  background: var(--head-grad-mid);
+  /* 效果图 erawrap 下沿有 1px 分隔线（offsetHeight 89 = 42 + 46 + 1） */
+  border-bottom: 2rpx solid #dccdb2;
+}
+
+.searchbar {
+  padding: 8rpx 24rpx;
+}
+
+/* ---------------- 收缩态展开的浮层药丸 ----------------
+   吸附在标题条下沿（top 由页面按 navTop + 36 写入），fixed 定位不占吸顶流，
+   展开/收起都不会让下面的列表跳动。 */
+.sfloat {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 58;
+  /* 4 + 34 + 8 = 46，加 1px 下描边正好 47 —— 与收缩态吸顶区同高，盖住后面的年代尺按钮行 */
+  padding: 8rpx 24rpx 16rpx;
+  background: var(--head-grad-mid);
+  border-bottom: 2rpx solid #dccdb2;
+  box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.26);
+}
+
+/* 点空白折回圆钮的透明遮罩：在浮层之下、列表与吸顶区之上 */
+.smask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 45;
+  background: transparent;
+}
+
+.sbox {
+  display: flex;
+  align-items: center;
+  height: 68rpx;
+  padding: 0 10rpx 0 22rpx;
+  background: rgba(255, 247, 232, 0.08);
+  border: 1rpx solid rgba(255, 247, 232, 0.28);
+  border-radius: 999rpx;
+}
+
+/* 输入为空时左侧先给一个「查」字，与效果图一致 */
+.shint {
+  flex: none;
+  margin-right: 10rpx;
+  font-size: var(--fs-20);
+  color: rgba(246, 236, 218, 0.6);
+}
+
+/* 放大镜：纯 CSS，避免引入图片 */
+.sicon {
+  position: relative;
+  flex: none;
+  width: 20rpx;
+  height: 20rpx;
+  margin-right: 12rpx;
+  border: 2rpx solid rgba(246, 236, 218, 0.55);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.sicon::after {
+  content: '';
+  position: absolute;
+  right: -6rpx;
+  bottom: -6rpx;
+  width: 8rpx;
+  height: 2rpx;
+  background: rgba(246, 236, 218, 0.55);
+  transform: rotate(45deg);
+}
+
+.sinput {
+  flex: 1;
+  min-width: 0;
+  height: 66rpx;
+  font-size: var(--fs-24);
+  color: #f6ecda;
+}
+
+.sph {
+  font-size: var(--fs-24);
+  color: rgba(248, 240, 226, 0.62);
+}
+
+.qcnt {
+  flex: none;
+  margin-left: 8rpx;
+  font-size: var(--fs-20);
+  color: rgba(246, 236, 218, 0.55);
+  white-space: nowrap;
+}
+
+.qclr {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  margin-left: 8rpx;
+  border-radius: 50%;
+  background: rgba(255, 247, 232, 0.12);
+  font-size: var(--fs-24);
+  line-height: 1;
+  color: rgba(246, 236, 218, 0.78);
+}
+
+/* 清空：视觉 36×36rpx，热区向右补到 70rpx 宽、88rpx 高（35×44px）。
+   右侧只有 10rpx 盒内边距 + 24rpx 搜索条内边距，再右就越过屏幕；
+   左侧是输入框、左邻是「查」按钮，都不动。 */
+.qclr::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: -34rpx;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+.qgo {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52rpx;
+  margin-left: 10rpx;
+  padding: 0 24rpx;
+  border-radius: 26rpx;
+  background: #c8925a;
+  font-size: var(--fs-24);
+  font-weight: 600;
+  line-height: 1;
+  color: #2a1d10;
+  white-space: nowrap;
+}
+
+/* 「查询」按钮：视觉 52rpx 高，热区补到 88rpx（44px）；
+   上下各外扩 18rpx，落在搜索条内边距与年代尺行留白里，不碰清空与筛选按钮。 */
+.qgo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+.qgo-hover {
+  background: #b07b45;
+}
+
+/* ---------------- 年代尺按钮（整行可点） ---------------- */
+.rulerbar {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 24rpx 16rpx;
+}
+
+/* 筛选 / 近现代 两枚小按钮合进这一行：行高不变（68rpx），吸顶高度也不变 */
+.tool {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  margin-left: 10rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #ddc7a4;
+  border-radius: var(--radius);
+  background: #f4e7d2;
+}
+
+/* 筛选 / 近现代：视觉 56rpx 高、约 80rpx 宽，热区补到 88rpx 高、左右各 4rpx（44px 级）；
+   上下落在年代尺行内边距，左右 4rpx 小于按钮间距 10rpx。 */
+.tool::after {
+  content: '';
+  position: absolute;
+  left: -4rpx;
+  right: -4rpx;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+.tool-hover {
+  background: #eadcc4;
+}
+
+.tool.on {
+  border-color: var(--accent-gold-ink);
+  background: #f7ecd8;
+}
+
+.tool-t {
+  font-size: var(--fs-22);
+  line-height: 1;
+  color: #5a442c;
+}
+
+.tool-n {
+  margin-left: 6rpx;
+  font-size: 18rpx;
+  line-height: 1;
+  color: var(--accent-vermillion);
+  font-weight: 600;
+}
+
+/* 筛选浮层：绝对定位在吸顶区下沿，不占吸顶流 */
+.fmask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  background: transparent;
+}
+
+.fpanel {
+  position: absolute;
+  left: 16rpx;
+  right: 16rpx;
+  top: 100%;
+  z-index: 2;
+  padding: 18rpx 20rpx 20rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: 20rpx;
+  box-shadow: 0 12rpx 28rpx rgba(51, 38, 26, 0.18);
+}
+
+.fp-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.fp-t {
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: #33261a;
+}
+
+.fp-x {
+  font-size: var(--fs-20);
+  color: #75634c;
+}
+
+.fp-k {
+  margin-top: 16rpx;
+  font-size: var(--fs-20);
+  color: #8a7358;
+}
+
+.fp-cats {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 8rpx;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  height: 52rpx;
+  margin: 0 10rpx 10rpx 0;
+  padding: 0 16rpx;
+  border: 1rpx solid #dccdb2;
+  border-radius: 12rpx;
+  background: var(--bg-primary);
+  font-size: var(--fs-22);
+  color: #4a3928;
+}
+
+.chip.on {
+  border-color: var(--accent-gold-ink);
+  background: #f7ecd8;
+  color: #6f4210;
+  font-weight: 600;
+}
+
+.chip-n {
+  margin-left: 6rpx;
+  font-size: 18rpx;
+  color: #8a7358;
+}
+
+.fp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4rpx;
+}
+
+.fp-mile {
+  display: flex;
+  align-items: center;
+  height: 56rpx;
+  font-size: var(--fs-22);
+  color: #4a3928;
+}
+
+.fp-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 10rpx;
+  border: 2rpx solid #b09a7a;
+  border-radius: 6rpx;
+  font-size: var(--fs-20);
+  color: #6f4210;
+  box-sizing: border-box;
+}
+
+.fp-mile.on .fp-box {
+  border-color: var(--accent-gold-ink);
+  background: #f0dfc2;
+}
+
+.fp-n {
+  margin-left: 8rpx;
+  font-size: var(--fs-20);
+  color: #8a7358;
+}
+
+.fp-clear {
+  padding: 0 8rpx;
+  font-size: var(--fs-20);
+  color: var(--accent-vermillion);
+}
+
+.fp-jump {
+  display: flex;
+  align-items: center;
+  margin-top: 8rpx;
+}
+
+.fp-input {
+  flex: 1;
+  min-width: 0;
+  height: 60rpx;
+  padding: 0 16rpx;
+  border: 1rpx solid #dccdb2;
+  border-radius: 12rpx;
+  background: var(--bg-primary);
+  font-size: var(--fs-24);
+  color: #33261a;
+}
+
+.fp-ph {
+  color: #a9977f;
+}
+
+.fp-go {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60rpx;
+  margin-left: 10rpx;
+  padding: 0 26rpx;
+  border-radius: 12rpx;
+  background: #c8925a;
+  font-size: var(--fs-24);
+  font-weight: 600;
+  color: #2a1d10;
+}
+
+.fp-go-hover {
+  background: #b07b45;
+}
+
+.ruler-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 68rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid #ddc7a4;
+  border-radius: 20rpx;
+  background: #f4e7d2;
+  color: #5a442c;
+}
+
+.rt-hover {
+  background: #eadcc4;
+}
+
+.ruler-toggle.on {
+  background: #efdfc6;
+  border-color: #cbb286;
+}
+
+/* 尺子图标 */
+.rlicon {
+  flex: none;
+  width: 28rpx;
+  height: 18rpx;
+  margin-right: 14rpx;
+  border: 2rpx solid #5a442c;
+  border-radius: 2rpx;
+  box-sizing: border-box;
+  background: repeating-linear-gradient(90deg, #5a442c 0 2rpx, transparent 2rpx 6rpx) left bottom / 100% 6rpx no-repeat;
+}
+
+.rt-t {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-24);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rt-cv {
+  flex: none;
+  margin-left: 10rpx;
+  font-size: var(--fs-22);
+  line-height: 1;
+}
+
+/* 首次提示：描边转金 + 轻微呼吸，只跑一轮（3s） */
+.ruler-toggle.hint {
+  animation: rthint 1.5s ease-in-out 2;
+}
+
+/* 只呼吸描边，不动 opacity：容器一旦有 opacity 动画就会被提升为合成层，
+   上面的 24rpx 文字会跟着做灰度抗锯齿。 */
+@keyframes rthint {
+  0%,
+  100% {
+    border-color: #ddc7a4;
+  }
+  50% {
+    border-color: #c8925a;
+  }
+}
+
+/* ---------------- 年代尺 ---------------- */
+.ruler {
+  background: var(--bg-primary);
+  border-top: 1rpx solid rgba(255, 236, 200, 0.14);
+}
+
+.ruler-in {
+  padding: 16rpx 24rpx 20rpx;
+}
+
+.ruler-cv {
+  display: block;
+  width: 100%;
+  height: 236rpx;
+}
+
+/* ---------------- 列表 ---------------- */
+.list {
+  background: var(--bg-primary);
+}
+
+.erahead {
+  position: -webkit-sticky;
+  position: sticky;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  height: 56rpx;
+  padding: 0 28rpx;
+  background: rgba(244, 237, 225, 0.98);
+  border-bottom: 1rpx solid #dccdb2;
+}
+
+.eh-name {
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: #33261a;
+}
+
+.eh-n {
+  margin-left: 12rpx;
+  font-size: var(--fs-20);
+  /* 3.45:1 → 5.69:1 */
+  color: var(--text-muted);
+}
+
+.erahead.on .eh-name {
+  color: var(--accent-vermillion);
+}
+
+.erahead.on {
+  box-shadow: inset 6rpx 0 0 var(--accent-gold);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  /* 左 16rpx 是脊线专用槽位，所有行都留，保证年份列不错位 */
+  padding: 14rpx 28rpx 14rpx 16rpx;
+  border-bottom: 1rpx solid #e7dbc4;
+  background: transparent;
+}
+
+/* 行首脊线：取自「书脊」意象。
+   纯事件不画（默认态保持安静）；纯战役单条；双记并列双条 —— 单/双的形态差
+   本身就是「一条记事 / 两条史料」的隐喻，不依赖颜色辨识。
+   只覆盖标题两行的高度，不随展开区一起拉长（否则展开后又成一条长竖条）。 */
+.rail {
+  position: absolute;
+  left: 0;
+  top: 14rpx;
+  height: 76rpx;
+  display: flex;
+  align-items: stretch;
+}
+
+/* 5rpx / 3rpx 在 375 宽下是 2.5px / 1.5px，竖条两侧会各糊半个像素。
+   改 6rpx / 4rpx，两根 + 4rpx 缝正好 16rpx，与行的左内边距对齐。 */
+.rail-b {
+  width: 6rpx;
+  border-radius: 4rpx;
+  background: var(--accent-gold);
+}
+
+.rail-b2 {
+  width: 6rpx;
+  margin-left: 4rpx;
+  border-radius: 4rpx;
+  /* 与第一条同色：靠「根的多少」区分，而不是靠深浅，缩略到 2px 时也不会糊成一条 */
+  background: var(--accent-gold);
+}
+
+.row-hover {
+  background: #f6efe2;
+}
+
+.row.open {
+  background: var(--bg-card);
+}
+
+.yc {
+  flex: none;
+  width: 108rpx;
+  padding: 4rpx 20rpx 0 0;
+  text-align: right;
+  font-size: var(--fs-20);
+  line-height: 28rpx;   /* 1.35×10px=13.5px，落在半像素；写成整数 14px */
+  /* 原 #8f7c63 在纸底上只有 3.45:1，低于 4.5:1；#75634c 实测 4.95:1 */
+  color: #75634c;
+}
+
+.yc.hit {
+  color: var(--accent-vermillion);
+  font-weight: 600;
+}
+
+.rng {
+  display: block;
+  font-size: 18rpx;
+  line-height: 1.3;
+  /* 原 #a9977c 实测 2.44:1，区间年份几乎读不出；与 .yc 同色 4.95:1 */
+  color: #75634c;
+}
+
+.bd {
+  flex: 1;
+  min-width: 0;
+}
+
+.r1 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nm {
+  font-size: var(--fs-28);
+  font-weight: 600;
+  line-height: 40rpx;   /* 1.42×14px=19.88px；整数 20px 后行高 50.875→51px */
+  color: #33261a;
+}
+
+.row.both .nm {
+  font-weight: 800;
+}
+
+/* 类型签：22rpx / 600（原 20rpx 细体在深色底上读不出），三种身份三套形态：
+   双记 = 实心金底 + 描边；纯战役 = 描边空底（弱一档）；重大 = 浅朱底 */
+.tag {
+  flex: none;
+  margin-left: 10rpx;
+  padding: 0 10rpx;
+  border: 1rpx solid #e2c79b;
+  border-radius: 6rpx;
+  background: #efdcbe;
+  font-size: var(--fs-22);
+  font-weight: 600;
+  line-height: 32rpx;   /* 1.45×11px=15.95px；整数 16px */
+  color: #6f4210;
+}
+
+.tag.tg-war {
+  border-color: #cbb18a;
+  background: transparent;
+  font-weight: 500;
+  color: #7a5220;
+}
+
+.tag.mj {
+  border-color: #e7c4b8;
+  background: #f6e0d8;
+  color: #94301f;
+}
+
+/* 子战役小签：虚线、低对比，只提示「这行里还折着东西」，不跟「战役 / 重大」抢 */
+.tag.tg-kid {
+  border-style: dashed;
+  border-color: #cfc0a6;
+  background: transparent;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.r2 {
+  margin-top: 2rpx;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hl {
+  background: #ffe6a8;
+  color: #5a3410;
+  border-radius: 2rpx;
+}
+
+.chev {
+  flex: none;
+  width: 32rpx;
+  padding-top: 2rpx;
+  text-align: right;
+  font-size: var(--fs-24);
+  line-height: 1.4;
+  /* 折叠箭头是纯文字字形，原 #b7a68c 只有 2.04:1；加深到 4.95:1 */
+  color: #75634c;
+  transition: transform 0.18s ease;
+}
+
+.row.open .chev {
+  transform: rotate(90deg);
+}
+
+/* 展开区（简要）：一句概要 + 事实签 + 双记指路条 + 完整档案入口。
+   完整纪事、纪年、同年、邻条、分类分布都在抽屉里，这里不重复同一段话。 */
+.det {
+  margin-top: 10rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid #e7dbc4;
+}
+
+/* 一句概要：d 的首句截断，最多 2 行（正文合计不超 3 行口径） */
+.brf {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--fs-24);
+  line-height: 40rpx;
+  color: var(--text-primary);
+}
+
+/* 纯战役的第二行：背景首句，单行截断；与上面的战果分行，避免混成一段 */
+.brf2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  margin-top: 4rpx;
+  font-size: var(--fs-22);
+  line-height: 34rpx;
+  color: var(--text-muted);
+}
+
+.brf2-k {
+  margin-right: 8rpx;
+  font-size: 18rpx;
+  color: #8a5620;
+  font-weight: 600;
+}
+
+/* 双记指路条：只给战役名 + 时间，地点 / 战果 / 背景全部留在抽屉 */
+.warlink {
+  display: flex;
+  align-items: center;
+  height: 52rpx;
+  margin-top: 12rpx;
+  padding: 0 16rpx;
+  border: 1rpx solid #e2c9a2;
+  border-radius: 8rpx;
+  background: #f7ecd8;
+}
+
+.wl-k {
+  flex: none;
+  font-size: var(--fs-20);
+  font-weight: 700;
+  color: #8a5620;        /* 5.23:1 on #f7ecd8 */
+}
+
+.wl-n {
+  flex: none;
+  max-width: 320rpx;
+  margin-left: 12rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-serif, serif);
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: #33261a;
+}
+
+.wl-t {
+  flex: 1;
+  min-width: 0;
+  margin-left: 10rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-20);
+  color: var(--text-muted);        /* 4.81:1 on #f7ecd8 */
+}
+
+.wl-go {
+  flex: none;
+  margin-left: 8rpx;
+  font-size: var(--fs-26);
+  color: #8a5620;
+}
+
+/* 完整档案入口：整块 .det 可点，这里给一个可发现的落点 */
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx dashed #e3d6bd;
+  font-size: var(--fs-20);
+  color: #75634c;        /* 4.95:1 */
+}
+
+.more-go {
+  font-size: var(--fs-24);
+  color: #8a5620;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+}
+
+.f {
+  margin-right: 8rpx;
+  margin-bottom: 4rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  background: #efe6d5;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.f.mj {
+  background: #f3ded6;
+  color: #94301f;
+}
+
+/* ---------------- 子战役清单（折叠在父事件展开区里） ----------------
+   父事件是纪事，子战役不独立成行、不占年份；这里只是父行内部的一层清单。
+   点条目 → 半屏抽屉（战役名/时间/地点/战果/背景/类别码），不触发父行抽屉。 */
+.kids {
+  margin-top: 14rpx;
+  border-top: 1rpx solid #e7dbc4;
+}
+
+.kids-h {
+  display: flex;
+  align-items: baseline;
+  padding-top: 12rpx;
+}
+
+.kids-k {
+  font-size: var(--fs-22);
+  font-weight: 700;
+  color: #5a4326;
+}
+
+.kids-n {
+  margin-left: 8rpx;
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+.kid {
+  margin-top: 8rpx;
+  padding: 10rpx 12rpx;
+  border: 1rpx solid #e6d9c1;
+  border-radius: 8rpx;
+  background: #fbf6ec;
+}
+
+/* 搜索命中：黄色高亮，父行展开后一眼能看到落在哪一场 */
+.kid.hi {
+  border-color: #d9a441;
+  background: #fff3d6;
+}
+
+.kid-l1 {
+  display: flex;
+  align-items: baseline;
+}
+
+.kid-y {
+  flex: none;
+  width: 150rpx;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: #7a5220;
+}
+
+.kid-n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-24);
+  font-weight: 600;
+  line-height: 1.5;
+  color: #33261a;
+}
+
+/* 子项身份签：与「战役」区分，虚线细框的低对比小签（目前只有「结局」） */
+.kid-tag {
+  flex: none;
+  margin-left: 8rpx;
+  padding: 0 8rpx;
+  border: 1rpx dashed #c9b79a;
+  border-radius: 4rpx;
+  font-size: 18rpx;
+  line-height: 1.6;
+  color: #7a6244;
+}
+
+.kid-loc {
+  flex: none;
+  max-width: 40%;
+  margin-left: 10rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: #8a6a42;
+}
+
+.kid-go {
+  flex: none;
+  margin-left: 8rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  color: #75634c;
+}
+
+.kid-l2 {
+  margin-top: 2rpx;
+  padding-left: 150rpx;
+  font-size: var(--fs-20);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* ---------------- 空态 / 页脚 ---------------- */
+.empty {
+  padding: 80rpx 40rpx 60rpx;
+  text-align: center;
+}
+
+.empty-t {
+  font-size: var(--fs-26);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.empty-s {
+  margin-top: 12rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-muted);        /* 2.44:1 → 5.69:1 */
+}
+
+.foot {
+  padding: 36rpx 32rpx 60rpx;
+}
+
+.foot-l {
+  font-size: var(--fs-20);
+  line-height: 1.9;
+  color: var(--text-muted);        /* 3.17:1 → 5.69:1 */
+}
+
+/* ============================================================
+   半屏抽屉（纪事 / 战史）
+   ------------------------------------------------------------
+   口径照抄历代帝王页：高度由 JS 写入 px（min(52%, 屏高−导航−72)），
+   这里只管形状：圆角上沿、抓手、内部 scroll-view、底部渐隐。
+   全部用偶数 rpx，且不设 letter-spacing，避免文字二次采样。
+   ============================================================ */
+.sheet-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 190;
+  background: rgba(24, 17, 11, 0.42);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border-radius: 40rpx 40rpx 0 0;
+  box-shadow: 0 -20rpx 56rpx -24rpx rgba(40, 28, 16, 0.42), 0 0 0 1rpx rgba(61, 46, 31, 0.06);
+  transition: transform 0.22s ease;
+}
+
+.sheet.is-dragging {
+  transition: none;
+}
+
+.sheet-grab {
+  display: flex;
+  justify-content: center;
+  padding: 12rpx 0 6rpx;
+}
+
+.sheet-grab-bar {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #ddccb6;
+}
+
+.sheet-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.sheet-scroll {
+  height: 100%;
+}
+
+.sheet-main {
+  padding: 2rpx 40rpx 16rpx;
+}
+
+/* 底部渐隐：提示内容还在下面，不挡点击 */
+.sheet-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52rpx;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(251, 247, 239, 0), var(--bg-card) 78%);
+}
+
+/* 年份 + 时代 */
+.sheet-meta {
+  display: flex;
+  align-items: baseline;
+}
+
+.sheet-yr {
+  font-size: var(--fs-22);
+  font-weight: 600;
+  color: #8a5a2b;
+}
+
+.sheet-era {
+  margin-left: 12rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* 干支（从年份本地推算，不依赖网络） */
+.sheet-gz {
+  margin-left: 12rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+.sheet-name {
+  margin-top: 4rpx;
+  font-size: var(--fs-36);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #33261a;
+}
+
+.sheet-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+}
+
+.sheet-tag {
+  margin-right: 10rpx;
+  margin-bottom: 6rpx;
+  padding: 2rpx 12rpx;
+  border: 1rpx solid #e2c79b;
+  border-radius: 6rpx;
+  background: #efdcbe;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: #6f4210;
+}
+
+/* 段头间距收紧：抽屉要在 812 的首屏（可视约 413px）里装下一条双记的
+   纪年 / 纪事 / 战史全字段，三段上下文还默认收起，层与层之间不必留太松 */
+.sheet-h {
+  display: flex;
+  align-items: baseline;
+  margin-top: 14rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx solid #e7dbc4;
+  font-size: var(--fs-22);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* 可折叠段头：同年 / 前后 / 分布。默认收起，箭头在右，计数紧挨标题 */
+.sh-toggle {
+  justify-content: space-between;
+  margin-top: 10rpx;
+  padding-top: 8rpx;
+}
+
+.sh-n {
+  margin-left: 12rpx;
+  font-size: var(--fs-20);
+  font-weight: 400;
+  color: #8a7358;
+}
+
+.sh-cv {
+  margin-left: auto;
+  padding-left: 12rpx;
+  font-size: var(--fs-20);
+  color: #8a5620;
+}
+
+.sheet-h-note {
+  margin-left: auto;
+  font-size: var(--fs-20);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.sheet-text {
+  margin-top: 6rpx;
+  font-size: var(--fs-24);
+  line-height: 1.66;
+  color: #33261a;
+}
+
+/* 战史块：与列表里的战役卡同一套材质，段头收进卡内 */
+.sheet-camp {
+  margin-top: 8rpx;
+  padding: 10rpx 14rpx 12rpx;
+  border: 1rpx solid #e2c9a2;
+  border-radius: 10rpx;
+  background: #f7ecd8;
+}
+
+.sheet-camp-h {
+  display: flex;
+  align-items: baseline;
+}
+
+.sheet-camp-k {
+  flex: none;
+  font-size: var(--fs-20);
+  font-weight: 700;
+  color: #8a5620;
+}
+
+.sheet-camp-mj {
+  flex: none;
+  margin-left: 10rpx;
+  padding: 0 8rpx;
+  border-radius: 4rpx;
+  background: #f3ded6;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: #94301f;
+}
+
+.sheet-camp-name {
+  margin-top: 4rpx;
+  font-family: var(--font-serif, serif);
+  font-size: var(--fs-28);
+  font-weight: 600;
+  line-height: 1.4;
+  color: #33261a;
+}
+
+.sheet-grid {
+  margin-top: 6rpx;
+  padding-top: 6rpx;
+  border-top: 1rpx dashed #e0cba8;
+}
+
+.sheet-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.sheet-k {
+  flex: none;
+  width: 68rpx;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.sheet-v {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-24);
+  line-height: 1.7;
+  color: #4a3a29;
+}
+
+/* 类别码（MIL:OFF 这类）：原样列出，等宽数字更好扫 */
+.sheet-v.sheet-codes {
+  font-size: var(--fs-22);
+  font-family: Menlo, Consolas, monospace;
+  letter-spacing: 0;
+  color: #5a4326;
+}
+
+.sheet-row-res .sheet-v {
+  font-weight: 600;
+  color: #33261a;
+}
+
+.sheet-sub-h {
+  margin-top: 8rpx;
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+.sheet-intro {
+  margin-top: 4rpx;
+  font-size: var(--fs-20);
+  line-height: 1.62;
+  color: #4a3a29;
+}
+
+/* —— 纪年：政权 / 年号 / 在位（数据源 era-names.json，最多 3 行） —— */
+.era-row {
+  display: flex;
+  align-items: baseline;
+  padding: 4rpx 0;
+}
+
+.era-regime {
+  flex: none;
+  width: 96rpx;
+  font-size: var(--fs-22);
+  font-weight: 600;
+  color: #6f4210;
+}
+
+.era-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-24);
+  color: #33261a;
+}
+
+.era-ruler {
+  flex: none;
+  margin-left: 12rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* 降级说明 / 次要信息：统一小字，4.95:1 以上 */
+.sheet-note {
+  margin-top: 6rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: #75634c;
+}
+
+/* —— 上下文：同年条目 —— */
+.ctx-i {
+  margin-top: 6rpx;
+  padding-left: 16rpx;
+  border-left: 2rpx solid #e3d6bd;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: #4a3a29;
+}
+
+/* —— 上下文：前后邻条 —— */
+.neigh {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 6rpx;
+}
+
+.neigh-k {
+  flex: none;
+  width: 96rpx;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  color: #75634c;
+}
+
+.neigh-v {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: #4a3a29;
+}

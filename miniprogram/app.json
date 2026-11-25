@@ -1,0 +1,261 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/article/article",
+    "pages/topic-list/topic-list",
+    "pages/query/query",
+    "pages/profile/profile",
+    "pages/festivals/festivals",
+    "pages/dynasty-timeline/dynasty-timeline",
+    "pages/emperors/emperors",
+    "pages/official-alias/official-alias",
+    "pages/stats/stats",
+    "pages/six-degrees/six-degrees",
+    "pages/parallel/parallel"
+  ],
+  "subpackages": [
+    {
+      "root": "lineage-pkg",
+      "pages": [
+        "pages/lineage/lineage"
+      ]
+    },
+    {
+      "root": "detail-pkg",
+      "pages": [
+        "pages/detail/detail",
+        "pages/dual/dual"
+      ]
+    },
+    {
+      "root": "chart-pkg",
+      "pages": [
+        "pages/graph/graph"
+      ]
+    },
+    {
+      "root": "topic-pkg",
+      "pages": [
+        "pages/topic/topic",
+        "pages/remember/remember",
+        "pages/liberation/liberation",
+        "pages/treaty/treaty",
+        "pages/campaign/campaign"
+      ]
+    },
+    {
+      "root": "footprint-pkg",
+      "pages": [
+        "pages/footprint/footprint"
+      ]
+    },
+    {
+      "root": "admin-pkg",
+      "pages": [
+        "pages/login/login",
+        "pages/dashboard/dashboard",
+        "pages/articles/articles",
+        "pages/users/users",
+        "pages/figures/figures",
+        "pages/topics/topics",
+        "pages/messages/messages"
+      ]
+    },
+    {
+      "root": "account-pkg",
+      "pages": [
+        "pages/user-center/user-center",
+        "pages/cancel-account/cancel-account",
+        "pages/feedback/feedback",
+        "pages/email/email",
+        "pages/policy/policy",
+        "pages/about/about",
+        "pages/settings/settings",
+        "pages/settings-topic/settings-topic"
+      ]
+    },
+    {
+      "root": "timeline-pkg",
+      "pages": [
+        "pages/timeline/timeline",
+        "pages/calendar/calendar"
+      ]
+    },
+    {
+      "root": "parallel-pkg",
+      "pages": [
+        "pages/compare/compare",
+        "pages/parallel/parallel",
+        "pages/who-present/who-present"
+      ]
+    },
+    {
+      "root": "sandbox-pkg",
+      "pages": [
+        "pages/sandbox-list/sandbox-list",
+        "pages/sandbox/sandbox"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "detail-pkg/pages/detail/detail": {
+      "network": "wifi",
+      "packages": [
+        "lineage-pkg",
+        "footprint-pkg",
+        "chart-pkg"
+      ]
+    },
+    "pages/index/index": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg",
+        "topic-pkg"
+      ]
+    },
+    "pages/article/article": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "pages/six-degrees/six-degrees": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "pages/stats/stats": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "pages/emperors/emperors": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "timeline-pkg/pages/timeline/timeline": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "account-pkg/pages/user-center/user-center": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "pages/topic-list/topic-list": {
+      "network": "wifi",
+      "packages": [
+        "topic-pkg",
+        "detail-pkg"
+      ]
+    },
+    "pages/query/query": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg",
+        "timeline-pkg",
+        "sandbox-pkg"
+      ]
+    },
+    "pages/profile/profile": {
+      "network": "wifi",
+      "packages": [
+        "account-pkg"
+      ]
+    },
+    "lineage-pkg/pages/lineage/lineage": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg",
+        "footprint-pkg",
+        "chart-pkg"
+      ]
+    },
+    "chart-pkg/pages/graph/graph": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "topic-pkg/pages/topic/topic": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "topic-pkg/pages/remember/remember": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    },
+    "footprint-pkg/pages/footprint/footprint": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg",
+        "lineage-pkg"
+      ]
+    },
+    "timeline-pkg/pages/calendar/calendar": {
+      "network": "wifi",
+      "packages": [
+        "detail-pkg"
+      ]
+    }
+  },
+  "requiredPrivateInfos": [],
+  "__usePrivacyCheck__": true,
+  "networkTimeout": {
+    "request": 10000,
+    "uploadFile": 30000,
+    "downloadFile": 30000
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#f4ede1",
+    "backgroundTextStyle": "light",
+    "navigationBarTitleText": "世慧屋"
+  },
+  "tabBar": {
+    "color": "#75654f",
+    "selectedColor": "#8f5326",
+    "backgroundColor": "#fbf7ef",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "assets/tab/home.png",
+        "selectedIconPath": "assets/tab/home-active.png"
+      },
+      {
+        "pagePath": "pages/topic-list/topic-list",
+        "text": "专题",
+        "iconPath": "assets/tab/topic.png",
+        "selectedIconPath": "assets/tab/topic-active.png"
+      },
+      {
+        "pagePath": "pages/query/query",
+        "text": "查询",
+        "iconPath": "assets/tab/query.png",
+        "selectedIconPath": "assets/tab/query-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "assets/tab/profile.png",
+        "selectedIconPath": "assets/tab/profile-active.png"
+      }
+    ],
+    "custom": true
+  },
+  "sitemapLocation": "sitemap.json"
+}

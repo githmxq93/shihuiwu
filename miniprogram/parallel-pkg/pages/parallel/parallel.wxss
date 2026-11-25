@@ -1,0 +1,354 @@
+/* ═══════════ 平行时空 · UI v2 ═══════════
+   保留宣纸古风底色，重做层次、双流对照、加载态与浮层。
+   设计 token 全部收敛到 .page，改配色只动这一处。 */
+.page {
+  --paper: #F4EDE1;
+  --card: #FCF9F2;
+  --ink: #3B2C1D;
+  --ink2: #6B5840;
+  --muted: #8A7B62;
+  --line: #E4D9C5;
+  --china: #B5713A;
+  --china-d: #8E4F27;
+  --world: #3F6B68;
+  --world-d: #2E5452;
+  --warn: #A63B2A;
+  position: relative;
+  min-height: 100vh;
+  background: var(--paper);
+}
+.bg-grain {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(181,113,58,0.07), transparent 38%),
+    radial-gradient(circle at 88% 42%, rgba(63,107,104,0.05), transparent 42%),
+    radial-gradient(circle at 30% 88%, rgba(181,113,58,0.05), transparent 40%);
+}
+.body { height: 100vh; position: relative; z-index: 1; }
+.nav-spacer { width: 100%; }
+
+/* ── 选择区：题头 ── */
+.hero { padding: 30rpx 44rpx 8rpx; }
+.hero-eyebrow { display: flex; align-items: center; gap: 14rpx; font-size: 20rpx; color: #B08A57; letter-spacing: 0; }
+.eb-line { width: 46rpx; height: 2rpx; background: linear-gradient(90deg, rgba(181,113,58,0), rgba(181,113,58,0.65)); }
+.hero-eyebrow .eb-line:last-child { background: linear-gradient(90deg, rgba(181,113,58,0.65), rgba(181,113,58,0)); }
+.hero-row { display: flex; align-items: center; justify-content: space-between; margin-top: 22rpx; }
+.hero-main { flex: 1; min-width: 0; }
+.hero-title { font-size: 62rpx; font-weight: 600; color: var(--ink); font-family: "Songti SC", "STSong", serif; letter-spacing: 0; line-height: 1.2; }
+.hero-accent { color: var(--china); }
+.hero-sub { margin-top: 12rpx; font-size: var(--fs-24); color: var(--muted); line-height: 1.6; }
+.hero-seal { flex-shrink: 0; width: 92rpx; height: 92rpx; margin-left: 20rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2rpx solid rgba(181,113,58,0.5); border-radius: 18rpx; background: rgba(181,113,58,0.06); color: var(--china-d); font-family: "Songti SC", "STSong", serif; font-size: var(--fs-30); line-height: 1.15; letter-spacing: 0; transform: rotate(6deg); box-shadow: inset 0 0 0 4rpx rgba(251,247,239,0.7); }
+.hero-rule { position: relative; height: 2rpx; margin-top: 30rpx; background: linear-gradient(90deg, rgba(181,113,58,0.4), rgba(181,113,58,0)); }
+.hr-dot { position: absolute; left: 0; top: -5rpx; width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--china); }
+
+/* ── 选择区：深色锚点卡（方案 B）──
+   把「时间锚点」定位、选人物/选年份分段、搜索框收进同一张卡；
+   卡本身不做 overflow:hidden，联想面板才能溢出卡片显示。 */
+.anchor-card {
+  position: relative;
+  z-index: 20;
+  margin: 20rpx 36rpx 0;
+  padding: 30rpx 30rpx 32rpx;
+  border-radius: 36rpx;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(181,113,58,0.32), rgba(181,113,58,0) 55%),
+    linear-gradient(135deg, #3B2C1D 0%, #2A1F14 60%, #4A3521 100%);
+  box-shadow: 0 36rpx 72rpx -44rpx rgba(59,44,29,0.9);
+}
+.ac-top { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.ac-chip { display: flex; align-items: center; gap: 12rpx; padding: 8rpx 20rpx; border-radius: 999rpx; background: rgba(252,249,242,0.1); border: 2rpx solid rgba(252,249,242,0.14); color: #E7D6BA; font-size: var(--fs-20); }
+.ac-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #D9A566; box-shadow: 0 0 0 6rpx rgba(217,165,102,0.16); }
+.ac-note { font-size: var(--fs-20); color: rgba(231,214,186,0.75); }
+.ac-hint { position: relative; margin-top: 18rpx; font-size: var(--fs-20); line-height: 1.6; color: rgba(231,214,186,0.8); }
+
+.anchor-card .anchor-tabs { margin: 24rpx 0 0; padding: 6rpx; background: rgba(252,249,242,0.09); border: 2rpx solid rgba(252,249,242,0.12); border-radius: 999rpx; box-shadow: none; }
+.anchor-card .at { height: 68rpx; padding: 0 14rpx; box-sizing: border-box; color: #E7D6BA; }
+.anchor-card .at.on { background: #FCF9F2; color: var(--china-d); font-weight: 600; box-shadow: 0 8rpx 20rpx -10rpx rgba(0,0,0,0.6); }
+.anchor-card .at-ico { background: rgba(252,249,242,0.14); color: #E7D6BA; }
+.anchor-card .at.on .at-ico { background: rgba(181,113,58,0.14); color: var(--china-d); }
+.anchor-card .search-box { height: 84rpx; margin: 20rpx 0 0; background: rgba(252,249,242,0.97); border-color: transparent; box-shadow: none; }
+.anchor-card .search-box.focused { border-color: rgba(181,113,58,0.55); box-shadow: 0 0 0 6rpx rgba(181,113,58,0.1); }
+
+.anchor-tabs, .view-tabs { display: flex; gap: 12rpx; margin: 30rpx 40rpx 0; padding: 6rpx; background: var(--bg-card); border: 2rpx solid var(--line); border-radius: 999rpx; box-shadow: inset 0 2rpx 8rpx rgba(61,46,31,0.04); }
+.at, .vt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12rpx; padding: 14rpx; font-size: var(--fs-28); color: var(--muted); border-radius: 999rpx; }
+.at.on, .vt.on { background: linear-gradient(135deg, var(--accent-gold), #8E4F27); color: var(--bg-card); font-weight: 500; box-shadow: 0 10rpx 20rpx -10rpx rgba(142,79,39,0.9); }
+.at-ico { width: 36rpx; height: 36rpx; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(181,113,58,0.1); color: var(--china-d); font-size: var(--fs-20); font-family: "Songti SC", "STSong", serif; }
+.at.on .at-ico { background: rgba(251,247,239,0.22); color: var(--bg-card); }
+.at-txt { line-height: 1.2; }
+.vt { font-size: var(--fs-26); }
+.vt-ico { font-size: var(--fs-26); opacity: 0.85; }
+
+/* ── 搜索框与联想 ── */
+.search-box { position: relative; z-index: 30; display: flex; align-items: center; margin: 28rpx 40rpx 0; padding: 0 24rpx; height: 88rpx; background: var(--card); border: 2rpx solid var(--line); border-radius: 999rpx; box-shadow: 0 14rpx 30rpx -18rpx rgba(163,149,137,0.65); }
+.search-box.focused { border-color: rgba(181,113,58,0.55); box-shadow: 0 0 0 6rpx rgba(181,113,58,0.08), 0 14rpx 30rpx -18rpx rgba(163,149,137,0.65); }
+.search-icon { position: relative; width: 32rpx; height: 32rpx; margin-right: 18rpx; flex-shrink: 0; }
+.search-icon-circle { width: 22rpx; height: 22rpx; border: 4rpx solid var(--muted); border-radius: 50%; box-sizing: border-box; }
+.search-icon-handle { position: absolute; right: 2rpx; bottom: 2rpx; width: 12rpx; height: 4rpx; border-radius: 2rpx; background: var(--muted); transform: rotate(45deg); }
+.search-input { flex: 1; height: 84rpx; font-size: var(--fs-28); color: var(--ink); }
+.search-placeholder { color: #9A8C73; }
+.search-clear { width: 40rpx; height: 40rpx; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(61,46,31,0.07); font-size: 22rpx; color: var(--muted); }
+
+.sug-dropdown { position: absolute; top: 100rpx; left: 0; right: 0; padding: 12rpx; background: var(--card); border: 2rpx solid var(--line); border-radius: 24rpx; box-shadow: 0 20rpx 48rpx rgba(61,46,31,0.18); z-index: 40; overflow: hidden; }
+.sug-head { padding: 6rpx 12rpx 12rpx; font-size: 20rpx; color: #A2937A; letter-spacing: 0; }
+.sug-item { display: flex; align-items: center; gap: 14rpx; padding: 18rpx 14rpx; border-radius: 14rpx; border-bottom: 1rpx solid rgba(228,217,197,0.7); }
+.sug-item:last-child { border-bottom: none; }
+.sug-item-hover { background: rgba(181,113,58,0.08); }
+.sug-idx { flex-shrink: 0; width: 30rpx; font-size: 20rpx; color: #B08A57; font-family: "Songti SC", "STSong", serif; }
+/* 检索结果的「域外 / 中土」归属徽标：域外只落右列，中土只落左列 */
+.sug-kind { flex-shrink: 0; font-size: 18rpx; line-height: 1; padding: 6rpx 10rpx; border-radius: 8rpx; color: var(--china-d); background: rgba(181,113,58,0.11); border: 1rpx solid rgba(181,113,58,0.22); letter-spacing: 0; }
+.sug-kind.is-world { color: var(--bg-card); background: var(--world); border-color: var(--world); }
+.sug-name { flex: 1; font-size: var(--fs-28); color: var(--ink); }
+.sug-dynasty { flex-shrink: 0; font-size: var(--fs-20); color: var(--china-d); background: rgba(181,113,58,0.11); padding: 3rpx 14rpx; border-radius: 999rpx; }
+.sug-arrow { flex-shrink: 0; font-size: var(--fs-30); color: #C9B79B; }
+
+/* ── 区块标题 ── */
+.section-label { display: flex; align-items: center; margin: 40rpx 40rpx 20rpx; font-size: var(--fs-26); color: var(--ink2); font-weight: 500; letter-spacing: 0; }
+.sl-bar { width: 6rpx; height: 26rpx; margin-right: 12rpx; border-radius: 999rpx; background: var(--china); }
+.sl-en { margin-left: auto; font-size: var(--fs-20); color: #A2937A; font-weight: 400; letter-spacing: 0; }
+
+/* ── 热门人物：两列精选卡 ── */
+.hot-grid { display: flex; flex-wrap: wrap; justify-content: space-between; padding: 0 40rpx; }
+.hot-card { position: relative; width: 48.5%; box-sizing: border-box; height: 116rpx; margin-bottom: 20rpx; padding: 0 18rpx; display: flex; align-items: center; gap: 16rpx; overflow: hidden; background: var(--card); border: 2rpx solid var(--line); border-radius: 22rpx; box-shadow: 0 12rpx 26rpx -18rpx rgba(163,149,137,0.7); }
+.hot-card-hover { background: rgba(181,113,58,0.08); }
+.hot-idx { position: absolute; right: 16rpx; top: 8rpx; font-size: 18rpx; color: rgba(61,46,31,0.26); font-family: "Songti SC", "STSong", serif; }
+.hot-badge { flex-shrink: 0; width: 64rpx; height: 64rpx; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; background: rgba(181,113,58,0.1); border: 2rpx solid rgba(181,113,58,0.3); color: var(--china-d); font-size: var(--fs-30); font-weight: 600; font-family: "Songti SC", "STSong", serif; }
+.hot-name { flex: 1; min-width: 0; font-size: var(--fs-26); font-weight: 600; color: var(--ink); }
+.hot-arrow { flex-shrink: 0; font-size: var(--fs-28); color: #C9B79B; }
+
+/* ── 年份输入与快捷锚点 ── */
+.year-box { display: flex; align-items: center; gap: 16rpx; margin: 28rpx 40rpx 0; }
+.year-field { flex: 1; min-width: 0; display: flex; align-items: center; height: 88rpx; padding: 0 24rpx; background: var(--card); border: 2rpx solid var(--line); border-radius: 999rpx; box-shadow: 0 14rpx 30rpx -18rpx rgba(163,149,137,0.65); }
+.year-prefix { flex-shrink: 0; padding-right: 16rpx; margin-right: 16rpx; border-right: 1rpx solid var(--line); font-size: var(--fs-22); color: #B08A57; letter-spacing: 0; }
+.year-input { flex: 1; min-width: 0; height: 84rpx; font-size: var(--fs-28); color: var(--ink); }
+.year-placeholder { color: #9A8C73; }
+.year-go { flex-shrink: 0; height: 88rpx; padding: 0 34rpx; display: flex; align-items: center; gap: 8rpx; background: linear-gradient(135deg, var(--accent-gold), #8E4F27); color: var(--bg-card); border-radius: 999rpx; font-size: var(--fs-28); box-shadow: 0 14rpx 26rpx -14rpx rgba(142,79,39,0.9); }
+.yg-arrow { font-size: var(--fs-30); opacity: 0.8; }
+.year-err { display: flex; align-items: center; gap: 10rpx; margin: 14rpx 40rpx 0; padding: 10rpx 18rpx; background: rgba(166,59,42,0.07); border-radius: 12rpx; font-size: 24rpx; color: var(--warn); }
+.ye-mark { width: 28rpx; height: 28rpx; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--warn); color: var(--bg-card); font-size: 20rpx; }
+
+.pick-grid { display: flex; flex-wrap: wrap; justify-content: space-between; padding: 0 40rpx; }
+.pick-card { position: relative; width: 31.5%; box-sizing: border-box; margin-bottom: 20rpx; padding: 24rpx 6rpx 20rpx; background: var(--card); border: 2rpx solid var(--line); border-radius: 20rpx; text-align: center; box-shadow: 0 12rpx 24rpx -18rpx rgba(163,149,137,0.7); }
+.pick-card-hover { background: rgba(181,113,58,0.08); }
+.pick-dot { position: absolute; left: 50%; top: -7rpx; width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--china); border: 3rpx solid var(--paper); transform: translateX(-50%); box-sizing: content-box; }
+.pick-year { font-size: var(--fs-32); font-weight: 600; color: var(--ink); font-family: "Songti SC", "STSong", serif; }
+.pick-tag { margin-top: 8rpx; font-size: var(--fs-20); color: var(--muted); }
+
+.intro { display: flex; align-items: flex-start; gap: 18rpx; margin: 36rpx 40rpx 0; padding: 24rpx 26rpx; background: rgba(181,113,58,0.07); border-left: 6rpx solid var(--china); border-radius: 0 20rpx 20rpx 0; }
+.intro-mark { flex-shrink: 0; width: 36rpx; height: 36rpx; display: flex; align-items: center; justify-content: center; border: 2rpx solid rgba(181,113,58,0.6); border-radius: 50%; color: var(--china-d); font-size: var(--fs-22); font-family: serif; }
+.intro-text { flex: 1; font-size: 24rpx; color: var(--ink2); line-height: 1.75; }
+.intro-tip { display: block; margin-top: 10rpx; font-size: 22rpx; color: #A08A68; }
+
+/* ── 结果头部：锚点卡 ── */
+.anchor-head { position: relative; overflow: hidden; margin: 24rpx 36rpx 0; padding: 28rpx 30rpx 24rpx; border-radius: var(--radius-lg); background: linear-gradient(135deg, #3B2C1D 0%, #2A1F14 60%, #4A3521 100%); box-shadow: 0 22rpx 46rpx -26rpx rgba(59,44,29,0.9); }
+.ah-glow { position: absolute; right: -60rpx; top: -80rpx; width: 260rpx; height: 260rpx; border-radius: 50%; background: radial-gradient(circle, rgba(181,113,58,0.42), rgba(181,113,58,0) 70%); pointer-events: none; }
+.ah-watermark { position: absolute; right: 18rpx; bottom: -34rpx; font-size: 132rpx; font-family: "Songti SC", "STSong", serif; color: rgba(251,247,239,0.055); letter-spacing: -4rpx; pointer-events: none; }
+.ah-top { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; }
+.ah-chip { display: flex; align-items: center; gap: 10rpx; padding: 6rpx 18rpx; border-radius: 999rpx; background: rgba(251,247,239,0.1); border: 1rpx solid rgba(251,247,239,0.14); color: #E7D6BA; font-size: 20rpx; letter-spacing: 1rpx; }
+.ah-chip-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #D9A566; box-shadow: 0 0 0 4rpx rgba(217,165,102,0.18); }
+.ah-reselect { display: flex; align-items: center; gap: 6rpx; flex-shrink: 0; padding: 10rpx 22rpx; border: 1rpx solid rgba(251,247,239,0.35); border-radius: 999rpx; color: #FBF7EF; font-size: 23rpx; }
+.ah-arrow { font-size: var(--fs-28); opacity: 0.8; }
+.ah-main { position: relative; z-index: 1; margin-top: 22rpx; }
+.ah-title { font-size: 44rpx; font-weight: 600; color: #FBF7EF; font-family: "Songti SC", "STSong", serif; letter-spacing: 2rpx; line-height: 1.25; }
+.ah-sub { margin-top: 10rpx; font-size: 23rpx; color: #C9B79B; letter-spacing: 1rpx; }
+.ah-others { margin-top: 8rpx; font-size: 21rpx; color: #A89474; line-height: 1.5; }
+.ah-basis { margin-top: 12rpx; font-size: var(--fs-20); color: #F0D9B0; background: rgba(181,113,58,0.32); display: inline-block; padding: 5rpx 16rpx; border-radius: 999rpx; }
+.ah-foot { position: relative; z-index: 1; display: flex; align-items: center; gap: 22rpx; margin-top: 26rpx; padding-top: 20rpx; border-top: 1rpx solid rgba(251,247,239,0.12); }
+.ah-seal { flex-shrink: 0; width: 76rpx; height: 76rpx; display: flex; align-items: center; justify-content: center; border: 2rpx solid rgba(217,165,102,0.65); border-radius: 14rpx; background: rgba(217,165,102,0.08); }
+.ah-seal text { font-family: "Songti SC", "STSong", serif; font-size: 28rpx; color: #E9C48D; letter-spacing: 2rpx; }
+.ah-metrics { flex: 1; display: flex; align-items: center; justify-content: space-around; gap: 16rpx; }
+.ah-metric { display: flex; flex-direction: column; align-items: center; }
+.am-num { font-family: "Songti SC", "STSong", serif; font-size: var(--fs-32); color: var(--bg-card); line-height: 1.1; }
+.am-label { margin-top: 6rpx; font-size: 19rpx; color: #A89474; }
+.am-div { width: 1rpx; height: 40rpx; background: rgba(251,247,239,0.16); }
+
+/* ── 二级入口：这一年，谁在场（方案 C · 年份区下方小卡）──
+   贴着深色锚点卡，用浅金纸面承接；两行结构，首行标题、次行三项计数。
+   数字为 0 的项由 JS 过滤（whoNums），不出现「0 出生」这类空项。 */
+.who-entry { margin: 18rpx 36rpx 0; padding: 18rpx 24rpx 20rpx; border-radius: 22rpx; background: linear-gradient(135deg, #FBF7EF 0%, #F7EEDD 100%); border: 2rpx solid #E3D3B6; box-shadow: inset 0 2rpx 0 rgba(255,255,255,0.6); }
+.who-entry-hover { background: linear-gradient(135deg, #F7EEDD 0%, #F2E6CE 100%); }
+.we-top { display: flex; align-items: center; gap: 12rpx; }
+.we-dot { flex-shrink: 0; width: 10rpx; height: 10rpx; background: var(--china); transform: rotate(45deg); }
+.we-title { font-family: "Songti SC", "STSong", serif; font-size: 25rpx; font-weight: 600; color: var(--ink); }
+.we-em { color: var(--china-d); }
+.we-go { margin-left: auto; font-size: 24rpx; color: var(--china-d); }
+.we-nums { display: flex; margin-top: 14rpx; padding-top: 14rpx; border-top: 1rpx dashed #E3D3B6; }
+.we-n { flex: 1; display: flex; align-items: baseline; gap: 8rpx; }
+.we-n + .we-n { padding-left: 20rpx; border-left: 1rpx solid #E7DBC6; }
+.we-num { font-family: "Songti SC", "STSong", serif; font-size: 30rpx; font-weight: 600; color: var(--ink); line-height: 1; }
+.we-lab { font-size: 17rpx; color: var(--muted); }
+.we-n.gold .we-num { color: var(--china-d); }
+.we-n.grey .we-num { color: #8A7B62; }
+
+/* ── 平行双流 ── */
+.dual { display: flex; align-items: stretch; margin: 28rpx 28rpx 0; }
+.dual-col { flex: 1; min-width: 0; box-sizing: border-box; }
+.dual-col.left { padding-right: 8rpx; }
+.dual-col.right { padding-left: 8rpx; }
+.dual-axis { width: 40rpx; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 4rpx; }
+.axis-node { position: relative; z-index: 2; flex-shrink: 0; width: 40rpx; height: 40rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: linear-gradient(135deg, var(--accent-gold), #8E4F27); color: var(--bg-card); font-size: var(--fs-20); box-shadow: 0 0 0 6rpx rgba(181,113,58,0.12); }
+.axis-line { flex: 1; min-height: 120rpx; width: 2rpx; margin: 10rpx 0; background: linear-gradient(180deg, rgba(181,113,58,0.55), rgba(63,107,104,0.4)); }
+.axis-end { flex-shrink: 0; width: 10rpx; height: 10rpx; border-radius: 50%; background: var(--world); }
+
+.col-head { display: flex; align-items: center; gap: 12rpx; margin-bottom: 16rpx; padding: 16rpx 14rpx; border-radius: var(--radius); }
+.ch-mark { flex-shrink: 0; width: 8rpx; height: 36rpx; border-radius: 999rpx; }
+.ch-body { min-width: 0; }
+.ch-name { font-size: var(--fs-24); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-sub { margin-top: 4rpx; font-size: 20rpx; letter-spacing: 1rpx; opacity: 0.75; }
+.col-china { color: var(--china-d); background: rgba(181,113,58,0.1); border: 1rpx solid rgba(181,113,58,0.16); }
+.col-china .ch-mark { background: var(--china); }
+.col-world { color: var(--world-d); background: rgba(63,107,104,0.09); border: 1rpx solid rgba(63,107,104,0.16); }
+.col-world .ch-mark { background: var(--world); }
+
+.mini-card { position: relative; overflow: hidden; margin-bottom: 16rpx; padding: 18rpx 18rpx 16rpx; background: var(--card); border: 1rpx solid var(--line); border-radius: 18rpx; box-shadow: 0 10rpx 24rpx -18rpx rgba(61,46,31,0.6); }
+.mini-card-hover { background: rgba(181,113,58,0.06); }
+.china-card { border-left: 6rpx solid var(--china); }
+.world-card { border-left: 6rpx solid var(--world); }
+.mc-top { display: flex; align-items: center; justify-content: space-between; gap: 8rpx; margin-bottom: 10rpx; }
+.mc-tag { flex-shrink: 0; font-size: var(--fs-20); color: var(--china-d); background: rgba(181,113,58,0.12); padding: 3rpx 12rpx; border-radius: 999rpx; }
+.world-tag { color: var(--world-d); background: rgba(63,107,104,0.12); }
+.mc-no { flex-shrink: 0; font-size: var(--fs-20); color: rgba(61,46,31,0.3); font-family: "Songti SC", "STSong", serif; }
+.mc-diff { flex-shrink: 0; font-size: var(--fs-20); color: var(--world-d); background: rgba(63,107,104,0.1); padding: 3rpx 10rpx; border-radius: 999rpx; }
+.mc-diff.same { color: var(--china-d); background: rgba(181,113,58,0.16); font-weight: 600; }
+.mc-book-tag { flex-shrink: 0; font-size: 20rpx; color: var(--china-d); border: 1rpx solid rgba(181,113,58,0.36); padding: 2rpx 10rpx; border-radius: 999rpx; }
+.mc-title { font-size: 27rpx; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.mc-sub { margin-top: 6rpx; font-size: var(--fs-20); color: var(--china-d); line-height: 1.4; }
+.mc-desc { margin-top: 8rpx; font-size: 21rpx; color: var(--muted); line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.mc-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12rpx; padding-top: 10rpx; border-top: 1rpx dashed var(--line); font-size: var(--fs-20); color: var(--china-d); }
+.mc-foot-arrow { font-size: var(--fs-26); }
+.mc-impact { margin-top: 12rpx; padding: 10rpx 12rpx; background: rgba(63,107,104,0.07); border-left: 3rpx solid rgba(63,107,104,0.5); border-radius: 0 12rpx 12rpx 0; }
+.mi-label { margin-right: 8rpx; font-size: 19rpx; color: var(--world-d); font-weight: 600; }
+.mi-text { font-size: var(--fs-20); color: #5C716E; line-height: 1.55; }
+
+/* 域外同期人物块：与域外事件共用 .mini-card / .world-card 视觉语言 */
+.fig-block { margin-top: 4rpx; }
+.fig-block-head { display: flex; align-items: center; gap: 10rpx; margin: 6rpx 0 14rpx; padding: 0 4rpx; }
+.fb-mark { width: 6rpx; height: 24rpx; border-radius: 999rpx; background: var(--world); }
+.fb-title { font-size: 22rpx; font-weight: 600; color: var(--world-d); letter-spacing: 1rpx; }
+.fb-count { margin-left: auto; font-size: 19rpx; color: var(--muted); }
+.mc-en { font-size: 21rpx; color: var(--muted); font-weight: 400; }
+
+/* 搜到的域外人物：右列置顶高亮，明确标为时间锚点 */
+.world-fig.is-anchor { background: rgba(63,107,104,0.1); border: 2rpx solid rgba(63,107,104,0.42); border-left: 8rpx solid var(--world); box-shadow: 0 14rpx 30rpx -20rpx rgba(63,107,104,0.9); }
+.world-fig.is-anchor .mc-title { font-size: 32rpx; }
+.wf-anchor-tag { flex-shrink: 0; font-size: 20rpx; color: var(--bg-card); background: var(--world); padding: 5rpx 14rpx; border-radius: 999rpx; letter-spacing: 0; }
+
+.sk-card { margin-bottom: 16rpx; padding: 20rpx 18rpx; background: var(--card); border: 1rpx solid var(--line); border-radius: 18rpx; }
+.sk-line { height: 18rpx; margin-bottom: 14rpx; border-radius: 999rpx; background: linear-gradient(90deg, #EFE7D7 25%, #F8F2E7 50%, #EFE7D7 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
+.sk-line:last-child { margin-bottom: 0; }
+.w30 { width: 30%; } .w60 { width: 60%; } .w85 { width: 85%; }
+@keyframes sk { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.col-empty { margin: 24rpx 6rpx; padding: 24rpx 10rpx; font-size: 21rpx; color: #9A8C73; text-align: center; line-height: 1.6; }
+.empty-mark { width: 48rpx; height: 48rpx; margin: 0 auto 12rpx; border: 2rpx dashed #D8CBB2; border-radius: 50%; color: #C0AE90; font-size: var(--fs-24); line-height: 44rpx; text-align: center; }
+.retry { margin: 4rpx auto 0; width: 200rpx; text-align: center; padding: 12rpx 0; background: var(--china); color: var(--bg-card); border-radius: 999rpx; font-size: var(--fs-24); }
+
+/* 列尾统计：双流两列高度天然不等（中土 16 条 vs 域外 2 条时右列必有大片空白），
+   用「共 N 条 / 查看该年全部」收口，比纯留白有意义 */
+.col-foot { margin: 4rpx 2rpx 18rpx; padding-top: 12rpx; border-top: 1rpx dashed var(--line); text-align: center; }
+.cf-line { font-size: 19rpx; color: var(--muted); letter-spacing: 0.5rpx; }
+.cf-link { display: inline-flex; align-items: center; gap: 4rpx; margin-top: 12rpx; padding: 8rpx 22rpx; border: 1rpx solid rgba(181,113,58,0.35); border-radius: 999rpx; font-size: 21rpx; color: var(--china-d); }
+.cf-arrow { font-size: var(--fs-24); }
+
+/* 空态出口：原来只有一句话，看完无处可去 */
+.empty-acts { display: flex; justify-content: center; gap: 14rpx; margin-top: 16rpx; }
+.ea-btn { padding: 10rpx 26rpx; border-radius: 999rpx; background: var(--china); color: var(--bg-card); font-size: var(--fs-22); }
+.ea-ghost { background: transparent; border: 1rpx solid rgba(181,113,58,0.4); color: var(--china-d); }
+
+/* ── 世界地图 ── */
+.map-view { margin: 28rpx 28rpx 0; }
+.map-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16rpx; padding: 0 4rpx; }
+.map-head-main { min-width: 0; }
+.map-title { font-size: 27rpx; font-weight: 600; color: var(--ink); }
+.map-sub { margin-top: 6rpx; font-size: var(--fs-20); color: var(--muted); }
+.map-legend { display: flex; gap: 16rpx; }
+.lg { display: flex; align-items: center; gap: 6rpx; font-size: 19rpx; color: var(--muted); }
+.lg-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
+.lg-china { background: var(--china); }
+.lg-world { background: var(--world); }
+.map-canvas { position: relative; width: 100%; padding-bottom: 56%; overflow: hidden; background-color: #F5EDDD; border: 1rpx solid #DFD1B6; border-radius: 20rpx; background-size: 100% 100%; box-shadow: inset 0 2rpx 14rpx rgba(120,96,60,0.07), 0 8rpx 24rpx -18rpx rgba(61,46,31,0.55); background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNjAgMTgwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj4KICA8IS0tIOa1t+WyuOe6v+WHoOS9leadpea6kO+8mlNpbXBsZSBNYXBzIEZyZWUgV29ybGQgU1ZHIE1hcCAoaHR0cHM6Ly9zaW1wbGVtYXBzLmNvbS9yZXNvdXJjZXMvc3ZnLXdvcmxkKe+8jE1JVCBMaWNlbnNl77yMQ29weXJpZ2h0IChjKSAyMDIwIFBhcmV0byBTb2Z0d2FyZSwgTExDIERCQSBTaW1wbGVtYXBzLmNvbeOAguW3suWBmuaKleW9sei9rOaNouOAgeWHoOS9leWQiOW5tuS4jueugOWMlu+8jOS7heS/neeVmeWkp+mZhuiHqueEtua1t+WyuOe6v++8jOS4jeWQq+S7u+S9leWbveeVjOaIluihjOaUv+WMuuWIku+8m+acrOWbvuS4uuaWh+aYjueCueS9jeekuuaEj++8jOmdnuihjOaUv+WMuuWIkuWbvuOAgiAtLT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ic2VhIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0ZCRjZFQSIgLz48c3RvcCBvZmZzZXQ9IjAuNTUiIHN0b3AtY29sb3I9IiNGNUVEREQiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRUZFM0NFIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyIgY3g9IjUwJSIgY3k9IjUwJSIgcj0iNTAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjQjU3MTNBIiBzdG9wLW9wYWNpdHk9IjAuMzAiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41NSIgc3RvcC1jb2xvcj0iI0I1NzEzQSIgc3RvcC1vcGFjaXR5PSIwLjEyIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNCNTcxM0EiIHN0b3Atb3BhY2l0eT0iMCIgLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzNjAiIGhlaWdodD0iMTgwIiBmaWxsPSJ1cmwoI3NlYSkiIC8+CiAgPGc+PGxpbmUgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMzAiIHkxPSIwIiB4Mj0iMzAiIHkyPSIxODAiIHN0cm9rZT0iI0REQ0VCNCIgc3Ryb2tlLXdpZHRoPSIwLjQiIG9wYWNpdHk9IjAuNTUiIC8+PGxpbmUgeDE9IjYwIiB5MT0iMCIgeDI9IjYwIiB5Mj0iMTgwIiBzdHJva2U9IiNERENFQjQiIHN0cm9rZS13aWR0aD0iMC40IiBvcGFjaXR5PSIwLjU1IiAvPjxsaW5lIHgxPSI5MCIgeTE9IjAiIHgyPSI5MCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMTIwIiB5MT0iMCIgeDI9IjEyMCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMTUwIiB5MT0iMCIgeDI9IjE1MCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMTgwIiB5MT0iMCIgeDI9IjE4MCIgeTI9IjE4MCIgc3Ryb2tlPSIjQzlCNjkzIiBzdHJva2Utd2lkdGg9IjAuNyIgb3BhY2l0eT0iMC43NSIgLz48bGluZSB4MT0iMjEwIiB5MT0iMCIgeDI9IjIxMCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMjQwIiB5MT0iMCIgeDI9IjI0MCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMjcwIiB5MT0iMCIgeDI9IjI3MCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMzAwIiB5MT0iMCIgeDI9IjMwMCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMzMwIiB5MT0iMCIgeDI9IjMzMCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMzYwIiB5MT0iMCIgeDI9IjM2MCIgeTI9IjE4MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgLz48bGluZSB4MT0iMCIgeTE9IjMwIiB4Mj0iMzYwIiB5Mj0iMzAiIHN0cm9rZT0iI0REQ0VCNCIgc3Ryb2tlLXdpZHRoPSIwLjQiIG9wYWNpdHk9IjAuNTUiICAvPjxsaW5lIHgxPSIwIiB5MT0iNjAiIHgyPSIzNjAiIHkyPSI2MCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgIC8+PGxpbmUgeDE9IjAiIHkxPSI5MCIgeDI9IjM2MCIgeTI9IjkwIiBzdHJva2U9IiNDOUI2OTMiIHN0cm9rZS13aWR0aD0iMC43IiBvcGFjaXR5PSIwLjgiIHN0cm9rZS1kYXNoYXJyYXk9IjQgMyIgLz48bGluZSB4MT0iMCIgeTE9IjEyMCIgeDI9IjM2MCIgeTI9IjEyMCIgc3Ryb2tlPSIjRERDRUI0IiBzdHJva2Utd2lkdGg9IjAuNCIgb3BhY2l0eT0iMC41NSIgIC8+PGxpbmUgeDE9IjAiIHkxPSIxNTAiIHgyPSIzNjAiIHkyPSIxNTAiIHN0cm9rZT0iI0REQ0VCNCIgc3Ryb2tlLXdpZHRoPSIwLjQiIG9wYWNpdHk9IjAuNTUiICAvPjx0ZXh0IHg9IjQiIHk9IjI4IiBmaWxsPSIjQjNBMTg0IiBmb250LXNpemU9IjUuNSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBvcGFjaXR5PSIwLjg1Ij42MMKwTjwvdGV4dD48dGV4dCB4PSI0IiB5PSI1OCIgZmlsbD0iI0IzQTE4NCIgZm9udC1zaXplPSI1LjUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgb3BhY2l0eT0iMC44NSI+MzDCsE48L3RleHQ+PHRleHQgeD0iNCIgeT0iODgiIGZpbGw9IiNCM0ExODQiIGZvbnQtc2l6ZT0iNS41IiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIG9wYWNpdHk9IjAuODUiPjDCsDwvdGV4dD48dGV4dCB4PSI0IiB5PSIxMTgiIGZpbGw9IiNCM0ExODQiIGZvbnQtc2l6ZT0iNS41IiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIG9wYWNpdHk9IjAuODUiPjMwwrBTPC90ZXh0Pjx0ZXh0IHg9IjQiIHk9IjE0OCIgZmlsbD0iI0IzQTE4NCIgZm9udC1zaXplPSI1LjUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgb3BhY2l0eT0iMC44NSI+NjDCsFM8L3RleHQ+PHRleHQgeD0iNjIiIHk9IjE3NiIgZmlsbD0iI0IzQTE4NCIgZm9udC1zaXplPSI1LjUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgb3BhY2l0eT0iMC44Ij4xMjDCsFc8L3RleHQ+PHRleHQgeD0iMTIyIiB5PSIxNzYiIGZpbGw9IiNCM0ExODQiIGZvbnQtc2l6ZT0iNS41IiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIG9wYWNpdHk9IjAuOCI+NjDCsFc8L3RleHQ+PHRleHQgeD0iMTgyIiB5PSIxNzYiIGZpbGw9IiNCM0ExODQiIGZvbnQtc2l6ZT0iNS41IiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIG9wYWNpdHk9IjAuOCI+MMKwPC90ZXh0Pjx0ZXh0IHg9IjI0MiIgeT0iMTc2IiBmaWxsPSIjQjNBMTg0IiBmb250LXNpemU9IjUuNSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBvcGFjaXR5PSIwLjgiPjYwwrBFPC90ZXh0Pjx0ZXh0IHg9IjMwMiIgeT0iMTc2IiBmaWxsPSIjQjNBMTg0IiBmb250LXNpemU9IjUuNSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBvcGFjaXR5PSIwLjgiPjEyMMKwRTwvdGV4dD48L2c+CiAgPCEtLSDkuK3lnJ/mlofmmI7lnIjvvJrlvoTlkJHlhYnmmZXvvIzkuI3nlLvku7vkvZXovrnnlYznur8gLS0+CiAgPGVsbGlwc2UgY3g9IjI4OCIgY3k9IjU1IiByeD0iMzAiIHJ5PSIyMSIgZmlsbD0idXJsKCNnbG93KSIgLz4KICA8Y2lyY2xlIGN4PSIyODgiIGN5PSI1NSIgcj0iMTciIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0I1NzEzQSIgc3Ryb2tlLXdpZHRoPSIwLjYiIHN0cm9rZS1kYXNoYXJyYXk9IjIgMyIgb3BhY2l0eT0iMC40MiIgLz4KICA8ZyBmaWxsPSIjRTRENUI5IiBmaWxsLW9wYWNpdHk9IjAuOTQiIHN0cm9rZT0iI0I5QTY4MSIgc3Ryb2tlLXdpZHRoPSIwLjc1IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwb2x5Z29uIHBvaW50cz0iMTg2LjIsNDIuMSAxOTIuNCw0Mi4yIDE5Mi4zLDQxLjQgMTkzLDQwLjggMTkxLjksNDAuMiAxOTEuNywzOS40IDE5NC40LDM4LjYgMTk1LjYsMzkuMyAxOTcsMzkuMyAxOTkuMiw0MC41IDIwMSw0MC4yIDIwMi4yLDQwLjcgMjAxLjUsNDEuMyAyMDQuMyw0MiAyMDIuNiw0MS42IDE5OS42LDQzLjYgMjAxLDQ0LjkgMjAyLjEsNDUuMSAyMDIuNCw0NS45IDIwNi43LDQ1LjUgMjA4LDQ2IDIwOC4zLDQ0LjggMjEwLjIsNDMuMSAyMTEuMSw0MyAyMTMsNDMuOCAyMTEuOSw0NC40IDIxMy4zLDQ1LjMgMjE1LjgsNDQuNiAyMTYsNDQuMiAyMTQuNCw0NCAyMTQuNCw0My40IDIxNy43LDQyLjMgMjE4LjYsNDIuNiAyMTcuMSw0MyAyMTcuNyw0My40IDIxNi4xLDQ0LjQgMjE5LjQsNDYuMiAyMjQuOSw0Ny4yIDIyNi44LDQ4LjQgMjI4LDQ3LjkgMjI2LjEsNDUuMSAyMjguNSw0My4zIDIzMC42LDQyLjYgMjMyLjUsNDIuOCAyMzIuNSw0NC40IDIzMC43LDQ0LjQgMjMwLjcsNDUuMiAyMjkuNyw0NS4xIDIzMC44LDQ2LjUgMjMxLjksNDYuOSAyMzIuMiw0OC41IDIzMi4zLDQ3LjggMjMzLjEsNDcuNiAyMzQuMiw0OC43IDIzMi4zLDQ4LjggMjMyLjEsNDkuNiAyMzIuOCw0OS43IDIzMi41LDUwLjQgMjMzLjMsNTAuNyAyMzMuNCw1Mi41IDIzNS42LDUxLjcgMjMzLjMsNTIuNyAyMzAuMyw1Mi44IDIyOC42LDUyLjEgMjI4LjMsNTEuMyAyMjcuNCw1MC45IDIyNy41LDUwLjEgMjI1LjYsNTAuOSAyMjMuMSw0OS40IDIyMyw0OC42IDIyMSw0OC4xIDIxOS44LDQ4LjcgMjE3LjgsNDguNyAyMTQuNiw0Ny42IDIxMS44LDQ3LjkgMjEwLjYsNDguNiAyMDguNyw0OC40IDIwOC4zLDQ5LjIgMjA2LjcsNDkuMiAyMDUuNiw1MC4yIDIwNi4yLDUwLjcgMjA1LjgsNTEuNSAyMDcuMSw1MyAyMDkuMSw1My41IDIxMS4xLDUzIDIxMS45LDUzLjYgMjE0LjIsNTIuOSAyMTUuNiw1MyAyMTUuMiw1My40IDIxNS42LDUzLjggMjE2LjIsNTIuOSAyMjEuNSw1Mi42IDIyMC43LDUzLjMgMjIwLjQsNTUuMiAyMTguMiw1Ni4zIDIxOC42LDU3LjUgMjE2LjQsNTguMSAyMTcuNCw1OS4yIDIxNS41LDYwLjUgMjE0LjQsNjAuMyAyMTQuMSw2MS42IDIxNC42LDYxLjYgMjE2LjQsNjQgMjE2LjksNjUuNCAyMTcuOSw2NS45IDIxOC42LDY4LjMgMjIyLjIsNzMuMyAyMjIuOCw3MiAyMjIsNzQuNCAyMjIuOSw3NyAyMjQuNCw3Ni45IDIzMS42LDc0IDIzMS44LDczLjIgMjM0LjIsNzIuNyAyMzUsNzEuNyAyMzUuNyw3MS44IDIzNiw3MS4xIDIzNy4xLDcwLjcgMjM3LjIsNjkuNCAyMzcuOSw2OS4yIDIzOS4yLDY3LjMgMjM1LjgsNjQuNyAyMzUuMyw2NC43IDIzNS40LDY1LjUgMjM0LjYsNjYuNSAyMzUuMSw2Ny42IDIzNC42LDY2LjkgMjMxLjQsNjYuNiAyMzAuOCw2NSAyMjkuNiw2NCAyMjkuNiw2MyAyMjcuOCw2MS4xIDIyNiw2MC42IDIyNi43LDU5LjYgMjI5LjUsNTkuNSAyMzEsNjEuOCAyMzQuMSw2My4yIDIzNi40LDYyLjcgMjM2LjgsNjMuOSAyNDAuOSw2NC42IDI0NS44LDY0LjIgMjQ5LjgsNjguOCAyNTIsNjguMyAyNTIuOSw3My42IDI1NS45LDgwLjcgMjU2LjksODEuNiAyNTkuMiw3OS4yIDI1OS43LDczLjcgMjYxLjUsNzMuMSAyNjQuNCw3MC4yIDI2NS44LDY5LjUgMjY2LjQsNjguOSAyNjYuMyw2OC4xIDI2OC40LDY3LjYgMjY4LDY1LjQgMjY3LjQsNjUuMSAyNjguMyw2NC40IDI2Ny42LDYzLjkgMjY4LDYzLjIgMjY5LjIsNjMuNyAyNjkuMyw2NC40IDI3MS43LDY0LjcgMjcwLjUsNjYuMSAyNzEuMSw2Ni43IDI3MS41LDY2IDI3Mi4yLDY3LjUgMjcyLDY4LjMgMjcxLjYsNjguMSAyNzEuNyw2OSAyNzMsNjkuOSAyNzMuNiw3MS40IDI3My41LDczLjYgMjc0LjcsNzMuOSAyNzYuNSw3Mi43IDI3Ny44LDc2LjUgMjc3LjgsNzkuNyAyNzguOSw3Ny43IDI3Ny40LDgxLjIgMjc3LjYsODEuOCAyNzcuOCw4MS4yIDI3OSw4Mi44IDI4MC40LDgzLjQgMjgwLjQsODMuOSAyODEuNCw4My40IDI3OS44LDgyLjIgMjc5LjIsODAuNCAyNzguNSw4MC40IDI3OS40LDc2LjIgMjgwLjMsNzYuMiAyODAuMSw3NyAyODEuOSw3Ny40IDI4MS43LDc2LjIgMjgyLjMsNzUuNCAyODQuNSw3NS4zIDI4NC45LDc0LjEgMjg0LDcyLjIgMjgyLjUsNzEuMyAyODAuNCw3Mi4xIDI4MC42LDcwLjIgMjc5LjksNzAuMSAyNzkuNCw2OS4yIDI3OSw2OS40IDI4MC41LDY3LjggMjgxLjEsNjguNSAyODEsNjcuMyAyODQuNyw2Ni4zIDI4MS41LDY3LjIgMjgyLjUsNjguOSAyODMuNyw2OC45IDI4NC4xLDY5LjcgMjgzLjIsNzAuNCAyODQuNCw3MSAyODYuOSw3NC40IDI4Ni44LDc3LjMgMjg1LjEsNzggMjg1LjUsNzguNiAyODMuNiw3OS4xIDI4NC4zLDc5LjcgMjg0LjQsODEgMjg4LjUsNzcuOSAyODguMiw3NC4zIDI4NSw3MC42IDI4Niw2OC45IDI4Ny40LDY4LjEgMjg2LjksNjcuOSAyODkuMiw2OC4yIDI4OS4yLDY5LjMgMjg5LjcsNjkuMyAyOTAuMSw2OC4yIDI5NS4yLDY2LjkgMjk3LjksNjUuMSAzMDEsNjEuNCAzMDEuNCw1OS44IDMwMC42LDU5IDMwMS4zLDU4LjcgMzAxLjMsNTggMjk5LjYsNTUuMyAyOTguNSw1NC44IDMwMC41LDUzIDMwMS45LDUyLjcgMzAxLjgsNTIuMiAzMDAuMiw1MS44IDI5OS4xLDUyLjUgMjk2LjksNTAuOSAzMDEuMSw0OC43IDMwMS42LDQ5LjIgMzAwLjQsNTAuOCAzMDMuNiw0OS44IDMwNi4zLDQ3LjkgMzA3LjYsNDguMiAzMDcuNSw0Ny43IDMwOS40LDQ2LjcgMzEwLjEsNDcuMyAzMTAuNCw0Ni44IDMxMC4yLDQ3LjUgMzExLjcsNDYuNCAzMTIuOSw0Ni45IDMxNC4zLDQ2LjMgMzE5LjUsNDEuMiAzMjAuOCwzNi42IDMxOS4zLDM1LjUgMzE3LjYsMzUuOSAzMTYuMSwzNS4xIDMxNC41LDM1IDMyMS42LDMwLjYgMzI4LDMwLjUgMzI5LjIsMzAgMzMwLjgsMzAuMiAzMzAuNywzMC45IDMzNC41LDMwLjUgMzMzLjYsMjkuOSAzMzYuMiwyOC4zIDMzOC44LDI3LjkgMzM5LjYsMjkuMiAzNDIuMiwyOCAzNDIuOCwyNy4yIDM0NCwyNy4xIDM0My4yLDI4LjUgMzM3LjgsMzEuNiAzMzYuMywzMS45IDMzNS40LDMyLjkgMzM0LjksMzQuMyAzMzYuMywzOC43IDMzNy43LDM3LjcgMzM4LDM2LjcgMzM5LjUsMzYuNSAzMzkuOCwzNS4zIDM0MS41LDM0LjggMzQxLjYsMzMuNiAzNDIuNiwzMy41IDM0Mi43LDMyLjEgMzQxLjYsMzEuOSAzNDEuNSwzMS40IDM0MywyOS44IDM0NC4zLDMwIDM0NS4zLDI5LjUgMzQ1LjcsMjkuOSAzNDguNCwyOS4xIDM0OS44LDI5LjggMzUzLjIsMjggMzU2LjksMjcuMiAzNTguOCwyNy40IDM1OC45LDI2LjcgMzU2LjksMjUuMSAzNTkuNSwyNC43IDM1OS42LDIwLjcgMzU1LjIsMTkuOCAzNTAsMTkuNiAzNDkuNSwyMC4xIDM1MC40LDIwLjcgMzQ5LjIsMjEgMzQ3LjMsMjAuMSAzNDAuNCwyMC4zIDMzOS4yLDIwIDMzOS40LDE5LjIgMzM4LjcsMTguOCAzMzIuNiwxOC44IDMyOS4yLDE3LjUgMzIwLjIsMTYuOCAzMTguOSwxNy4yIDMxOS42LDE4LjIgMzEzLjUsMTguMyAzMTEuOSwxNy44IDMxMC45LDE4LjkgMzA5LjMsMTguNSAzMDguMSwxNy43IDMwOC43LDE3LjMgMzA4LjMsMTYuNiAzMDYuNiwxNi4xIDMwMi44LDE1LjkgMzAyLjksMTYuNyAyOTUuMSwxNS45IDI5My4xLDE2LjMgMjkyLjYsMTUuNyAyODguOSwxNS41IDI5My41LDE0LjMgMjkzLjgsMTMuOCAyOTAuOCwxMi45IDI4Ni45LDEzLjEgMjg2LjcsMTIuNiAyODQuNCwxMi41IDI4NS44LDEyLjIgMjg0LjEsMTEuOSAyODEuNywxMi4zIDI4MC40LDEzLjIgMjY5LjgsMTQgMjY1LjQsMTUuMiAyNjYuMywxNS43IDI2MCwxNiAyNjAuMSwxNy4xIDI2MSwxNy45IDI1OS4yLDE3LjMgMjU3LjEsMTcuNCAyNTUuNCwxNy44IDI1NS44LDE4LjUgMjU0LjgsMTguMyAyNTUuMiwxNy40IDI1NC4yLDE2LjggMjU0LjQsMTcuNSAyNTIuNiwxOC4yIDI1My44LDE5IDI1MywyMC4xIDI1My4yLDIwLjYgMjU0LjMsMjAuNyAyNTMuOSwyMS4zIDI1NC41LDIxLjkgMjUxLjgsMjMuNSAyNTAuNywyMy40IDI1My4xLDIxLjMgMjUyLDIwLjcgMjUyLjIsMTkuMyAyNTEuMywxOC4zIDI1Mi4zLDE3LjQgMjUyLjEsMTYuOSAyNDkuNCwxNi42IDI0Ni4yLDE4LjYgMjQ2LjMsMjAuMiAyNDguNiwyMS4xIDI0Ny45LDIxLjYgMjQyLjksMjAuMSAyMzkuOSwxOS44IDIzOS40LDIwLjIgMjQwLjUsMjAuNyAyMzkuMywyMS40IDIzOC4yLDIwLjggMjMyLjksMjEuNSAyMzMuOSwyMC45IDIzMy4xLDIwLjggMjI1LjcsMjMgMjI0LjksMjIuNyAyMjQuOSwyMi4xIDIyNi4yLDIyIDIyNS42LDIxLjQgMjIyLjgsMjEuMSAyMjMuNiwyMS43IDIyMy4xLDIyLjMgMjIzLjksMjIuOSAyMjMuMywyMy42IDIyMS41LDIzLjIgMjE5LjEsMjQuMiAyMTkuOCwyNC45IDIxOSwyNS4yIDIxNi41LDI0LjUgMjE1LjksMjQuOSAyMTYuNCwyNS44IDIxNC4zLDI1LjMgMjE0LjIsMjMuOCAyMTIuNSwyMyAyMTcuNywyMy43IDIyMC41LDIyLjkgMjIwLjQsMjIuMiAyMTUuOSwyMC42IDIxMS41LDE5LjggMjEwLjMsMjAuMSAyMDkuMywxOS41IDIxMC42LDE5LjIgMjA3LjUsMTguNSAyMDMuOSwxOC42IDIwMi4zLDE5LjUgMTk4LjUsMTkuOSAxOTUuNywyMS4xIDE4OS45LDI1LjIgMTg0LjMsMjcuNyAxODUsMzEuMSAxODcuOCwzMS40IDE4OS43LDMwLjIgMTkyLjMsMzQuMyAxOTMuNSwzNC4zIDE5NC4xLDMzLjUgMTk1LjMsMzMuNiAxOTYuMiwzMSAxOTcuMywzMC43IDE5OC4yLDI5LjYgMTk2LjUsMjguMyAxOTcuMiwyNi45IDIwMC43LDI1LjMgMjAwLjYsMjQuNyAyMDEuNSwyNCAyMDMuMiwyMy41IDIwNC43LDI0LjYgMjAwLjksMjYuNSAyMDAuNCwyNy4xIDIwMC45LDI4IDIwMC43LDI5IDIwMi4yLDI5LjkgMjA3LjQsMjkuMiAyMDguNSwyOS43IDIwNi44LDMxIDIwNy4xLDMxLjkgMjA2LjcsMzIuMiAyMDcuNiwzMy41IDIwNS45LDM0LjEgMjA0LjksMzUuNCAyMDIuOSwzNS44IDE5NS43LDM1LjIgMTkzLjUsMzUuOSAxOTEuOSwzNS4yIDE5MC4zLDM1LjcgMTkwLjQsMzUuMyAxODkuMywzNS4xIDE4OS4zLDM0LjcgMTg3LjksMzQuNyAxODguMiwzNS43IDE4Ny41LDM2LjIgMTg2LjUsMzYgMTg2LjMsMzcuNSAxODUuNCwzNy44IDE4NS41LDM5LjYgMTg2LDQwLjQgMTgxLjksMzguNSAxODEuMSwzOC43IDE4MC43LDM5LjYgMTc4LjQsNDAuMyAxNzcuNSwzOS45IDE3Ny44LDQxIDE3NC44LDQxIDE3NC45LDQxLjcgMTc2LjUsNDIuMSAxNzguMiw0My43IDE3OC4xLDQ1LjcgMTc3LjUsNDYuMyAxNzEuNSw0NS45IDE3MC4xLDQ2LjcgMTcwLjQsNDcuOCAxNzEuMiw0Ny40IDE3MS40LDQ3LjkgMTcyLjgsNDcuOCAxNzMuMSw0OC4zIDE3Miw1MC4xIDE3Mi40LDUxLjYgMTcyLDUyLjYgMTc0LjEsNTMuNyAxNzUuMSw1MyAxNzcuMyw1MyAxNzkuNiw1MC45IDE3OS4yLDUwLjQgMTc5LjUsNDkuNSAxODIuNSw0Ny44IDE4Mi41LDQ2LjYgMTg2LDQ2LjUgMTg4LjMsNDUuMyAxODkuNiw0NS44IDE4OS45LDQ2LjggMTkxLjUsNDggMTk0LjksNDkuNiAxOTUuNiw1MC43IDE5NS4xLDUxLjggMTk2LjUsNTAuOCAxOTYuNiw1MC4zIDE5NS45LDQ5LjkgMTk2LjMsNDkuMiAxOTcuNyw0OS45IDE5Ny45LDQ5LjUgMTkyLDQ1LjYgMTkxLjgsNDQuMyAxOTMuNCw0NC4xIDE5My4yLDQzLjIgMTkxLjYsNDIuNiAxODkuOSw0Mi44IDE4OS40LDQzLjQgMTg2LjMsNDMuNyAxODUuNCw0My40IiAvPjxwb2x5Z29uIHBvaW50cz0iMTIuMywyMS4zIDE3LjQsMjMuNiAxNS4zLDIzLjYgMTUuNCwyMy4xIDE0LjYsMjMuMSAxMSwyNCAxNC4zLDI1LjMgMTguNCwyNC45IDE3LjcsMjUuMyAxOC40LDI1LjkgMTQuNiwyNi41IDEzLjQsMjcuNiAxMy4xLDI4LjIgMTMuOSwyOC42IDEzLjksMjkuMiAxNS41LDI5LjkgMTYuOCwyOS43IDE3LjQsMzAuMSAxNy4zLDMxIDE4LjksMzAuNiAyMC4yLDMxLjMgMjIuMiwzMC44IDIwLjYsMzIuNyAxNC40LDM1LjEgMjAuOCwzMy43IDI1LDMxLjUgMjYsMzAuOCAyNS4zLDMwLjMgMjguNiwyOC40IDI4LjksMjguNiAyNy44LDI5IDI3LjYsMzAuNSAzMS4zLDI5LjcgMzEsMjkgMzIuMSwyOC44IDM2LjcsMjkuNiA0Mi43LDMxLjUgNDUuMiwzMS42IDQ3LjQsMzQuMiA0OC44LDM0LjkgNDkuMywzMy44IDQ4LjgsMzUuNCA1MCwzNi4xIDUwLjIsMzYuOSA1MS41LDM3LjQgNTEuOSwzOC45IDU2LjYsNDAuNyA1Ni44LDQyLjYgNTYuMyw0MS42IDU0LjcsNDEuNSA1NS42LDQ0LjIgNTQuOSw0Ni45IDU1LjEsNDkuNCA1OSw1NS4xIDYxLDU1LjYgNjIuNCw1Ny4xIDY0LjEsNjAuMSA2NS40LDYxLjEgNjQuNSw2MS45IDY3LjMsNjMuNiA2Ny41LDY0LjkgNjkuNiw2Ni44IDcwLjIsNjYuMyA2NC45LDU5LjUgNjQuOCw1Ny45IDY2LjQsNTguNSA2Ny44LDYxLjIgNzMuNiw2Ni45IDc0LjQsNjguMiA3My45LDY5LjIgNzQuNyw3MC4zIDc4LjgsNzIuNSA4My4xLDc0IDg0LjksNzMuNCA4NS44LDczLjcgODcuNCw3NS4xIDg3LjksNzMuNiA4OS4yLDczLjYgODguMiw3Mi40IDg4LjYsNzEuOCA5MC41LDcxLjggOTEuMSw3MS4xIDkxLjgsNzEuNCA5Mi44LDY4LjMgODkuMyw2OC42IDg4LjksNzAuMyA4NS4yLDcxLjUgODMuNyw3MC44IDgxLjcsNjcuMiA4Mi40LDYxLjggODUuOCw1OS45IDkwLjIsNjAuNSA5MCw1OS41IDkwLjQsNTkuMyA5My4yLDU5LjIgOTQuMyw2MCA5NS41LDU5LjYgOTYuOSw2MS4xIDk2LjgsNjIuMiA5OC45LDY0LjYgOTkuNSw2Mi44IDk4LDU4LjkgOTguMiw1OC4yIDEwMy44LDU0LjEgMTAzLjIsNTEuNyAxMDIuNSw1MS40IDEwMy4yLDUxLjYgMTAzLjEsNTAuNSAxMDMuMiw1MS40IDEwMy44LDUxLjcgMTAzLjUsNTIuNSAxMDQuNCw1MS4zIDEwNCw1MC4yIDEwNC42LDUwLjcgMTA1LjUsNDguOSAxMDcuNSw0OC43IDEwNS43LDQ4LjcgMTA5LjUsNDggMTA4LjYsNDcuMyAxMDkuMyw0NiAxMTIuNSw0NC45IDExMS42LDQ0IDExMi4zLDQ0LjUgMTE1LDQ0LjQgMTEzLjMsNDUuMiAxMTMuMyw0Ni4xIDExNC4xLDQ2LjEgMTE5LjYsNDMuOCAxMTguOSw0Mi43IDExNy45LDQzLjggMTE1LDQzLjQgMTE0LjMsNDEuNiAxMTUuMiw0MC45IDExNC40LDQwLjUgMTEyLjksNDAuNSAxMDguMyw0Mi45IDExMywzOS41IDExOS40LDM5LjQgMTIzLjcsMzcuNSAxMjMuNiwzNi40IDEyMi40LDM1LjkgMTIyLjEsMzUuMSAxMTcuNSwzMy40IDExNy45LDMyLjcgMTE0LjcsMjkuNCAxMTEuNywzMS41IDExMCwzMC43IDEwOS43LDI4LjYgMTA3LjksMjguNSAxMDUuNCwyNy4yIDEwMS4yLDI3LjQgMTAyLDI5LjggMTAwLjgsMzAuOSAxMDIsMzEuNiAxMDIuOCwzMy4yIDEwMS4xLDM0LjYgOTkuNiwzNSAxMDAuNywzNy4xIDk5LjUsMzguNSA5Ny4yLDM2LjQgOTcuMSwzNC42IDk0LjMsMzQuNCA4OC40LDMyLjQgODcsMzIuNiA4Ni4xLDMwLjkgODQuNiwzMC43IDg1LDI4LjggODcuMywyNi45IDg4LjUsMjYuNyA4OC41LDI2LjEgOTAuOCwyNS42IDkzLjQsMjMuMSA5NS44LDIzLjMgOTcuOCwyMi42IDk3LjIsMjEuNSA5Ny45LDIwLjUgOTMuNiwxOS44IDkzLjYsMjAuOSA5MS44LDIyLjUgOTAuOCwyMS44IDkxLjEsMjEuMSA5MCwyMC40IDg4LjYsMjEuMiA4OC42LDIwLjIgODYuOCwyMCA4Ny42LDE5LjUgODYuMSwxOC4zIDgzLjgsMTcuNyA4Mi42LDE4LjUgODIuNywxOS42IDg0LjksMjAuNiA4NC41LDIxLjYgODMuNiwyMS42IDgzLDIyLjQgODMsMjEuNCA4MS41LDIxLjEgODAuNiwyMS4zIDgwLjcsMjEuOSA3Ny43LDIyIDc0LjgsMjEuNyA3MywyMC45IDcxLDIxIDcwLjMsMjEuNCA3MS4zLDIxLjggNzAuMiwyMi4zIDY5LjIsMjEuNyA2My44LDIxLjggNjUuMiwyMS4zIDU2LjUsMTkuOCA1NC45LDIwLjMgNTQuNiwxOS41IDUzLjQsMjAuMiA1MC45LDE5LjIgNTAsMTkuOSA0OS4zLDE5LjUgNDIuNiwyMC44IDI2LjcsMTguOCAyNC42LDE5IDIyLjMsMTguMyAxNy4xLDE5LjMgMTQuNiwyMC44IDEyLjgsMjAuOCIgLz48cG9seWdvbiBwb2ludHM9IjE2Ni4zLDYyIDE2NSw2My40IDE2Mi41LDY4LjIgMTY0LjcsNjguMSAxNjUuNiw2NS45IDE2Nyw2NC45IDE2Ny41LDYzLjkgMTY3LjYsNjYuMyAxNjYuNiw2Ni4zIDE2Ni42LDY4LjMgMTYyLjQsNjguNiAxNjMuMiw2OS41IDE2Myw3My41IDE2NC45LDczIDE2Ny4zLDc1IDE2OCw3Ny41IDE2OS4zLDc3LjggMTcwLjQsNzcuMyAxNzEuNSw3OS40IDE3Mi4yLDc5LjQgMTcxLjMsNzkuNSAxNzEuNyw4MSAxNzEuMiw4MS4zIDE3MC45LDgzLjEgMTcxLjksODMuOSAxNzIsODUuMyAxNzQuOCw4NC40IDE3Ni42LDg0LjYgMTc2LjYsNzguNiAxODAuNCw3OC42IDE4MS40LDc4IDE4MS43LDc3IDE4MS42LDc3LjcgMTgyLjMsNzcuNCAxODMuMSw3OCAxODMuMiw3Ny42IDE4My4yLDc5LjUgMTgyLjIsODEuMSAxODIuMiw4My4zIDE4My44LDgzLjMgMTg1LjQsODUuMyAxODguMSw4NC41IDE4OCw4NS4xIDE4OS4zLDg2LjUgMTg5LjEsODcuMyAxOTIuNiw4Ny42IDE5Mi44LDg4LjMgMTkzLjcsODguNCAxOTMuMyw4OS41IDE5My44LDkxLjYgMTkyLjYsOTIgMTkyLDkxLjUgMTkyLDkyIDE5MC45LDkyLjMgMTkxLjMsOTMgMTkwLjYsOTMuNSAxOTEuNCw5NC42IDE5Mi4xLDk0IDE5NCw5NC41IDE5Mi40LDk0LjMgMTkxLjgsOTUuNyAxOTMuMiwxMDAuOSAxOTEuOSwxMDMuMSAxOTEuMiwxMDYuOCAxOTMuNywxMTEuNiAxOTQuNiwxMTYuNiAxOTcuNiwxMjEuMiAxOTcuNiwxMjMuNCAxOTkuNCwxMjQuMyAyMDIsMTIzLjMgMjA1LjEsMTIzLjQgMjA4LjMsMTIxLjcgMjExLjYsMTE4LjMgMjEyLjIsMTE2LjIgMjExLjksMTE1LjIgMjE1LDExMy4yIDIxNC4yLDEwOS4zIDIxNi44LDEwNy4xIDIxOC44LDEwNi4zIDIxOS44LDEwNC45IDIxOS43LDk5LjkgMjE4LjYsOTggMjE4LjksOTYuNyAyMTguMSw5NS41IDIxOC42LDk0LjIgMjE5LjcsOTIuMSAyMjEsOTEuMyAyMjgsODQuMiAyMjkuNSw4MS41IDIzMC41LDc3LjYgMjI0LDc5LjIgMjIyLjYsNzguMSAyMjIuMSw3OC44IDIyMS4yLDc4LjYgMjIxLjgsNzcuMSAyMjAuMyw3NS41IDIxNy4zLDc0LjcgMjE3LDc1LjQgMjE1LjgsNzUuMiAyMTYuMyw3Mi43IDIxNy44LDcxLjYgMjE2LjksNzEgMjE2LjMsNjcuNiAyMTUsNjYuNSAyMTUuMSw2NS43IDIxMS43LDU5LjkgMjEzLjQsNjIgMjE0LjMsNjAuMSAyMTMuNyw1OC40IDIxMS40LDU4LjcgMjEwLjQsNTguMSAyMDguNCw1OC44IDIwNC42LDU4LjEgMjAyLjQsNTcgMjAwLjMsNTYuOSAxOTkuMyw1Ny45IDE5OS41LDU4LjcgMTk4LjUsNTkuNCAxOTUuMiw1OC4zIDE5NC43LDU3LjQgMTkzLjQsNTYuOSAxOTAuOSw1Ni41IDE5MC45LDU3LjMgMTg5LjQsNTguMyAxODkuNCw1OS4xIDE4OSw1OS4zIDE4OC41LDU3LjYgMTg3LDU1LjYgMTg3LjYsNTUgMTg3LjksNTIuNyAxODAuOSw1My4xIDE3Ny4zLDU0LjUgMTczLjUsNTMuOSAxNzIuNiw1NS42IDE3MC4yLDU3LjEgMTY5LjksNTkuNyAxNjkuMSw2MC42IiAvPjxwb2x5Z29uIHBvaW50cz0iMTA3LjgsNzcuMiAxMDYuMiw3OC40IDEwNC43LDc4LjUgMTA0LjEsNzkgMTA0LDgwLjIgMTAyLjMsODAuOSAxMDEuOCw4Mi40IDEwMi41LDg1LjcgMTAwLjcsODcuOSAxMDIuMiw4OS4yIDEwNC42LDg5LjYgMTA0LjEsOTEuMSAxMDEuOCw5Mi42IDEwMC41LDk0LjUgOTkuMiw5NCA5OS40LDkzIDk4LjMsOTQuMyA5OC44LDk1LjMgOTguNSw5NS43IDk5LjksOTYuNyAxMDMuNywxMDQuMiAxMDkuMywxMDcuOSAxMDkuNiwxMTAuOSAxMDguOCwxMTcuMSAxMDguMiwxMTguNCAxMDguMywxMjEuOSAxMDYuNiwxMjYuNiAxMDYuMiwxMjYuNiAxMDYuNiwxMjguNyAxMDUuNSwxMzIuNyAxMDYuMSwxMzIuOCAxMDYuNCwxMzEuNiAxMDcuMSwxMzEuOSAxMDYuNiwxMzMuOSAxMDUuNSwxMzMuNiAxMDUuMSwxMzUuMiAxMDQuMiwxMzYuMSAxMDUuNywxMzYuNCAxMDQuMiwxMzguMSAxMDQuOSwxNDEuNyAxMDguNCwxNDMuMyAxMDksMTQyLjMgMTExLjcsMTQxLjggMTEwLjcsMTQwLjIgMTEyLDEzOS4zIDExMi42LDEzOC4xIDExMy44LDEzNy42IDExNC4xLDEzNi43IDExMi4yLDEzNS44IDExMi41LDEzNSAxMTQuMiwxMzQuNSAxMTQuNiwxMzMgMTE2LjMsMTMyIDExNiwxMzEuNSAxMTQuOCwxMzEuNSAxMTQuNywxMzAuNSAxMTcsMTMwLjUgMTE3LjYsMTMwLjEgMTE3LjQsMTI4LjMgMTIwLjUsMTI4LjIgMTIxLjksMTI3LjcgMTIyLjksMTI2LjQgMTIyLjUsMTI0LjggMTIxLjIsMTIzLjkgMTIxLjgsMTIwLjUgMTIyLjMsMTE5LjggMTI1LjksMTIxLjUgMTI2LjUsMTIyLjIgMTI2LDEyMi43IDEyNi4zLDEyMy4zIDEzMC44LDExOC4yIDEzMS4xLDExNS40IDEzMiwxMTQuNCAxMzUsMTEyLjkgMTM3LjYsMTEyLjUgMTM4LjcsMTExLjUgMTQwLjMsMTA3LjQgMTQwLjYsMTAzLjMgMTQ0LDk5LjIgMTQ0LjksOTYuOSAxNDQsOTQuNyAxNDIuNCw5NC40IDEzOS42LDkyLjQgMTM2LjIsOTEuOSAxMzUsOTIuMyAxMzQuNyw5MS4xIDEzMS44LDkwLjIgMTMxLDkwLjggMTMxLDg5LjggMTI5LjIsODkuNyAxMjguOSw4OS40IDEyOS43LDg4LjUgMTI5LjYsODcuOCAxMjkuMSw4Ny43IDEyOC4zLDg1LjQgMTI2LjcsODcuNSAxMjMuNiw4Ny4xIDEyMy42LDg3LjggMTIwLjYsODguMyAxMTkuNiw4Ni44IDEyMC4xLDg1LjYgMTE5LjQsODQuNCAxMTguMiw4My42IDExOS4zLDgyLjYgMTE5LDgxLjggMTE5LjksODEuMiAxMTguOSw4MSAxMTguOCw4MC4yIDExOCw3OS43IDExNy4yLDc5LjcgMTE2LjksNzkuMiAxMTcuNyw3OC45IDExNS4zLDc5IDExNC43LDc5LjUgMTExLjQsNzkuMSAxMTAuNyw3OC4yIDExMCw3OC4yIDEwOS43LDc3LjQgMTA5LjUsNzguMiAxMDguMiw3OC42IDEwOC40LDgwLjUgMTA3LjksODAuNSAxMDcuNyw3OC4zIDEwOC4zLDc3LjgiIC8+PHBvbHlnb24gcG9pbnRzPSIxMjUuOCw3LjYgMTI0LjcsNy4yIDExOC41LDcuNCAxMTAuOSw5LjUgMTEzLjYsOS45IDExMy4yLDEwLjMgMTA1LjcsMTEuMiAxMDUuNiwxMS42IDExMi4xLDEyLjIgMTA3LjUsMTIuNiAxMTAuNSwxMy42IDExNy43LDEzLjUgMTIwLjQsMTQuMSAxMjQuNCwxNy4xIDEyMy4zLDE4IDEyNy44LDE5LjEgMTI0LjgsMTguOCAxMjQuNSwyMC4xIDEyNS44LDIwLjQgMTI4LjMsMTkuOCAxMjcuNywyMC45IDEyNi4yLDIxLjMgMTI1LjMsMjIuNSAxMjUuOSwyMi44IDEyNS42LDIzLjYgMTI3LDI0LjUgMTI3LjcsMjYuMSAxMzEsMjguOCAxMzYsMjkuNiAxMzYuOSwyNy44IDEzNi41LDI3IDEzOC4xLDI2LjIgMTM5LjUsMjQuMiAxNDIuOSwyMy43IDE0Ny41LDIxLjYgMTUxLjUsMjEuMiAxNTYuOSwxOS42IDE1Mi45LDE5LjUgMTU0LDE4LjkgMTUzLjcsMTguMiAxNTUuNywxOS4yIDE1Ny41LDE5IDE1Ny4xLDE4LjIgMTU0LjQsMTcuMyAxNTYuOSwxNy41IDE1Ni45LDE3IDE1NS42LDE2LjQgMTU4LjQsMTYuMiAxNTguNywxNS45IDE1Ny42LDE1LjUgMTU5LjgsMTUuNCAxNTguNSwxNC41IDE1OS42LDE0LjQgMTU5LjMsMTMuNSAxNTcuNCwxMyAxNjAuNywxMi42IDE1OS40LDEyIDE1OS40LDEwLjkgMTYxLjQsOS41IDE1OSw5LjQgMTY2LjksOC4yIDE2Ni4zLDcuNyAxNjMuMyw3LjUgMTU1LjksOC4zIDE1Nyw3LjcgMTU2LjEsNy4zIDE1NC4yLDcuNyAxNDcuMSw3LjIgMTU4LjIsNi43IDE1MS45LDUuOSAxNDAuMyw1LjkgMTMyLjEsNi44IDEzMiw3LjIgMTM0LjQsNy44IDEyOC41LDciIC8+PHBvbHlnb24gcG9pbnRzPSIzMTUuMSwxMDIuOSAzMTYuMSwxMDEuOSAzMTUuNiwxMDEuNCAzMTQuNCwxMDEuOCAzMTEsMTAwLjggMzExLjcsMTAxLjEgMzExLjcsMTAxLjcgMzA5LjgsMTAyLjEgMzA4LjUsMTA0IDMwOC43LDEwNC41IDMwNy41LDEwNC40IDMwNi4yLDEwMy40IDMwNC44LDEwMy44IDMwMy41LDEwNS4xIDMwMy40LDEwNS45IDMwMi42LDEwNi4xIDMwMywxMDYuNiAzMDIuNiwxMDYuOCAzMDIuMSwxMDUuOSAzMDEuNCwxMDcuNyAzMDAsMTA5LjIgMjk1LjgsMTEwLjIgMjkzLjQsMTEyIDI5My4zLDExMS4zIDI5Mi41LDExMy45IDI5My4zLDExNS44IDI5Mi41LDExNS4xIDI5Mi45LDExNi4xIDI5Mi40LDExNS42IDI5NC43LDEyMS4xIDI5NC43LDEyMi44IDI5NCwxMjMuNyAyOTUuNiwxMjQuNSAyOTcsMTI0LjUgMjk4LjksMTIzLjUgMzAyLjYsMTIzLjQgMzAzLjIsMTIyLjQgMzA1LjIsMTIxLjcgMzEwLjMsMTIxIDMxMy4yLDEyMi4xIDMxNC4xLDEyNCAzMTQuOSwxMjQuNCAzMTYuOCwxMjIuNCAzMTUuNywxMjQuNyAzMTYuNiwxMjQuNiAzMTcuMSwxMjMuOSAzMTcsMTI1LjEgMzE4LjQsMTI1LjYgMzE5LjUsMTI3LjUgMzIyLjQsMTI4LjMgMzIzLjksMTI3LjQgMzIzLjcsMTI3LjkgMzI1LjEsMTI4LjUgMzI3LjEsMTI3LjMgMzI4LjMsMTI3LjMgMzI5LjEsMTI1LjEgMzMxLjgsMTIxLjEgMzMyLjYsMTE3LjYgMzMxLjgsMTE0LjggMzI5LjksMTEzIDMyOS43LDExMS45IDMyOC43LDExMS45IDMyNy45LDEwOS45IDMyNS40LDEwOC41IDMyNC40LDEwNC41IDMyMy43LDEwMy43IDMyMywxMDQuMSAzMjEuNiwxMDAuMiAzMjAuOCwxMDIgMzIwLjgsMTA0LjYgMzE5LjksMTA2LjkgMzE5LjMsMTA3LjIgMzE0LjYsMTA0LjUiIC8+PHBvbHlnb24gcG9pbnRzPSI5Ny45LDIwIDEwMC4yLDE5LjUgMTAzLDIwLjUgMTAyLjMsMjAuOCAxMDYuMywyMS45IDEwNi41LDIyLjQgMTA0LjksMjMuOSAxMDUuMywyNC4yIDEwMS4zLDI0LjQgMTAwLjcsMjUuMSAxMDEuNiwyNS41IDEwNC40LDI1IDEwNy40LDI2IDEwNywyNi4zIDEwOC4yLDI2LjggMTEzLjEsMjcuNyAxMTAuNSwyNiAxMTQuMiwyNyAxMTQuNiwyNi4zIDExNCwyNS4zIDExMS4xLDI0IDExMS4yLDIzLjQgMTEyLjUsMjMuMyAxMTUuMywyNC43IDExNy40LDIyLjggMTEwLjQsMjEgMTEyLjIsMjAuNSAxMTAuMywxOS4yIDEwNi44LDE4LjEgMTA1LDE4LjMgMTAxLjIsMTYuOSA5OC4zLDE3LjYgOTguNCwxNi45IDk2LjcsMTUuOSA5NC4xLDE2LjMgOTMuMiwxNy4xIDkyLjQsMTYuNSA5My4yLDE1LjkgODkuNSwxNi41IDg4LjgsMTcuNCA4OS4yLDE4LjQgOTAuNiwxOC40IDg5LjUsMTguOSIgLz48cG9seWdvbiBwb2ludHM9Ijk3LDkuMSA5MS45LDkuMyA5My44LDEwLjMgOTAuOCwxMS4yIDkzLjgsMTIuMSA5MC42LDExLjcgOTEsMTIuNCA4OS4yLDEyLjYgODkuMywxMy4xIDk4LjMsMTMuNCAxMDEsMTIuOCA5OS4xLDEyLjQgMTAzLjUsMTEuMSAxMDIuNywxMC42IDEwMy40LDEwLjQgMTAyLDEwLjMgMTA3LjgsOS44IDEwOS40LDguOSAxMTMuMyw4IDExMS4xLDggMTEyLDcuNyAxMTYuOSw3LjEgMTE1LjEsNi41IDExMC4yLDYuMyA5Ny42LDYuNCA5NS41LDcuMSA5My4xLDYuOCA4Ny4xLDcuNiA5MS4yLDkiIC8+PHBvbHlnb24gcG9pbnRzPSIzMTEuNCw5MS44IDMxMi45LDkxLjggMzExLjIsOTIuNCAzMTIuMiw5My43IDMxMi44LDkzLjEgMzE3LjEsOTUgMzE3LjgsOTYuOSAzMTYuOCw5OCAzMTkuMyw5Ny45IDMyMC4yLDk4LjcgMzIxLjgsOTguOSAzMjIuNSw5OC41IDMyMi40LDk3LjggMzIzLjksOTcuMiAzMjUuMiw5Ny42IDMyNyw5OS43IDMyOS4xLDEwMC4yIDMyOS45LDk5LjggMzI4LjQsOTkuMSAzMjguNCw5OC42IDMyNy44LDk4LjcgMzI2LjMsOTcgMzI2LjEsOTYuMyAzMjcsOTYuMiAzMjYuOCw5NS42IDMyNS4xLDk1IDMyMy43LDkzLjQgMzE2LjYsOTEuMyAzMTQuNiw5Mi45IDMxMy42LDkyLjMgMzEzLjIsOTAuMyAzMTEuNSw4OS45IDMwOS43LDkwLjUiIC8+PHBvbHlnb24gcG9pbnRzPSI2Ni42LDE5LjMgNjEuOCwxOS43IDYzLDIwLjUgNjUuOCwyMS4xIDczLjIsMjAuNSA3Ni43LDIwLjkgNzcuMSwyMC42IDc2LjQsMjAuMiA3OC4xLDIwLjEgNzguMiwxOS43IDc0LjYsMTguNyA3My41LDE3IDcyLjQsMTYuNiA3MC41LDE2LjYgNzEuMywxNy42IDcwLjgsMTggNjksMTYuNyA2Ny45LDE3LjIgNjYuNSwxNi43IDY0LjIsMTcgNjQuNywxNi41IDYxLDE2LjkgNTkuNSwxOC4xIDYyLjgsMTguMyA2MC42LDE4LjggNjEuMSwxOS4xIiAvPjxwb2x5Z29uIHBvaW50cz0iMjIzLjMsMTA2LjkgMjIzLjcsMTA5LjYgMjIyLjYsMTExLjYgMjIzLjEsMTE0IDIyNC4yLDExNC45IDIyNi40LDExNC41IDIyOC44LDEwNy41IDIyOSwxMDUuMiAyMjkuNywxMDUuMiAyMjkuNCwxMDMuMSAyMjguNiwxMDEuNiAyMjcuNywxMDMuMyAyMjcuMiwxMDMuMiAyMjcuMSwxMDQuMSAyMjUuNywxMDUuMyAyMjMuOCwxMDUuNyIgLz48cG9seWdvbiBwb2ludHM9IjI5NS4yLDkzLjIgMjk1LjQsOTMuNiAyOTUuOCw5MS4xIDI5Ni43LDkwLjQgMjk3LDg4LjggMjk4LjIsODguNyAyOTcuMSw4Ny44IDI5Ny4zLDg3LjMgMjk2LjYsODYuNCAyOTcuMSw4NS41IDI5NS4xLDg1LjMgMjkzLjksODguMSAyOTMuMSw4OC40IDI5Mi4xLDg4LjEgMjg5LjgsODguOCAyODguOSw4Ny42IDI4OC4yLDg5LjIgMjg5LjUsOTIuNSAyOTEuMyw5My4xIDI5Mi41LDkyLjcgMjk0LjEsOTMuNyIgLz48cG9seWdvbiBwb2ludHM9IjI3NC42LDg0LjEgMjc3LjksODcuOCAyNzguNSw4OS40IDI4MS44LDkzLjggMjgzLjksOTUuNCAyODUsOTUuNCAyODUuNCw5Mi42IDI4Mi43LDkwLjMgMjgzLjEsODkuNSAyODAuOSw4Ny41IDI3OS45LDg3LjUgMjc2LjgsODQuMyIgLz48cG9seWdvbiBwb2ludHM9IjE3Ni40LDM1LjcgMTc2LjMsMzYuMyAxNzQuOCwzNi4yIDE3NC42LDM2LjggMTc1LjIsMzcuNCAxNzQuMSwzNy43IDE3NiwzOC4zIDE3My42LDM5LjUgMTgwLjksMzguNCAxODAuNSwzNy45IDE4MS4xLDM2LjkgMTc5LjksMzYuOCAxNzksMzUuMiAxNzguMywzNS4xIDE3Ny4zLDMzLjggMTc2LjMsMzMuNyAxNzcuNCwzMiAxNzUuMywzMi4xIDE3Ni40LDMxIDE3NC40LDMxLjEgMTczLjIsMzIuOSAxNzMuOCwzNC40IDE3NC4zLDMzLjkgMTc0LjUsMzQuOSIgLz48cG9seWdvbiBwb2ludHM9IjMxNi44LDUyLjggMzE2LjEsNTIuNCAzMTUsNTQuMSAzMTIsNTQuMiAzMDguOCw1Ni40IDMwOS44LDU3LjMgMzEwLDU4LjYgMzEwLjcsNTguMiAzMTEuNCw1Ni41IDMxMC4zLDU1LjggMzE0LjQsNTUuMSAzMTUuMiw1Ni4yIDMxNi41LDU1LjEgMzE5LjYsNTQuNSAzMjAuNCw1MS41IDMyMS4zLDUwLjUgMzIwLjgsNDguMyAzMTkuMyw0OS4xIDMxOC44LDUxLjUiIC8+PC9nPgogIAogIDxnIG9wYWNpdHk9IjAuNSIgc3Ryb2tlPSIjQjU3MTNBIiBmaWxsPSJub25lIiBzdHJva2Utd2lkdGg9IjAuNyI+CiAgICA8Y2lyY2xlIGN4PSIzNDQiIGN5PSIxOCIgcj0iOSIgLz4KICAgIDxwYXRoIGQ9Ik0zNDQgNyBMMzQ2LjUgMTggTDM0NCAxNiBMMzQxLjUgMTggWiIgZmlsbD0iI0I1NzEzQSIgc3Ryb2tlPSJub25lIiBvcGFjaXR5PSIwLjc1IiAvPgogICAgPHBhdGggZD0iTTM0NCAyOSBMMzQxLjUgMTggTDM0NCAyMCBMMzQ2LjUgMTggWiIgZmlsbD0ibm9uZSIgLz4KICA8L2c+CiAgPHRleHQgeD0iMzQ0IiB5PSI1LjUiIGZpbGw9IiNCNTcxM0EiIGZvbnQtc2l6ZT0iNS41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIG9wYWNpdHk9IjAuOCI+TjwvdGV4dD4KPC9zdmc+"); }
+.map-arc-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+/* 文明锚点：小圆点落在对应大陆，不再用大胶囊盖住轮廓 */
+.map-pin { position: absolute; z-index: 2; width: 16rpx; height: 16rpx; box-sizing: border-box; border-radius: 50%; transform: translate(-50%, -50%); border: 2rpx solid #FCF9F2; box-shadow: 0 1rpx 5rpx rgba(61,46,31,0.35); }
+.pin-china { width: 20rpx; height: 20rpx; background: var(--china); box-shadow: 0 0 0 3rpx rgba(181,113,58,0.2), 0 2rpx 8rpx rgba(142,79,39,0.5); }
+.pin-china::after { content: ''; position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; box-sizing: border-box; transform: translate(-50%, -50%); border: 2rpx solid rgba(181,113,58,0.55); border-radius: 50%; animation: pulse 2.4s ease-out infinite; pointer-events: none; }
+@keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.75; } 100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; } }
+.pin-world { background: var(--world); }
+.pin-idle { background: rgba(63,107,104,0.2); box-shadow: none; }
+.pin-china.pin-idle { background: var(--china); }
+
+/* 标签：有同期记载＝实心胶囊，无记载＝淡字；统一向外扇出 */
+.map-tag { position: absolute; z-index: 3; display: flex; align-items: center; gap: 6rpx; transform: translate(-50%, -50%); padding: 5rpx 12rpx; border-radius: 999rpx; background: rgba(252,249,242,0.94); border: 1rpx solid rgba(63,107,104,0.4); box-shadow: 0 4rpx 12rpx rgba(61,46,31,0.16); transition: transform 0.18s, box-shadow 0.18s; }
+.tag-label { font-size: var(--fs-20); line-height: 1.2; color: var(--world-d); white-space: nowrap; }
+.tag-num { min-width: 24rpx; padding: 0 6rpx; border-radius: 999rpx; background: rgba(63,107,104,0.14); font-size: 18rpx; line-height: 24rpx; text-align: center; color: var(--world-d); }
+.tag-china { background: linear-gradient(135deg, var(--accent-gold), #8E4F27); border-color: #8E4F27; box-shadow: 0 6rpx 16rpx rgba(142,79,39,0.35); }
+.tag-china .tag-label { color: var(--bg-card); }
+.tag-china .tag-num { background: rgba(251,247,239,0.22); color: var(--bg-card); }
+/* 无同期记载：半透明纸底小字，落在陆地上也能读清，但不遮挡轮廓 */
+.tag-idle { background: rgba(252,249,242,0.66); border-color: rgba(228,217,197,0.7); box-shadow: none; padding: 2rpx 8rpx; opacity: 0.88; }
+.tag-idle .tag-label { color: #7A6B52; font-size: 19rpx; }
+.tag-active { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 10rpx 22rpx rgba(46,84,82,0.4); }
+.tag-china.tag-active { box-shadow: 0 10rpx 22rpx rgba(142,79,39,0.5); }
+.map-note { position: absolute; right: 14rpx; bottom: 12rpx; z-index: 3; pointer-events: none; font-size: 16rpx; color: #A8977B; letter-spacing: 0.5rpx; }
+
+.region-detail { margin-top: 20rpx; padding: 22rpx 24rpx; background: var(--card); border: 1rpx solid var(--line); border-radius: 20rpx; box-shadow: 0 12rpx 28rpx -20rpx rgba(61,46,31,0.7); }
+.rd-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.rd-title-wrap { display: flex; align-items: baseline; gap: 12rpx; }
+.rd-title { font-size: 29rpx; font-weight: 600; color: var(--ink); }
+.rd-count { font-size: 19rpx; color: var(--world-d); background: rgba(63,107,104,0.1); padding: 3rpx 12rpx; border-radius: 999rpx; }
+.rd-close { padding: 8rpx 12rpx; font-size: var(--fs-22); color: var(--muted); }
+.rd-item { padding: 16rpx 0; border-top: 1rpx solid #EFE7D7; }
+.rd-item-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12rpx; }
+.rd-item-title { flex: 1; font-size: var(--fs-26); color: var(--ink); font-weight: 500; }
+.rd-item-year { flex-shrink: 0; font-size: var(--fs-20); color: var(--china-d); background: rgba(181,113,58,0.1); padding: 3rpx 10rpx; border-radius: 999rpx; }
+.rd-item-desc { margin-top: 8rpx; font-size: 21rpx; color: var(--muted); line-height: 1.6; }
+.rd-item-impact { margin-top: 8rpx; padding-top: 8rpx; font-size: var(--fs-20); color: var(--china-d); line-height: 1.5; border-top: 1rpx dashed #EFE7D7; }
+.map-tip { display: flex; align-items: center; justify-content: center; gap: 10rpx; margin-top: 16rpx; padding: 14rpx 18rpx; background: rgba(61,46,31,0.04); border-radius: 14rpx; font-size: var(--fs-20); color: var(--muted); text-align: center; }
+.tip-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: var(--china); }
+
+/* ── 分享 ── */
+.share-row { margin: 36rpx 40rpx 0; text-align: center; }
+.share-hint { margin-bottom: 18rpx; font-size: var(--fs-20); color: #9A8C73; }
+.share-btn { display: flex; align-items: center; justify-content: center; gap: 12rpx; width: 100%; padding: 18rpx 0; line-height: 1.4; background: linear-gradient(135deg, var(--accent-gold), #8E4F27); color: var(--bg-card); font-size: var(--fs-28); border: none; border-radius: 999rpx; box-shadow: 0 14rpx 28rpx -16rpx rgba(142,79,39,0.9); }
+.share-btn::after { border: none; }
+.sb-ico { font-size: var(--fs-28); }
+/* 结果页第二个换锚点入口：锚点卡里的「换一个」滚上去就看不到了 */
+.reselect-link { display: inline-flex; align-items: center; gap: 6rpx; margin-top: 20rpx; padding: 8rpx 6rpx; font-size: var(--fs-22); color: var(--muted); }
+.rl-arrow { font-size: var(--fs-26); opacity: 0.75; }
+
+/* 回顶：内容最长 2400px，固定在自定义 tabBar 之上 */
+.fab { position: fixed; right: 26rpx; bottom: calc(150rpx + env(safe-area-inset-bottom)); z-index: 20; width: 76rpx; height: 76rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(252,249,242,0.96); border: 1rpx solid var(--line); box-shadow: 0 12rpx 28rpx -12rpx rgba(61,46,31,0.6); }
+.fab-arrow { width: 18rpx; height: 18rpx; border-left: 3rpx solid var(--china-d); border-top: 3rpx solid var(--china-d); transform: rotate(45deg) translate(3rpx, 3rpx); }
+
+/* 本页不是 tabBar 页，无底栏；仅保留普通底部留白 48rpx + 安全区 */
+.bottom-spacer { height: calc(48rpx + env(safe-area-inset-bottom)); }
+
+/* ── 长按浮层 ── */
+.pop-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 50; background: rgba(30,22,14,0.55); display: flex; align-items: flex-end; }
+.pop-sheet { position: relative; width: 100%; max-height: 82vh; box-sizing: border-box; overflow: hidden; padding: 12rpx 40rpx calc(32rpx + env(safe-area-inset-bottom)); background: linear-gradient(180deg, #FDFAF4, var(--bg-primary)); border-radius: 36rpx 36rpx 0 0; box-shadow: 0 -20rpx 60rpx rgba(0,0,0,0.24); display: flex; flex-direction: column; }
+.pop-sheet::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6rpx; background: linear-gradient(90deg, var(--china), #D9A566, var(--world)); }
+.pop-grip { width: 72rpx; height: 8rpx; border-radius: 999rpx; background: #D8CBB2; margin: 12rpx auto 18rpx; }
+.pop-head { display: flex; align-items: center; justify-content: space-between; }
+.pop-kind { display: flex; align-items: center; gap: 10rpx; padding: 6rpx 20rpx; border-radius: 999rpx; font-size: 21rpx; font-weight: 500; letter-spacing: 1rpx; }
+.pk-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: currentColor; opacity: 0.75; }
+.pop-kind.k-figure { color: var(--bg-card); background: var(--china-d); }
+.pop-kind.k-event { color: var(--bg-card); background: var(--world-d); }
+.pop-close { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; font-size: var(--fs-28); color: var(--muted); border-radius: 50%; }
+.pop-close:active { background: rgba(61,46,31,0.08); }
+.pop-title { margin-top: 16rpx; font-size: 42rpx; font-weight: 600; color: var(--ink); font-family: "Songti SC", "STSong", serif; line-height: 1.35; }
+.pop-sub { margin-top: 10rpx; font-size: 23rpx; color: var(--muted); line-height: 1.55; }
+.pop-divider { margin-top: 20rpx; height: 2rpx; background: linear-gradient(90deg, var(--china), rgba(181,113,58,0)); opacity: 0.4; }
+.pop-loading { display: flex; align-items: center; gap: 12rpx; margin-top: 20rpx; font-size: 25rpx; color: #9A8C73; }
+.pl-dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: var(--china); animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+.pop-body { margin-top: 18rpx; max-height: 42vh; overflow-y: auto; font-size: 27rpx; color: #4A3C2B; line-height: 1.85; white-space: pre-line; }
+.pop-impact { margin-top: 20rpx; padding: 16rpx 18rpx; background: rgba(181,113,58,0.08); border-left: 5rpx solid var(--china); border-radius: 0 14rpx 14rpx 0; }
+.pop-impact-label { margin-bottom: 6rpx; font-size: var(--fs-20); color: var(--china-d); font-weight: 600; letter-spacing: 2rpx; }
+.pop-impact-text { font-size: var(--fs-24); color: var(--ink2); line-height: 1.7; white-space: pre-line; }
+.pop-btn { display: flex; align-items: center; justify-content: center; gap: 12rpx; margin-top: 28rpx; padding: 22rpx 0; background: linear-gradient(135deg, var(--accent-gold), #8E4F27); color: var(--bg-card); border-radius: 999rpx; font-size: var(--fs-28); box-shadow: 0 12rpx 24rpx -14rpx rgba(142,79,39,0.9); }
+.pop-btn:active { opacity: 0.88; }
+.pb-arrow { font-size: var(--fs-30); }
+.pop-foot-hint { margin-top: 22rpx; text-align: center; font-size: var(--fs-20); color: #A2937A; }

@@ -1,0 +1,139 @@
+<view class="page">
+  <nav-bar title="个人中心" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <scroll-view class="body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <view class="nav-spacer" style="height: {{navBarHeight}}px; flex-shrink: 0;"></view>
+
+    <!-- 用户卡 -->
+    <view class="uc-head">
+      <view class="uc-avatar"><text class="uc-avatar-text">{{profile.initial || '世'}}</text></view>
+      <view class="uc-meta">
+        <text class="uc-name">{{profile.nickName || '世慧屋用户'}}</text>
+        <text class="uc-sub uc-retry" wx:if="{{profileFailed}}" bindtap="onRetryProfile">信息加载失败，点击重试</text>
+        <text class="uc-sub" wx:elif="{{profile.qlId}}">世慧屋 ID：{{profile.qlId}}</text>
+        <text class="uc-sub" wx:else>欢迎回到世慧屋</text>
+      </view>
+    </view>
+
+    <!-- 分类切换 -->
+    <view class="uc-tabs">
+      <view
+        class="uc-tab {{activeTab === item.key ? 'uc-tab-active' : ''}}"
+        wx:for="{{tabList}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="onTapTab"
+      >
+        <text class="uc-tab-text">{{item.label}}</text>
+        <view class="uc-tab-badge" wx:if="{{item.key === 'messages' && unreadCount > 0}}">{{unreadCount}}</view>
+      </view>
+    </view>
+
+    <view class="skeleton-wrap" wx:if="{{loading}}">
+  <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+    <view class="skeleton-line skeleton-line-title"></view>
+    <view class="skeleton-line"></view>
+    <view class="skeleton-line skeleton-line-short"></view>
+  </view>
+  <view class="skeleton-hint">正在加载…</view>
+</view>
+    <view wx:elif="{{loadFailed}}" class="uc-empty">
+      <text class="uc-empty-text">加载失败，请下拉重试</text>
+    </view>
+
+    <!-- ===== 消息 ===== -->
+    <block wx:elif="{{activeTab === 'messages'}}">
+      <view class="uc-bar" wx:if="{{messages.length > 0}}">
+        <text class="uc-bar-text">共 {{messages.length}} 条{{unreadCount > 0 ? '，未读 ' + unreadCount : ''}}</text>
+        <text class="uc-bar-action" bindtap="onMarkAllRead">全部已读</text>
+      </view>
+      <view class="uc-list" wx:if="{{messages.length > 0}}">
+        <view class="uc-msg-item {{item.isRead ? '' : 'uc-msg-unread'}}" wx:for="{{messages}}" wx:key="id" data-index="{{index}}" bindtap="onTapMessage">
+          <view class="uc-msg-head">
+            <text class="uc-msg-type">{{item.typeLabel}}</text>
+            <text class="uc-msg-time">{{item.time}}</text>
+          </view>
+          <text class="uc-msg-title">{{item.title}}</text>
+          <text class="uc-msg-body">{{item.content}}</text>
+        </view>
+      </view>
+      <view class="uc-empty" wx:else>
+        <text class="uc-empty-text">暂无消息</text>
+      </view>
+    </block>
+
+    <!-- ===== 收藏 ===== -->
+    <block wx:elif="{{activeTab === 'collections'}}">
+      <block wx:if="{{collections.length > 0}}">
+        <view class="uc-group" wx:for="{{collections}}" wx:for-item="group" wx:key="id">
+          <view class="uc-group-title">{{group.name}} · {{group.items.length}}</view>
+          <view class="uc-item" wx:for="{{group.items}}" wx:for-item="it" wx:key="id">
+            <view class="uc-item-main" data-type="{{it.type}}" data-refid="{{it.refId}}" data-title="{{it.title}}" data-summary="{{it.summary}}" bindtap="onTapItem">
+              <view class="uc-item-top">
+                <text class="uc-item-tag">{{it.typeLabel}}</text>
+                <text class="uc-item-time">{{it.time}}</text>
+              </view>
+              <text class="uc-item-title">{{it.title}}</text>
+              <text class="uc-item-summary" wx:if="{{it.summary}}">{{it.summary}}</text>
+            </view>
+            <view class="uc-item-remove" data-refid="{{it.refId}}" catchtap="onRemoveCollection">移除</view>
+          </view>
+        </view>
+      </block>
+      <view class="uc-empty" wx:else>
+        <text class="uc-empty-text">还没有收藏内容</text>
+        <text class="uc-empty-hint">在人物详情页或文章页点击收藏即可加入</text>
+      </view>
+    </block>
+
+    <!-- ===== 浏览历史 ===== -->
+    <block wx:elif="{{activeTab === 'history'}}">
+      <view class="uc-bar" wx:if="{{history.length > 0}}">
+        <text class="uc-bar-text">最近 {{history.length}} 条</text>
+        <text class="uc-bar-action" bindtap="onClearHistory">清空</text>
+      </view>
+      <view class="uc-list" wx:if="{{history.length > 0}}">
+        <view class="uc-item" wx:for="{{history}}" wx:key="id">
+          <view class="uc-item-main" data-type="{{item.type}}" data-refid="{{item.refId}}" data-title="{{item.title}}" bindtap="onTapItem">
+            <view class="uc-item-top">
+              <text class="uc-item-tag">{{item.typeLabel}}</text>
+              <text class="uc-item-time">{{item.time}}</text>
+            </view>
+            <text class="uc-item-title">{{item.title}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="uc-empty" wx:else>
+        <text class="uc-empty-text">暂无浏览记录</text>
+      </view>
+    </block>
+
+    <!-- ===== 登录设备 ===== -->
+    <block wx:else>
+      <view class="uc-list" wx:if="{{devices.length > 0}}">
+        <view class="uc-item" wx:for="{{devices}}" wx:key="id">
+          <view class="uc-item-main">
+            <view class="uc-item-top">
+              <text class="uc-item-tag">{{item.shortAgent}}</text>
+              <text class="uc-item-time">{{item.time}}</text>
+            </view>
+            <text class="uc-item-summary">{{item.userAgent}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="uc-empty" wx:else>
+        <text class="uc-empty-text">暂无登录设备记录</text>
+      </view>
+    </block>
+
+    <view class="uc-bottom-space"></view>
+  </scroll-view>
+
+  <!-- 文章浮层：与首页 / 专题页同一个组件，点文章就地浮起 -->
+  <articleOverlay
+    currentArticle="{{currentArticle}}"
+    home-text="返回"
+    bind:close="onCloseArticle"
+    wx:if="{{currentArticle}}"
+  />
+</view>

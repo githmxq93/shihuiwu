@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "中国历代帝王名录 - 朝代、在位年份与世系",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  }
+}

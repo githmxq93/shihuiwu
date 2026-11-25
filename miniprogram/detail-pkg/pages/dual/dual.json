@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "双人生命线 - 世慧屋"
+}

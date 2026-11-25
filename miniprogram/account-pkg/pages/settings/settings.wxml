@@ -1,0 +1,25 @@
+<view class="st-page">
+  <nav-bar title="设置" dark="{{true}}" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <scroll-view class="st-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <view class="nav-spacer" style="height: {{navBarHeight}}px; flex-shrink: 0;"></view>
+
+    <text class="st-intro">以下偏好只保存在本机，不写服务端，也不跨设备同步。</text>
+
+    <!-- ---------- 分类入口（第一项：专题设置） ----------
+         这一层只列入入口，不摆具体选项；以后新增设置继续往下加行。 -->
+    <view class="st-label"><text>偏好</text></view>
+    <view class="st-card">
+      <view class="st-row st-row-nav" bindtap="onOpenTopicSettings" hover-class="st-row-hover">
+        <view class="st-row-main">
+          <text class="st-row-title">专题设置</text>
+          <text class="st-row-desc">专题页的呈现风格、进入时的展开状态</text>
+        </view>
+        <text class="st-value">{{topicSummary}}</text>
+        <text class="st-arrow">›</text>
+      </view>
+    </view>
+
+    <text class="st-foot">以后新增的设置项会继续加在这个列表里。</text>
+  </scroll-view>
+</view>

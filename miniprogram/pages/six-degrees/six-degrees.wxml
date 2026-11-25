@@ -1,0 +1,307 @@
+<view class="sd-page">
+  <!-- ================= 深色头 ================= -->
+  <view class="sd-head">
+    <view style="height: {{safeAreaTop}}px;"></view>
+    <view class="nav">
+      <view class="nav-back" bindtap="onBack"><text class="chev">‹</text></view>
+      <view class="nav-title">六度空间</view>
+      <view class="nav-spacer"></view>
+    </view>
+  </view>
+
+  <view class="sd-main">
+    <!-- ================= 上浮双端搜索卡 ================= -->
+    <view class="search-wrap">
+      <view id="guide-search" class="search-card">
+        <view class="fields">
+          <view class="field">
+            <view class="dot">起</view>
+            <input class="fi" value="{{fromQuery}}" placeholder="起点人物，如「杨坚」" placeholder-class="ph" bindinput="onFromInput" />
+            <view wx:if="{{fromQuery}}" class="clr" catchtap="onClearFrom">×</view>
+            <view wx:if="{{fromResults.length > 0}}" class="dropdown">
+              <view wx:for="{{fromResults}}" wx:key="id" class="dd-item" data-index="{{index}}" catchtap="onSelectFrom">
+                <text class="dd-name">{{item.name}}</text>
+                <text class="dd-meta">{{item.dynasty}} · {{item.gender}}</text>
+              </view>
+            </view>
+            <view wx:elif="{{fromStatus}}" class="dropdown">
+              <view class="dd-hint">{{fromStatus === 'loading' ? '查询中…' : (fromStatus === 'empty' ? '没有匹配的人物，试试其他写法' : '联想加载失败，请检查网络后重试')}}</view>
+            </view>
+          </view>
+
+          <view class="field">
+            <view class="dot">终</view>
+            <input class="fi" value="{{toQuery}}" placeholder="终点人物，如「李世民」" placeholder-class="ph" bindinput="onToInput" />
+            <view wx:if="{{toQuery}}" class="clr" catchtap="onClearTo">×</view>
+            <view wx:if="{{toResults.length > 0}}" class="dropdown">
+              <view wx:for="{{toResults}}" wx:key="id" class="dd-item" data-index="{{index}}" catchtap="onSelectTo">
+                <text class="dd-name">{{item.name}}</text>
+                <text class="dd-meta">{{item.dynasty}} · {{item.gender}}</text>
+              </view>
+            </view>
+            <view wx:elif="{{toStatus}}" class="dropdown">
+              <view class="dd-hint">{{toStatus === 'loading' ? '查询中…' : (toStatus === 'empty' ? '没有匹配的人物，试试其他写法' : '联想加载失败，请检查网络后重试')}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="search-side">
+          <view class="swap" bindtap="onSwap"><text class="swap-i">⇅</text></view>
+          <view id="guide-query" class="go {{canSearch && !loading ? '' : 'off'}}" bindtap="onSearch">{{loading ? '推演中' : '查询'}}</view>
+        </view>
+      </view>
+      <view wx:if="{{resolving}}" class="search-note">正在定位人物…</view>
+    </view>
+
+    <!-- ================= 结果态 ================= -->
+    <block wx:if="{{result}}">
+      <view class="rhead">
+        <view class="rhead-l">
+          <text class="rh-main">找到 <text class="rh-n">{{result.pathCount}}</text> 条路径</text>
+          <text class="rh-sub">最短 {{result.distance}} 度 · 按度数排序</text>
+        </view>
+        <view class="rh-share" catchtap="openShare">分享卡</view>
+      </view>
+
+      <scroll-view class="rlist" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+        <view wx:for="{{result.paths}}" wx:key="no" class="ritem p{{index}} {{openIndex === index ? 'open' : ''}}">
+          <view class="rrow" data-index="{{index}}" bindtap="onTogglePath">
+            <view class="rno">{{item.no}}</view>
+            <view class="rbody">
+              <view class="rt1">{{item.distance}} 度{{item.via ? ' · 经 ' + item.via : ''}}</view>
+              <view class="rt2">{{item.summary}}</view>
+            </view>
+            <view class="rchev">{{openIndex === index ? '▴' : '▾'}}</view>
+          </view>
+
+          <view wx:if="{{openIndex === index}}" class="rexp">
+            <view class="chain">
+              <block wx:for="{{item.path}}" wx:key="id" wx:for-item="nd" wx:for-index="ni">
+                <view class="cnode">
+                  <view class="cav">
+                    <image
+                      wx:if="{{nd.avatarView.image}}"
+                      class="cav-img"
+                      src="{{nd.avatarView.image}}"
+                      mode="aspectFill"
+                      lazy-load="{{true}}"
+                      binderror="onAvatarError"
+                      data-row="{{index}}"
+                      data-index="{{ni}}"
+                    />
+                    <text wx:else class="cav-char">{{nd.avatarView.char}}</text>
+                  </view>
+                  <view class="cinfo">
+                    <view class="cnm">{{nd.name}}</view>
+                    <view class="csub">{{nd.dynasty}}{{nd.gender ? ' · ' + nd.gender : ''}}</view>
+                  </view>
+                  <view wx:if="{{ni === 0}}" class="cflag">起点</view>
+                  <view wx:elif="{{ni === item.path.length - 1}}" class="cflag">终点</view>
+                </view>
+                <view wx:if="{{ni < item.path.length - 1}}" class="clink">
+                  <view class="cline"></view>
+                  <view class="ctag">{{item.path[ni + 1].relationFromPrev}}</view>
+                </view>
+              </block>
+            </view>
+
+            <view class="racts">
+              <view class="ract" data-id="{{item.path[item.path.length - 1].id}}" catchtap="onViewPerson">查看人物</view>
+              <view class="ract solid" data-index="{{index}}" catchtap="onOpenGraph">在关系图中查看 ›</view>
+            </view>
+          </view>
+        </view>
+        <view class="list-end">点任意一行原地展开 · 已展开 {{openIndex >= 0 ? 1 : 0}}/{{result.pathCount}}</view>
+        <view class="list-gap"></view>
+      </scroll-view>
+    </block>
+
+    <!-- ================= 加载态 ================= -->
+    <view wx:elif="{{loading}}" class="loading">
+      <view class="ld-ring"></view>
+      <view class="ld-t">正在推演关系路径…</view>
+    </view>
+
+    <!-- ================= 空态 ================= -->
+    <scroll-view wx:else class="empty" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}" scroll-top="{{emptyScrollTop}}">
+      <!-- 照「年份查询」页空态：一句用法 + 01/02/03 三张指路卡 -->
+      <view class="sd-lead">写两个人物名，看看他们之间隔了几个人、是怎么连上的。</view>
+
+      <view wx:for="{{guide}}" wx:key="no" id="{{index === 0 ? 'guide-examples' : ''}}" class="gcard">
+        <text class="gcard-no">{{item.no}}</text>
+        <view class="gcard-main">
+          <view class="gcard-title">{{item.title}}</view>
+          <view class="gcard-desc">{{item.desc}}</view>
+          <view class="gcard-egs">
+            <view
+              wx:for="{{item.egs}}"
+              wx:for-item="eg"
+              wx:key="a"
+              class="gchip"
+              data-a="{{eg.a}}"
+              data-b="{{eg.b}}"
+              bindtap="onGuideTap"
+            >{{eg.a}} ⇄ {{eg.b}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="sec">
+        <view class="sec-h">
+          <text class="sec-t">最近查询</text>
+          <text wx:if="{{recent.length > 0}}" class="sec-a" catchtap="onClearRecent">清空</text>
+        </view>
+        <view wx:if="{{recent.length > 0}}" class="recent">
+          <view wx:for="{{recent}}" wx:key="ts" class="rec" data-index="{{index}}" bindtap="onRecentTap">
+            <view class="rec-main">{{item.from.name}} ⇄ {{item.to.name}}</view>
+            <view class="rec-meta">{{item.distance}} 度 · {{item.pathCount}} 条</view>
+            <view class="rec-time">{{item.time}}</view>
+          </view>
+        </view>
+        <view wx:else class="rec-empty">查过一次后，这里会留下最近 3 条</view>
+      </view>
+
+      <view class="foot">关系数据来自站内人物档案，仅作历史关系参考；缺失关系以「待补全」标注。</view>
+      <view class="list-gap"></view>
+    </scroll-view>
+  </view>
+
+  <!-- ================= 图谱页（wx:if 挂载：隐藏时不留 canvas 原生层） ================= -->
+  <view wx:if="{{graphVisible}}" class="graph-page">
+    <view class="ghead">
+      <view style="height: {{safeAreaTop}}px;"></view>
+      <view class="gnav">
+        <view class="gback" catchtap="onCloseGraph">
+          <text class="gchev">‹</text>
+          <text class="gback-t">{{result.pathCount}} 条路径</text>
+        </view>
+        <view class="gtitle">{{graphTitle}}</view>
+        <view class="gdeg">{{graphMode === 'full' ? graphMeta.persons + ' 人' : result.distance + ' 度'}}</view>
+      </view>
+    </view>
+
+    <view class="gtool">
+      <scroll-view class="pchips" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
+        <view
+          wx:for="{{graphPathLegend}}"
+          wx:key="no"
+          class="pchip {{graphMode === 'single' && graphPathIndex === index ? 'on' : ''}}"
+          data-index="{{index}}"
+          catchtap="onGraphSelectPath"
+        >
+          <text class="pch-no">{{item.char}}</text>
+          <text wx:if="{{graphMode === 'single' && graphPathIndex === index && item.via}}" class="pch-via">经{{item.via}}</text>
+        </view>
+      </scroll-view>
+      <view class="allbtn {{graphMode === 'full' ? 'on' : ''}}" catchtap="onGraphFull">
+        <text class="all-ico">▦</text>
+        <text>全图谱</text>
+        <text class="all-n">{{graphMeta.persons}} 人</text>
+      </view>
+    </view>
+
+    <view class="gcanvas-wrap">
+      <canvas
+        type="2d"
+        id="graphCanvas"
+        class="gcanvas"
+        catchtouchstart="onGraphTouchStart"
+        catchtouchmove="onGraphTouchMove"
+        catchtouchend="onGraphTouchEnd"
+        catchtouchcancel="onGraphTouchEnd"
+        catchtap="onGraphTap"
+      ></canvas>
+
+      <view class="gbar">
+        <text class="gbar-t">{{graphMode === 'full' ? '合并 ' + graphMeta.paths + ' 条路径 · ' + graphMeta.persons + ' 人 · ' + graphMeta.edges + ' 条边' : '路径 ' + (graphPathIndex + 1) + ' / ' + result.pathCount + ' · ' + result.distance + ' 度'}}</text>
+        <text class="gbar-s">{{graphMode === 'full' ? '点人高亮 · 点线看关系' : '点人看人物卡'}}</text>
+      </view>
+
+      <view wx:if="{{graphFocus}}" class="focusbar">
+        <text class="focus-t">{{graphFocus}}</text>
+        <text wx:if="{{graphFocusAction}}" class="focus-a" catchtap="onFocusPerson">看人物卡 ›</text>
+      </view>
+
+      <view wx:if="{{edgeCard}}" class="ecard" catchtap="onEdgePath">
+        <view class="ec-top">
+          <text class="ec-title">{{edgeCard.title}}</text>
+          <text class="ec-rel">{{edgeCard.rel}}</text>
+        </view>
+        <view class="ec-sub">{{edgeCard.sub}} · 点此查看这条路径 ›</view>
+      </view>
+
+      <view wx:if="{{graphDegraded}}" class="degrade">
+        <view class="dg-t">人太多，改看列表</view>
+        <view class="dg-s">{{graphMeta.persons}} 人 / {{graphMeta.paths}} 条路径，超出单图可读范围</view>
+        <view class="dg-btn" catchtap="onCloseGraph">返回路径列表</view>
+      </view>
+
+      <view class="glegend">
+        <view class="gl"><view class="gl-line blood"></view><text>血缘</text></view>
+        <view class="gl"><view class="gl-line politics"></view><text>政治</text></view>
+        <view class="gl"><view class="gl-line marriage"></view><text>姻亲</text></view>
+      </view>
+
+      <!-- zoom-pill 只展示当前缩放倍率，不再绑定点击（复位唯一入口是 reset-pill） -->
+      <view class="zoom-pill">{{zoomLabel}}</view>
+      <view wx:if="{{graphZoomed}}" class="reset-pill" catchtap="onResetView">重置</view>
+      <view class="ghint">双指缩放 0.8–2× · 拖动查看</view>
+    </view>
+  </view>
+
+  <!-- ================= 分享卡（C 版） ================= -->
+  <!-- 画布只做一次性绘制：画完立刻导出图片，预览只用 <image>，长按可保存。
+       原生 canvas 若直接摆进弹层，真机上层位置与布局不同步，会整块错位。 -->
+  <view wx:if="{{shareOpen}}" class="share-modal">
+    <view class="share-mask" bindtap="closeShare" catchtouchmove="noop"></view>
+    <view class="share-sheet">
+      <view class="share-hd">
+        <text class="share-t">分享卡</text>
+        <text class="share-x" bindtap="closeShare">×</text>
+      </view>
+
+      <view class="share-scroll">
+        <!-- 生成中：画布需要真实渲染，上面盖进度遮罩 -->
+        <view wx:if="{{!cardPath && !cardError}}" class="share-stage">
+          <canvas
+            type="2d"
+            id="shareCanvas"
+            class="share-canvas"
+            style="width: {{cardW}}px; height: {{cardH}}px;"
+          ></canvas>
+          <view class="share-loading">
+            <view class="share-spin"></view>
+            <text>{{cardExporting ? '正在导出图片…' : '正在生成分享卡…'}}</text>
+          </view>
+        </view>
+
+        <!-- 失败：写明原因并给重试 -->
+        <view wx:elif="{{cardError}}" class="share-fail">
+          <text class="share-fail-t">{{cardError}}</text>
+          <text class="share-fail-s">可重新生成，或先返回结果页</text>
+          <view class="share-retry" bindtap="retryShare">重新生成</view>
+        </view>
+
+        <!-- 成品：图片预览，长按可直接保存 -->
+        <image
+          wx:else
+          class="share-img"
+          src="{{cardPath}}"
+          mode="widthFix"
+          show-menu-by-longpress="{{true}}"
+          bindtap="previewCard"
+        />
+
+        <text class="share-tip">点图片可放大，长按可保存；卡里只放最短的一条路径，完整候选仍可在结果页切换。</text>
+      </view>
+
+      <view class="share-ft">
+        <view class="share-btn share-btn-ghost" bindtap="saveShare">保存图片</view>
+        <button class="share-btn share-btn-gold" open-type="share">分享给朋友</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 六度空间分步引导：空态时讲清「两端各写一个人、点查询、示例一点就填」 -->
+  <guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />
+</view>

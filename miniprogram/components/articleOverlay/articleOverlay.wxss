@@ -1,0 +1,106 @@
+/* ===== 文章详情浮层 · 外壳 =====
+   内容（元信息 / 标题 / 正文 / 文末三块 / 底部翻篇条）全部来自
+   templates/article-reader/article-reader.wxss，与整页 pages/article 共用，
+   本文件只保留浮层外壳：遮罩、圆角面板、抓手行、滚动区。
+   2026-11-14：统一首页入口与专题入口的阅读样式。 */
+
+@import "../../templates/article-reader/article-reader.wxss";
+
+.article-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: rgba(23, 18, 14, 0.4);   /* 压暗背后的专题列表，交代「浮层」层级 */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.article-overlay-content {
+  width: 100%;
+  height: 86vh;
+  max-height: 86vh;
+  background: var(--bg-primary, var(--bg-primary));
+  border-radius: 36rpx 36rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 -24rpx 68rpx rgba(23, 18, 14, 0.26);
+  transition: height 0.2s ease, max-height 0.2s ease;
+}
+
+.article-overlay-content.is-expanded {
+  height: 96vh;
+  max-height: 96vh;
+}
+
+/* ===== 抓手行：左提示 / 中抓手 / 右关闭 ===== */
+.overlay-grab {
+  position: relative;
+  flex: none;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grabber {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: rgba(61, 46, 31, 0.2);
+}
+
+.grab-hint {
+  position: absolute;
+  left: 32rpx;
+  top: 0;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted, var(--text-muted));
+  letter-spacing: 0;
+}
+
+/* 关闭热区 44×44px（88rpx），视觉仍是一个 28px 的小圆 */
+.overlay-close {
+  position: absolute;
+  right: 16rpx;
+  top: 0;
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay-close-icon {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(181, 113, 58, 0.1);
+  box-shadow: inset 0 0 0 1rpx rgba(181, 113, 58, 0.16);
+  font-size: var(--fs-28);
+  line-height: 56rpx;
+  text-align: center;
+  color: var(--text-primary, var(--text-primary));
+}
+
+.overlay-close:active .overlay-close-icon {
+  background: rgba(181, 113, 58, 0.18);
+}
+
+/* ===== 正文滚动区 ===== */
+.overlay-body {
+  flex: 1;
+  min-height: 0;
+  height: 0;
+}
+
+.overlay-body-inner {
+  padding: 0 32rpx 56rpx;
+}

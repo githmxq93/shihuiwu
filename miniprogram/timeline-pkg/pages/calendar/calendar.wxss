@@ -1,0 +1,1111 @@
+/* 年份查询（六历对照）
+   色与质对齐全站纸本风：纸底 --bg-primary、卡片 --bg-card、赭石 --accent-gold。
+   尺寸一律 rpx，2 倍设计稿；胶囊与印章的圆角保持「方中带圆」，不做全圆。 */
+
+/* 滚动容器沿用 pages/query 的成熟写法：页面 min-height + scroll-view 定高 100vh，
+   靠 nav-spacer 给 fixed 的 nav-bar 让位。不用 flex:1 + height:0 —— 那套在部分
+   安卓机型上 scroll-view 高度会算成 0，整页不滚。 */
+.cal-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.body {
+  height: 100vh;
+}
+
+/* ── 深色头部：与详情页/世系页/足迹页同一套口径 ──
+   本页是「定高 100vh + scroll-view」布局，头部不能随内容滚走：
+   fixed 悬在 nav-bar 下方（z-index 20 < nav 的 100），滚动容器内用 .head-spacer 让位。 */
+.head-spacer {
+  width: 100%;
+}
+
+.cal-head-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--bg-primary);
+}
+
+.cal-head {
+  position: relative;
+  padding: 26rpx 32rpx 30rpx;
+  background:
+    radial-gradient(120% 90% at 84% 0%, rgba(207, 138, 75, 0.28), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+  box-shadow: 0 10rpx 24rpx -14rpx rgba(30, 20, 12, 0.7);
+  overflow: hidden;
+}
+
+.cal-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+}
+
+.cal-head > view {
+  position: relative;
+  z-index: 1;
+}
+
+.cal-head-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 20rpx;
+}
+
+.cal-head-nm {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-head-nameline {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+  flex-wrap: wrap;
+}
+
+.cal-head-name {
+  font-family: var(--font-serif);
+  font-size: 42rpx;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+
+.cal-head-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.52);
+}
+
+.cal-head-tag {
+  flex: none;
+  padding-bottom: 4rpx;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.5);
+}
+
+/* ── 头内检索：深色半透明底 + 金色内嵌按钮（与效果图 F 一致）
+   之前是头下方一张浅色卡（44px 高、白底、实心赭石按钮），与深色头脱节。 */
+.cal-search {
+  position: relative;
+  box-sizing: border-box;
+  margin-top: 24rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 0 10rpx 0 24rpx;
+  background: rgba(255, 247, 232, 0.07);
+  border: 2rpx solid rgba(229, 183, 127, 0.26);
+  border-radius: 40rpx;
+}
+
+.cal-search-ico {
+  flex: none;
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.5);
+}
+
+.cal-search-input {
+  flex: 1;
+  height: 72rpx;
+  font-family: var(--font-serif);
+  font-size: var(--fs-28);
+  letter-spacing: 0;
+  color: #fff7e8;
+}
+
+.cal-search-ph {
+  /* 深色头上对比度仅 3.60:1，提到 .58 后实测约 5.3:1（WCAG AA 4.5:1） */
+  color: rgba(246, 236, 218, 0.58);
+  font-size: 26rpx;
+  letter-spacing: 0;
+}
+
+.cal-search-clear {
+  flex: none;
+  width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  text-align: center;
+  font-size: var(--fs-20);
+  color: rgba(246, 236, 218, 0.6);
+  background: rgba(255, 247, 232, 0.1);
+  border-radius: 50%;
+}
+
+.cal-search-go {
+  flex-shrink: 0;
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 28rpx;
+  font-size: var(--fs-24);
+  font-weight: 600;
+  color: #2a1f16;
+  background: linear-gradient(135deg, #e7bf8b, #c98a4e);
+  border-radius: 30rpx;
+  letter-spacing: 0;
+}
+
+/* ── 输入建议（朝代参照年 / 年号前缀）──
+   输入「唐」时主查询必然落空，这里是唯一能给出落脚点的入口，
+   所以不能做成浮层（scroll-view 内绝对定位易被裁），走文档流，
+   插在搜索框与示例之间，点选后自动收起。 */
+.cal-sugg {
+  margin: 14rpx 32rpx 0;
+  padding: 6rpx 8rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+/* 朝代标题行：不可点，只交代名字与区间 */
+.cal-sugg-head {
+  display: flex;
+  align-items: baseline;
+  padding: 14rpx 14rpx 8rpx;
+  border-top: 2rpx solid var(--border-subtle);
+}
+
+.cal-sugg-head:first-child {
+  border-top: 0;
+  padding-top: 8rpx;
+}
+
+.cal-sugg-name {
+  font-size: var(--fs-28);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.cal-sugg-span {
+  margin-left: 14rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* 「年号表范围」：提醒这组是年号反推的，不等于政权存续期 */
+.cal-sugg-tag {
+  margin-left: auto;
+  padding: 2rpx 10rpx;
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 20rpx;
+}
+
+.cal-sugg-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 14rpx;
+  border-radius: 10rpx;
+}
+
+.cal-sugg-row-hover {
+  background: var(--bg-card-hover);
+}
+
+.cal-sugg-kind {
+  flex: 0 0 100rpx;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-sugg-year {
+  flex: 0 0 auto;
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 注释可能较长，单行截断保布局稳定 */
+.cal-sugg-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 14rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── 空态：一句用法 + 三张指路卡 ──
+   零输入时页面只做一件事：告诉人怎么输。三张卡对应三种输入法，
+   示例做成可点的小胶囊（值与原「试试」一致），本页可算放底部一行。 */
+.cal-empty {
+  padding: 28rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.cal-lead {
+  margin: 0 2rpx 24rpx;
+  font-size: var(--fs-26);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+
+.cal-card {
+  display: flex;
+  gap: 24rpx;
+  padding: 38rpx 34rpx 36rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.cal-card + .cal-card {
+  margin-top: 24rpx;
+}
+
+/* 编号用衬线大数字、压到极淡，只做序列感，不抢标题 */
+.cal-card-no {
+  flex: none;
+  width: 52rpx;
+  padding-top: 2rpx;
+  font-family: var(--font-serif);
+  font-size: var(--fs-40);
+  line-height: 1.1;
+  color: rgba(181, 113, 58, 0.34);
+  letter-spacing: 0;
+}
+
+.cal-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-card-title {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.cal-card-desc {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.cal-card-egs {
+  margin-top: 18rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.cal-card-eg {
+  padding: 6rpx 18rpx;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  background: rgba(255, 252, 246, 0.8);
+  border: 2rpx solid var(--border-color);
+  border-radius: 999rpx;
+}
+
+.cal-card-eg-key {
+  color: var(--accent-gold-ink);
+  border-color: rgba(181, 113, 58, 0.3);
+}
+
+.cal-card-eg-hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-glow);
+}
+
+.cal-legend {
+  margin-top: 36rpx;
+  padding-top: 22rpx;
+  border-top: 2rpx dashed var(--border-color);
+}
+
+.cal-legend-title {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.cal-legend-line {
+  margin-top: 6rpx;
+  font-size: var(--fs-22);
+  line-height: 1.9;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* 换算免责：空态与结果态共用，压在页面最末 */
+.cal-foot {
+  margin: 20rpx 4rpx 0;
+  font-size: 22rpx;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+/* ── 结果态 · 主卡：公元年份（主角，字号全页最大）+ 干支印 ── */
+.cal-result {
+  margin: 28rpx 32rpx 0;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.cal-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 32rpx 36rpx 28rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.cal-hero-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-hero-year {
+  display: flex;
+  align-items: baseline;
+  color: var(--text-primary);
+}
+
+.cal-hero-unit {
+  font-family: var(--font-serif);
+  font-size: var(--fs-28);
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+
+.cal-hero-num {
+  font-family: var(--font-serif);
+  font-size: 92rpx;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0 14rpx;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+/* 干支另给一行文字：印只有四个字，小屏上不一定读得出，文字这行保证可读
+   行高按 F 的 小字行高 : 字号 = 1.2 锁死（不设时微信默认约 1.4，会虚高 2.5px） */
+.cal-hero-sub {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.2;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* 公元纪年的历法口径：旧版是「公元纪年」格的第二行，改版后并入主卡末行
+   它是「副行的附注」层级：字号取 F 的最小字（10px=20rpx），行高收到 1.35，
+   与上一行的间距 4px（F 的行间距 6px × 2/3），既不贴死也不另起一段 */
+.cal-hero-note {
+  margin-top: 8rpx;
+  font-size: var(--fs-20);
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: #a4917a;
+}
+
+/* 距今：钉在主卡右下角，纯文字一行。
+   .cal-hero 作定位容器（position: relative）；right / bottom 直接取主卡既有内边距
+   （padding: 32rpx 36rpx 28rpx），即距右 36rpx、距下 28rpx，与卡内文字列对齐。
+   绝对定位不占流，卡高不因这行变化；无底色、无描边、无圆角、无内边距。 */
+.cal-ago {
+  position: absolute;
+  right: 36rpx;
+  bottom: 28rpx;
+  font-size: var(--fs-28);
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+/* 年号卡右上角的类别小签（F 的 .tag），只是归类标签，不承载数据 */
+.cal-eracap-tag {
+  padding: 0 12rpx;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+  border: 2rpx solid rgba(181, 113, 58, 0.34);
+  border-radius: 8rpx;
+}
+
+/* 干支印：赭石细边 + 淡底，像钤在纸上的小印
+   不随整块文字垂直居中（三行时文字块 84.75px，居中会把印压到主值下方 13px，
+   看着"掉下去"）；改为与主值行同顶：F 里印顶距内容顶 4.5px，这里 4px */
+.cal-seal {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 8rpx;
+  width: 116rpx;
+  height: 116rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-glow);
+  border: 3rpx solid var(--accent-gold);
+  border-radius: var(--radius);
+}
+
+.cal-seal-gz {
+  font-family: var(--font-serif);
+  font-size: var(--fs-40);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-seal-zodiac {
+  margin-top: 4rpx;
+  font-size: var(--fs-20);
+  color: var(--accent-gold-light);
+}
+
+/* ── 结果态 · 年号卡：主条在上、同年并立收在下半区 ── */
+.cal-eracard {
+  margin-top: 22rpx;
+  padding: 28rpx 36rpx 24rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+/* 主条若属异说，整张卡降权，与并立行里的异说一个口径 */
+.cal-eracard-alt {
+  opacity: 0.72;
+}
+
+/* 政权小字行：政权 + 纪年体系徽章（有真实 scope 才渲染） */
+.cal-eracap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.cal-eracap-rg {
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+/* 年号本体：第二档字号，赭石衬线 */
+.cal-eraname {
+  margin-top: 14rpx;
+  font-family: var(--font-serif);
+  font-size: 52rpx;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-erameta {
+  margin-top: 10rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* 年号注记（如「祥兴二年赵昺投海，南宋亡」）另起一行，不与君主同行 */
+.cal-eranote {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+/* 并立行：虚线分界 + 字号降一档，形状仍清楚（不靠 opacity 压，灰字会更糊） */
+.cal-erarow-sub {
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx dashed var(--border-color);
+}
+
+.cal-eraname-sub {
+  font-size: var(--fs-36);
+  letter-spacing: 0;
+}
+
+.cal-eracard-none {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* 纪年体系徽章：正朔实心朱红 / 对外描边赭石 / 对内浅底虚线，三种一眼可分。
+   样式保留，只有接口真给了 scope 才渲染（模板 wx:if），没数据就是空位。 */
+.cal-scope {
+  display: inline-block;
+  padding: 2rpx 14rpx;
+  font-size: var(--fs-20);
+  line-height: 1.6;
+  letter-spacing: 0;
+  border-radius: 6rpx;
+}
+
+.cal-scope-orthodox {
+  color: #fdfaf3;
+  background: var(--accent-vermillion);
+  border: 2rpx solid var(--accent-vermillion);
+}
+
+.cal-scope-outward {
+  color: var(--accent-gold-ink);
+  background: transparent;
+  border: 2rpx solid var(--accent-gold);
+}
+
+.cal-scope-inward {
+  color: var(--text-secondary);
+  background: rgba(181, 113, 58, 0.07);
+  border: 2rpx dashed rgba(181, 113, 58, 0.42);
+}
+
+/* 「异说」角标：不抢色，用灰描边表示存疑 */
+.cal-alt-tag {
+  display: inline-block;
+  margin-left: 10rpx;
+  padding: 0 10rpx;
+  font-size: 18rpx;
+  line-height: 1.7;
+  color: var(--text-muted);
+  border: 2rpx solid var(--border-color);
+  border-radius: 4rpx;
+}
+
+/* 纪年体系说明：小一号字 + 左侧细竖线，与年号自带的 note 分开 */
+.cal-scopenote {
+  margin-top: 10rpx;
+  padding-left: 14rpx;
+  border-left: 3rpx solid rgba(181, 113, 58, 0.32);
+}
+
+.cal-scopenote-text {
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* 年份级纪年体系说明块：放在年号列表上方 */
+.cal-anno {
+  margin-top: 16rpx;
+  padding: 20rpx 26rpx;
+  background: rgba(181, 113, 58, 0.055);
+  border: 2rpx solid rgba(181, 113, 58, 0.18);
+  border-radius: var(--radius-lg);
+}
+
+.cal-anno-title {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-anno-text {
+  margin-top: 8rpx;
+  font-size: var(--fs-24);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+/* ── 并立年号 ── */
+.cal-parallel {
+  margin-top: 16rpx;
+  padding: 20rpx 26rpx;
+  background: rgba(251, 247, 239, 0.75);
+  border: 2rpx dashed var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.cal-parallel-label {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  letter-spacing: 0;
+  margin-bottom: 10rpx;
+}
+
+.cal-parallel-item {
+  display: block;
+  padding: 10rpx 0;
+  border-bottom: 2rpx dashed var(--border-subtle);
+}
+
+.cal-parallel-item:last-child {
+  border-bottom: 0;
+}
+
+.cal-parallel-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.cal-parallel-era {
+  font-family: var(--font-serif);
+  font-size: var(--fs-30);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+.cal-parallel-meta {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── 同名年号 / 只写年号名 ── */
+.cal-alt {
+  margin-top: 16rpx;
+  padding: 22rpx 26rpx;
+  background: rgba(181, 113, 58, 0.055);
+  border: 2rpx solid rgba(181, 113, 58, 0.18);
+  border-radius: var(--radius-lg);
+}
+
+.cal-alt-hint {
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.cal-alt-kw {
+  color: var(--accent-gold-ink);
+  font-weight: 600;
+}
+
+.cal-alt-title {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  letter-spacing: 0;
+  margin: 16rpx 0 12rpx;
+}
+
+.cal-alt-hint + .cal-alt-title {
+  padding-top: 14rpx;
+  border-top: 2rpx dashed var(--border-subtle);
+}
+
+.cal-alt-chips {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.cal-alt-chip {
+  display: flex;
+  align-items: baseline;
+  margin: 0 12rpx 12rpx 0;
+  padding: 8rpx 20rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-color);
+  border-radius: 999rpx;
+}
+
+.cal-alt-chip-hover {
+  border-color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.07);
+}
+
+.cal-alt-chip-regime {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-alt-chip-span {
+  margin-left: 10rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+.cal-alt-chip.is-active {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold-ink);
+}
+
+.cal-alt-chip.is-active .cal-alt-chip-regime,
+.cal-alt-chip.is-active .cal-alt-chip-span {
+  color: #fdfaf3;
+}
+
+/* ── 其余纪年：2×2 小格 ──
+   结果态只把公元 / 干支 / 年号当主角，剩下四历收在这一张卡里。
+   每格仍是「小标签一行 + 值衬线 32rpx 独占一行」，值不跟标签挤；
+   格本身就是口径入口（点格弹抽屉），不再每行挂问号。 */
+.cal-more {
+  margin-top: 22rpx;
+  padding: 22rpx 24rpx 20rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.cal-more-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 6rpx 16rpx;
+}
+
+.cal-more-title {
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.cal-more-tip {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+.cal-more-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.cal-more-cell {
+  width: calc(50% - 7rpx);
+  box-sizing: border-box;
+  padding: 16rpx 20rpx 14rpx;
+  background: rgba(255, 252, 246, 0.78);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 18rpx;
+}
+
+.cal-more-cell-off {
+  opacity: 0.62;
+}
+
+.cal-more-cell-hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-color);
+}
+
+.cal-more-label {
+  display: block;
+  font-size: 22rpx;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.cal-more-value {
+  display: block;
+  margin-top: 8rpx;
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+/* 换算口径副行：跟在值后面内联（与 F 的 .ms 一致），不再单独占一行 */
+.cal-more-sub {
+  margin-left: 8rpx;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: #a4917a;
+}
+
+/* 「按日本年号解析」轻提示：一行灰字，不抢主信息 */
+.cal-via {
+  margin-top: 16rpx;
+  padding-left: 4rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* 日本纪年并存列表沿用「同年并立的年号」的虚线卡语言（.cal-parallel），
+   只补一个朝廷徽章，不另起一套风格。 */
+
+/* 朝廷徽章：南朝实心朱红、北朝描边赭石；统一年号不渲染 */
+.cal-jp-court {
+  display: inline-block;
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  font-size: var(--fs-20);
+  line-height: 1.6;
+  letter-spacing: 0;
+  border-radius: 6rpx;
+}
+
+.jp-court-south {
+  color: var(--accent-vermillion);
+  background: rgba(178, 58, 42, 0.08);
+  border: 2rpx solid rgba(178, 58, 42, 0.34);
+}
+
+.jp-court-north {
+  color: var(--text-secondary);
+  background: rgba(181, 113, 58, 0.07);
+  border: 2rpx dashed rgba(181, 113, 58, 0.42);
+}
+
+/* 统一：正常不出现，仅作兜底，保持中性 */
+.jp-court-unified {
+  color: var(--text-muted);
+  border: 2rpx solid var(--border-color);
+}
+
+/* 日本纪年不可用：与页面其它空态同一套虚线卡 + 灰字居中 */
+.cal-jp-empty {
+  margin-top: 16rpx;
+  padding: 24rpx 26rpx;
+  font-size: 24rpx;
+  line-height: 1.65;
+  color: var(--text-muted);
+  text-align: center;
+  background: rgba(251, 247, 239, 0.75);
+  border: 2rpx dashed var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+/* ── 关联内容 ── */
+.cal-related {
+  margin-top: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 28rpx;
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-glow);
+  border-radius: var(--radius-lg);
+}
+
+.cal-related-hover {
+  background: var(--bg-card-hover);
+}
+
+.cal-related-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cal-related-link {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+}
+
+/* ── 未匹配 ── */
+.cal-miss {
+  margin: 24rpx 32rpx 0;
+  padding: 40rpx 32rpx;
+  background: var(--bg-card);
+  border: 2rpx dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.cal-miss-msg {
+  font-size: var(--fs-28);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.cal-miss-hint {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.cal-miss-chips {
+  margin-top: 24rpx;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cal-miss-chip {
+  margin: 0 8rpx 12rpx;
+  padding: 10rpx 20rpx;
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+  background: var(--accent-glow);
+  border-radius: 999rpx;
+}
+
+/* ── 换算口径浮层：蒙层 + 贴底卡片 ──
+   进场动画靠 .is-open 切换 transform/opacity，不用 @keyframes。 */
+.cal-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+
+.cal-sheet-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(45, 33, 22, 0.42);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.cal-sheet.is-open .cal-sheet-mask {
+  opacity: 1;
+}
+
+.cal-sheet-panel {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 76vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: var(--bg-card);
+  border-top-left-radius: 32rpx;
+  border-top-right-radius: 32rpx;
+  box-shadow: 0 -8rpx 40rpx -12rpx rgba(61, 46, 31, 0.28);
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.26s ease;
+}
+
+.cal-sheet.is-open .cal-sheet-panel {
+  transform: translateY(0);
+}
+
+.cal-sheet-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.cal-sheet-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-sheet-eyebrow {
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-sheet-title {
+  margin-top: 4rpx;
+  font-family: var(--font-serif);
+  font-size: var(--fs-38);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.cal-sheet-close {
+  flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  margin-left: 16rpx;
+  text-align: center;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-radius: 50%;
+}
+
+.cal-sheet-close-hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.cal-sheet-tagline {
+  flex-shrink: 0;
+  margin-top: 12rpx;
+  font-size: var(--fs-24);
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+/* 内容可能超过一屏：flex:1 + min-height:0 让 scroll-view 拿到确定高度后自己滚 */
+.cal-sheet-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 56vh;
+  margin-top: 8rpx;
+}
+
+.cal-sheet-point {
+  padding: 20rpx 0;
+}
+
+.cal-sheet-point + .cal-sheet-point {
+  border-top: 2rpx dashed var(--border-subtle);
+}
+
+.cal-sheet-h {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.cal-sheet-d {
+  margin-top: 6rpx;
+  font-size: var(--fs-24);
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+
+.cal-sheet-foot {
+  padding: 18rpx 0 8rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+.safe-area-bottom {
+  height: calc(40rpx + env(safe-area-inset-bottom));
+}

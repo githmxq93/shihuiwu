@@ -1,0 +1,1636 @@
+page {
+  /* 全页统一宣纸米白：深色只出现在顶部 nav/档案头，页面底与登录界面同色，
+     回弹时不会露出旧的深色背景 */
+  background: var(--bg-primary);
+  min-height: 100vh;
+}
+
+/* ====== Body ====== */
+.body {
+  height: 100vh;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ====== Phone Login Form ====== */
+.profile-phone-form {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-phone-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.profile-phone-panel {
+  position: relative;
+  background: var(--bg-elevated);
+  border-radius: 24rpx;
+  padding: 40rpx 36rpx;
+  width: 80%;
+  max-width: 560rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.12);
+  /* 内容可变长（如「修改密码 · 密保验证」有 3 道密保题 + 2 个新密码输入框），
+     限定最大高度并允许内部滚动，避免小屏被裁掉底部按钮 */
+  max-height: 78vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.profile-phone-title {
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 28rpx;
+}
+
+.profile-phone-input {
+  width: 100%;
+  height: 72rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.15);
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  margin-bottom: 16rpx;
+  background: rgba(181, 113, 58, 0.02);
+  box-sizing: border-box;
+}
+
+.profile-phone-input::placeholder {
+  color: #8a6a46;               /* 4.65:1（卡底 #fbf7ef） */
+}
+
+.profile-phone-actions {
+  display: flex;
+  gap: 16rpx;
+  width: 100%;
+  margin-top: 8rpx;
+}
+
+.profile-btn-phone-submit {
+  flex: 1;
+  padding: 16rpx 0;
+  font-size: var(--fs-26);
+  font-weight: 600;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-gold) 0%, #a05f2c 100%);
+  color: var(--bg-elevated);
+  box-shadow: 0 4rpx 12rpx rgba(181, 113, 58, 0.25);
+}
+
+.profile-phone-cancel {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  margin-top: 20rpx;
+  padding: 8rpx 24rpx;
+}
+
+.profile-phone-desc {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+/* ====== 修改密码：验证方式切换 + 密保问答 ====== */
+
+/* 「忘记密码？改用密保验证」/「改用旧密码验证」——木质棕的次要可点动作 */
+.profile-pwd-switch {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 0 4rpx;
+}
+
+.profile-pwd-switch-hover {
+  opacity: 0.6;
+}
+
+.profile-pwd-switch-text {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+
+.profile-pwd-switch-arrow {
+  font-size: var(--fs-28);
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.75;
+  margin-left: 6rpx;
+}
+
+.profile-pwd-switch-arrow-back {
+  margin: 0 6rpx 0 0;
+}
+
+/* 密保问答块：题目在上、答案输入框在下（沿用 .profile-phone-input 的既有输入风格） */
+.profile-sq-item {
+  width: 100%;
+  margin-bottom: 4rpx;
+}
+
+.profile-sq-q {
+  display: block;
+  font-size: var(--fs-24);
+  line-height: 1.5;
+  color: var(--text-primary);
+  opacity: 0.82;
+  margin-bottom: 10rpx;
+}
+
+/* 密保方式里第一个新密码输入框与上方问题拉开一点距离 */
+.profile-pwd-new-top {
+  margin-top: 6rpx;
+}
+
+.profile-sq-loading {
+  width: 100%;
+  padding: 24rpx 0 8rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-sq-loading-text {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+
+/* 未设置密保 / 加载失败：朱砂红浅底提示，明确告知此路不通 */
+.profile-sq-tip {
+  display: block;
+  width: 100%;
+  font-size: var(--fs-24);
+  line-height: 1.7;
+  color: var(--accent-vermillion);
+  background: rgba(196, 90, 84, 0.07);
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
+  margin-top: 6rpx;
+}
+
+/* 关于面板样式（.profile-about-*）已随弹层迁移到独立页而删除，
+   现由 account-pkg/pages/about/about.wxss 承接。 */
+/* ==========================================================================
+   登录界面（未登录时替代个人中心；照「功能/登录」素材两屏结构，
+   配色/文字/徽标改为世慧屋博物馆暖调）
+   ========================================================================== */
+
+.lg {
+  min-height: 100vh;
+  box-sizing: border-box;
+  /* ===== 字体「发虚」的真正根因（2026-10-01 定位）=====
+     app.wxss 的 page{} 里写了 -webkit-font-smoothing: antialiased（全局生效，会被继承）。
+     这个属性把 WebKit/WKWebView 的**次像素抗锯齿**切成**灰度抗锯齿**，笔画显著变细变淡，
+     对 CJK 尤为明显。上一轮只改字体栈/字距是治标 —— 它同时解释了「标题（衬线）虚」
+     和「按钮文字（无衬线）也虚」：两者字体族完全不同，唯一的共同点就是这个属性。
+     [注意] 只在登录页作用域内覆盖为 auto，不动 app.wxss 全局（全站 30 个页面的文字观感都会变，
+        提审前不适合做这种 blast radius）。
+     [注意] Chromium 系（Android 微信 X5）本来就不支持该属性，改了也无效 —— 本修复主要作用于 iOS。 */
+  -webkit-font-smoothing: auto;
+  /* 登录页专用中文衬线栈（2026-10-01）：**只列运行时真实存在的系统字体**。
+     全局 --font-serif 的前两项 'Noto Serif SC' / 'Source Han Serif SC' 在小程序里
+     并不存在（不是系统字体），第三项 Georgia 又没有中文字形 —— 于是中文一路掉到
+     最末的通用 serif，落到哪款衬线完全看机型，这就是标题「笔画发虚、机型间不一致」的根因。
+     这里把真机真实存在的衬线排到最前：iOS 命中 Songti SC，Android 命中思源宋体/Noto Serif CJK。 */
+  --lg-serif: 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC', 'SimSun', Georgia, serif;
+}
+
+/* ---------- 一、欢迎屏 ---------- */
+/* 欢迎屏背景：宣纸暖米色。
+   2026-10-01 由「深棕→金」深色改为浅色宣纸 —— 与后续登录屏/注册屏的
+   --bg-primary(#f4ede1) 同源，整条登录链路统一为浅色，不再深→浅跳变。 */
+.lg-welcome {
+  position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 0 64rpx calc(150rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(170deg, #f8f2e6 0%, #f2e9d9 48%, #eadfcb 100%);
+}
+
+/* 水墨竹影装饰（.lg-ink / .lg-ink-tl / .lg-ink-br，2026-10-01 已整体移除）：
+   八代迭代后仍不合格 —— 真机截图显示 SVG 被 560×640rpx 的 background-size:100% 100%
+   拉伸后笔画压到发丝级只剩描边感，且右下那丛压住「注册账号」按钮。
+   教训：tmp/_svg2png.cjs 是按 SVG 原始尺寸 1:1 逐像素渲染的，与真机拉伸后的观感不等价，
+        脚本渲染验收不能替代真机验收。留此一行说明，避免以后又有人去翻生成器。 */
+
+.lg-welcome-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 120rpx;
+}
+
+/* .lg-logo / .lg-logo-text 已删除（2026-10-01）：WXML 从改用图片 logo（.lg-logo-mark）后
+   这两个纯 CSS 拼字规则就没有消费者了，属于本页唯一的样式死代码。 */
+
+@keyframes lgLogoIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* 标题（2026-10-01 字体优化 · 二次修正）：
+   ① 字体走 --lg-serif（真实存在的系统衬线），不再掉进通用 serif；
+   ② **font-weight 600 → 700**：系统宋体只有 Regular(400) / Bold(700) 两档字重，
+      600 既没有对应的字体文件，浏览器也不会去合成加粗，只能退回 Regular ——
+      这就是"字号明明是 64rpx，看着还是没分量"的原因。700 命中真 Bold 面。
+   ③ 不再加字距（项目约束 letter-spacing:0），靠字重与字号撑住标题体量。 */
+.lg-title {
+  font-family: var(--lg-serif);
+  font-size: 64rpx;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+/* 副标题（2026-10-01 字体优化）：
+   ① 字号 26→28rpx、行高补 1.5，小字不再"挤成一条线"；
+   ② 颜色 0.58→0.68 —— 0.58 在浅宣纸底上偏灰发飘，提上来才立得住，又不与标题抢。 */
+.lg-subtitle {
+  font-family: var(--lg-serif);
+  margin-top: 26rpx;
+  font-size: var(--fs-28);
+  line-height: 1.5;
+  color: rgba(61, 46, 31, 0.68);
+}
+
+.lg-welcome-foot {
+  position: relative;
+  z-index: 1;
+}
+
+/* 主按钮（2026-10-01 按钮优化）：
+   ① 纯平涂 → 同色系三档微渐变（上 #b1432f 亮 → 下 #9a3524 暗）。
+      平涂在浅宣纸上像一块"贴上去的色纸"，没有体积；只在同色相内做 8% 明度差，
+      既立起"按下去了"的立体感，又不会变成花哨的金属渐变。
+   ② 单层大扩散阴影（0 10rpx 26rpx）→ 双层：近层贴地窄阴影定形，远层弥散晕染。
+      单层大阴影的边缘是"糊"的，双层才有"悬在纸上方"的层次。
+   ③ 不加字距（项目约束 letter-spacing:0），也不再补 padding-left。 */
+.lg-btn-primary {
+  height: 96rpx;
+  border-radius: 48rpx;
+  background: linear-gradient(180deg, #b1432f 0%, var(--accent-vermillion) 52%, #9a3524 100%);
+  color: #fff;
+  font-size: var(--fs-32);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4rpx 10rpx rgba(140, 45, 30, 0.30),
+    0 12rpx 30rpx rgba(166, 59, 42, 0.22);
+}
+/* hover：阴影收紧（近层保留、远层收小），配合缩放做出"按下去"的下沉感 */
+.lg-btn-hover {
+  transform: scale(0.97);
+  opacity: 0.94;
+  box-shadow:
+    0 2rpx 6rpx rgba(140, 45, 30, 0.28),
+    0 6rpx 16rpx rgba(166, 59, 42, 0.18);
+}
+
+/* 次按钮（2026-10-01 按钮优化）：
+   ① 描边 2→3rpx：2rpx(=1px) 在浅宣纸底上发虚，像"没画实"；3rpx 才立得住，
+      又不到主按钮的视觉重量，主次分明。
+   ② 字号 30→32rpx、补 font-weight: 500：原来比主按钮小一号且无字重，
+      两按钮并排像"完整版 + 缩水版"；统一字号、仅靠描边区分主次才协调。
+   ③ 与主按钮同一套居中逻辑，不加字距。 */
+.lg-btn-ghost {
+  height: 96rpx;
+  margin-top: 36rpx;
+  border-radius: 48rpx;
+  border: 3rpx solid var(--accent-vermillion);
+  color: var(--accent-vermillion);
+  font-size: var(--fs-32);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lg-btn-ghost-hover {
+  background: rgba(166, 59, 42, 0.08);
+  transform: scale(0.97);
+}
+
+/* .lg-tips 已随「登录即代表同意《隐私政策》」一并移除（2026-10-01 隐私合规整改），
+   该文案是它唯一的消费方，改由 .lg-agree-welcome 承接勾选框样式。 */
+.lg-link {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* ---------- 二、登录屏 ---------- */
+.lg-login {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 0 60rpx calc(150rpx + env(safe-area-inset-bottom));
+  background: var(--bg-primary);
+  animation: lgSlideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes lgSlideIn {
+  from { opacity: 0; transform: translateX(80rpx); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.lg-nav {
+  height: 96rpx;
+  /* 必须在 wxml 内联注入 statusBarHeight：本页是自定义导航（navigationStyle: custom），
+     内容从屏幕顶端 y=0 开始，不预留状态栏高度会把返回键压在系统状态栏里（看得见、点不中） */
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  margin-left: -28rpx; /* 配合下方热区放大，保持箭头视觉上与内容左边界对齐 */
+}
+.lg-nav-back {
+  /* 触控热区放大到 88rpx（约 44px），满足微信最小可点击区域建议 */
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lg-nav-back::before {
+  content: '';
+  width: 22rpx;
+  height: 22rpx;
+  margin-left: 8rpx;
+  border-left: 4rpx solid var(--text-primary);
+  border-bottom: 4rpx solid var(--text-primary);
+  transform: rotate(45deg);
+}
+.lg-nav-back-hover { opacity: 0.45; }
+
+.lg-header { margin-top: 52rpx; }
+.lg-h1 {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 56rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.lg-h2 {
+  display: block;
+  margin-top: 18rpx;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+.lg-form { margin-top: 72rpx; }
+
+.lg-field {
+  display: flex;
+  align-items: center;
+  height: 108rpx;
+  border-bottom: 2rpx solid var(--border-subtle);
+}
+.lg-field-active { border-bottom-color: var(--accent-gold-ink); }
+
+.lg-prefix {
+  flex-shrink: 0;
+  font-size: var(--fs-32);
+  font-weight: 500;
+  color: var(--text-primary);
+  padding-right: 20rpx;
+  margin-right: 20rpx;
+  border-right: 2rpx solid var(--border-subtle);
+}
+
+.lg-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font-size: var(--fs-32);
+  color: var(--text-primary);
+}
+.lg-ph {
+  color: #c4b7a4;
+  font-size: var(--fs-30);
+}
+
+.lg-clear {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--border-color);
+  color: var(--bg-card);
+  font-size: var(--fs-28);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 密码显隐：CSS 画眼睛，避免图片资源 */
+.lg-eye {
+  flex-shrink: 0;
+  position: relative;
+  width: 64rpx;
+  height: 64rpx;
+  margin-right: -12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lg-eye-shape {
+  position: relative;
+  width: 40rpx;
+  height: 26rpx;
+  border: 3rpx solid var(--text-muted);
+  border-radius: 50%;
+}
+.lg-eye-shape::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10rpx;
+  height: 10rpx;
+  margin: -5rpx 0 0 -5rpx;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.lg-eye-on .lg-eye-shape { border-color: var(--accent-gold-ink); }
+.lg-eye-on .lg-eye-shape::after { background: var(--accent-gold); }
+.lg-eye-slash {
+  position: absolute;
+  width: 46rpx;
+  height: 3rpx;
+  background: var(--accent-gold);
+  transform: rotate(-45deg);
+}
+
+.lg-forgot-row {
+  margin-top: 28rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+.lg-forgot {
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+}
+
+.lg-btn-submit {
+  height: 96rpx;
+  margin-top: 56rpx;
+  border-radius: 48rpx;
+  background: linear-gradient(135deg, var(--accent-gold-light), var(--accent-gold));
+  color: #fff;
+  font-size: var(--fs-32);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16rpx 32rpx rgba(181, 113, 58, 0.28);
+}
+.lg-btn-submit-disabled {
+  background: #ded3c0;
+  color: var(--bg-card);
+  box-shadow: none;
+}
+
+.lg-agree {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 40rpx;
+}
+.lg-checkbox {
+  flex-shrink: 0;
+  position: relative;
+  width: 32rpx;
+  height: 32rpx;
+  margin: 4rpx 14rpx 0 0;
+  border: 2rpx solid var(--border-color);
+  border-radius: 50%;
+}
+.lg-checkbox-checked {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold-ink);
+}
+.lg-checkbox-checked::after {
+  content: '';
+  position: absolute;
+  left: 8rpx;
+  top: 6rpx;
+  width: 12rpx;
+  height: 6rpx;
+  border-left: 3rpx solid #fff;
+  border-bottom: 3rpx solid #fff;
+  transform: rotate(-45deg);
+}
+.lg-agree-text {
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* 欢迎屏勾选框配色。
+   [注意] 联动提醒：本节配色**跟着欢迎屏背景走**。2026-10-01 欢迎屏由深色改为
+   浅色宣纸后，这里必须同步由「白色系」改为「深棕系」，否则浅底白字会看不见。
+   注意顺序：.lg-checkbox-checked 必须写在 .lg-checkbox 之后（同权重靠后生效）。 */
+.lg-agree-welcome {
+  justify-content: center;
+  align-items: center;
+  margin-top: 36rpx;
+}
+.lg-agree-welcome .lg-agree-text {
+  color: rgba(61, 46, 31, 0.62);
+}
+.lg-agree-welcome .lg-checkbox {
+  margin-top: 0;
+  border-color: rgba(61, 46, 31, 0.42);
+}
+.lg-agree-welcome .lg-checkbox-checked {
+  background: var(--accent-vermillion);
+  border-color: var(--accent-vermillion);
+}
+.lg-agree-welcome .lg-link {
+  color: var(--accent-vermillion);
+  text-decoration: none;
+}
+.lg-login .lg-link {
+  color: var(--accent-gold-ink);
+  text-decoration: none;
+}
+
+/* 注册入口行 */
+.lg-register-row {
+  margin-top: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lg-register-row-left {
+  justify-content: flex-start;
+  margin-top: 24rpx;
+}
+.lg-register-row .lg-link {
+  font-size: var(--fs-24);
+  text-decoration: none;
+}
+.lg-register-hint {
+  font-size: var(--fs-24);
+  color: rgba(143, 124, 99, 0.9);
+}
+.lg-welcome .lg-register-hint {
+  color: rgba(255, 255, 255, 0.72);
+}
+.lg-login-inner { width: 100%; }
+.lg-btn-submit-loading {
+  opacity: 0.8;
+}
+
+/* 品牌徽标：内联 base64（项目内本地图片在开发者工具里加载不稳定，故不引入文件）
+   源图 Desktop/tx.png → 裁圆去底 → 240x240 调色板量化 → 13.3KB */
+.lg-logo-mark {
+  width: 220rpx;
+  height: 220rpx;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  /* 阴影由中性黑改为暖棕（2026-10-01）：logo 圆底是米白，在浅色宣纸背景上
+     靠中性黑阴影会显脏，暖棕阴影更贴合整体纸质调性 */
+  box-shadow: 0 16rpx 40rpx rgba(120, 85, 50, 0.22), 0 2rpx 6rpx rgba(120, 85, 50, 0.1);
+  margin-bottom: 48rpx;
+  animation: lgLogoIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  background-image: url("data:image/png;base64,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");
+}
+
+/* ==================== 注册 5 步向导（与 Web 端 AuthModal 对齐） ====================
+   注意：全部用 margin 排布，不用 flex gap —— 老基础库对 gap 支持不完整 */
+
+/* 步骤进度点 */
+.reg-steps {
+  display: flex;
+  align-items: center;
+  margin-top: 34rpx;
+}
+.reg-dot {
+  width: 16rpx;
+  height: 16rpx;
+  margin-right: 16rpx;
+  border-radius: 50%;
+  background: var(--border-color);
+  transition: all 0.25s;
+}
+.reg-dot:last-child { margin-right: 0; }
+.reg-dot-done { background: var(--accent-gold); opacity: 0.55; }
+.reg-dot-cur {
+  width: 40rpx;
+  border-radius: 8rpx;
+  background: var(--accent-gold);
+  opacity: 1;
+}
+
+/* 分步表单：借用登录屏的 .lg-field/.lg-input，下面只补各步独有部分 */
+.reg-label {
+  margin-top: 44rpx;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+/* 第 1 步：性别选择 */
+.reg-gender {
+  display: flex;
+  margin-top: 20rpx;
+}
+.reg-gender-item {
+  flex: 1;
+  height: 88rpx;
+  margin-right: 24rpx;
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 12rpx;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--fs-30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.reg-gender-item:last-child { margin-right: 0; }
+.reg-gender-on {
+  border-color: var(--accent-gold-ink);
+  background: var(--accent-glow);
+  color: var(--accent-gold-ink);
+  font-weight: 600;
+}
+.reg-gender-hover { opacity: 0.75; }
+
+/* 第 2 步：密保问答 */
+.reg-qa { margin-top: 40rpx; }
+.reg-qa-picker {
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 12rpx;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--fs-28);
+  line-height: 84rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reg-qa-picker-empty { color: #c4b7a4; }
+/* 覆写 .lg-input 的 flex 布局（此处输入框不在 .lg-field 里，需自带边框） */
+.reg-qa-input {
+  display: block;
+  width: 100%;
+  height: 88rpx;
+  box-sizing: border-box;
+  margin-top: 14rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 12rpx;
+  background: var(--bg-card);
+  font-size: var(--fs-28);
+}
+
+/* 提示文字 */
+.reg-hint {
+  display: block;
+  margin-top: 28rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.reg-hint-bad { color: var(--accent-vermillion); }
+
+/* 第 3 步：手机号校验 */
+.reg-check-row {
+  display: flex;
+  align-items: center;
+  margin-top: 36rpx;
+}
+.reg-check-btn {
+  flex-shrink: 0;
+  height: 76rpx;
+  padding: 0 34rpx;
+  border: 2rpx solid var(--accent-gold);
+  border-radius: 38rpx;
+  color: var(--accent-gold-ink);
+  font-size: var(--fs-26);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.reg-check-btn-disabled {
+  border-color: var(--border-color);
+  color: var(--text-muted);
+}
+.reg-check-btn-hover { background: var(--accent-glow); }
+.reg-check-msg {
+  flex: 1;
+  min-width: 0;
+  margin-left: 22rpx;
+  font-size: var(--fs-24);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.reg-check-msg-ok { color: #16a34a; }
+.reg-check-msg-bad { color: var(--accent-vermillion); }
+
+/* 第 4 步：密码规则清单 */
+.reg-rules {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 28rpx;
+}
+.reg-rule {
+  margin: 0 16rpx 16rpx 0;
+  padding: 8rpx 20rpx;
+  border: 2rpx solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.reg-rule-on {
+  border-color: var(--accent-gold-ink);
+  background: var(--accent-glow);
+  color: var(--accent-gold-ink);
+}
+
+/* 第 5 步：信息确认 */
+.reg-summary {
+  padding: 0 28rpx;
+  border: 2rpx solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.reg-summary-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid var(--border-subtle);
+}
+.reg-summary-row:last-child { border-bottom: none; }
+.reg-summary-k {
+  flex-shrink: 0;
+  width: 128rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+.reg-summary-v {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-26);
+  line-height: 1.5;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+/* 步骤导航：上一步 / 下一步 */
+.reg-nav {
+  display: flex;
+  align-items: center;
+  margin-top: 56rpx;
+}
+.reg-btn-prev {
+  flex-shrink: 0;
+  height: 96rpx;
+  margin-right: 24rpx;
+  padding: 0 44rpx;
+  border: 2rpx solid var(--border-color);
+  border-radius: 48rpx;
+  color: var(--text-secondary);
+  font-size: var(--fs-30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 末步「注册」按钮与「上一步」同排：撑满剩余宽度、去掉自带的上外边距 */
+.reg-nav .lg-btn-submit {
+  flex: 1;
+  margin-top: 0;
+}
+
+/* ==================================================================
+   「我的」页 · 卡片式个人档案（B 细化版，pc-/p-/tile- 前缀）
+   ------------------------------------------------------------------
+   版式来源：_design/profile/plan-b-refined.html（375×812，1px = 2rpx）。
+   色板取效果图达标值：纸底 #f4ede1 / 卡 #fbf7ef / 正文 #3d2e1f /
+   次要 #75654f（纸底 4.84:1）/ 箭头 #7a6552（4.9:1）/ 金 #b5713a / 朱砂 #9c3f2c。
+   [约束] letter-spacing 一律 0；字号只用偶数 rpx；正文对比度 ≥4.5:1。
+   ================================================================== */
+
+/* 页面底色：宣纸米白（效果图为纯色底，不再叠网点纹理） */
+.pc-body {
+  background-color: var(--bg-primary);
+}
+
+/* 通用卡片外壳 */
+.pc-card {
+  background: var(--bg-card);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12rpx 36rpx -32rpx rgba(74, 56, 38, 0.55);
+}
+
+/* 按下时的整体变淡（头像、昵称、登录入口共用） */
+.pc-dim {
+  opacity: 0.7;
+}
+
+/* ---------- 深色档案头（固定 nav-bar 之下；下沿 20rpx 圆角） ---------- */
+.phead {
+  position: relative;
+  overflow: hidden;
+  padding: 16rpx 32rpx 28rpx;
+  color: #fff7e8;
+  background:
+    radial-gradient(120% 120% at 88% 0%, rgba(207, 138, 75, 0.22), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+}
+
+/* 115deg 斜纹肌理（1px 线 / 7px 间隔 → 2rpx / 14rpx） */
+.phead::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 0.16;
+  pointer-events: none;
+  border-radius: 0 0 20rpx 20rpx;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.06) 0,
+    rgba(255, 255, 255, 0.06) 2rpx,
+    transparent 2rpx,
+    transparent 14rpx
+  );
+}
+
+.pblock {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* 头像 64px；热区靠 ::after 外扩到 76px */
+.pavatar-hit {
+  position: relative;
+  flex-shrink: 0;
+  width: 128rpx;
+  height: 128rpx;
+  margin-right: 24rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #efe9df 0%, #d6ccbe 100%);
+  border: 4rpx solid rgba(255, 247, 232, 0.85);
+  box-shadow: 0 20rpx 44rpx -24rpx rgba(0, 0, 0, 0.6);
+}
+
+.pavatar-hit::after {
+  content: '';
+  position: absolute;
+  left: -12rpx;
+  right: -12rpx;
+  top: -12rpx;
+  bottom: -12rpx;
+  border-radius: 50%;
+}
+
+.pavatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.pavatar-txt {
+  font-family: 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC', 'SimSun', Georgia, serif;
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: #4a3826;
+}
+
+.pmeta {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 昵称即入口：视觉 20px（行高 25），热区上下各外扩 10px → 45px */
+.pname-hit {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.pname-hit::after {
+  content: '';
+  position: absolute;
+  left: -20rpx;
+  right: -20rpx;
+  top: -20rpx;
+  bottom: -20rpx;
+}
+
+.pname {
+  font-family: 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC', 'SimSun', Georgia, serif;
+  font-size: var(--fs-40);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff7e8;
+  border-bottom: 2rpx dashed rgba(233, 199, 155, 0.45);
+  padding-bottom: 2rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 访客态「未登录」：不是入口，去掉虚线下划线 */
+.pname-guest {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.pid {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  line-height: 1.45;
+  color: #cfc3b2;
+}
+
+/* 未登录时的登录入口：占 ID 行位置，热区 44px */
+.plogin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4rpx;
+  min-height: 44rpx;
+}
+
+.plogin::after {
+  content: '';
+  position: absolute;
+  left: -20rpx;
+  right: -20rpx;
+  top: -22rpx;
+  bottom: -22rpx;
+}
+
+.plogin-txt {
+  font-size: var(--fs-26);
+  line-height: 1.4;
+  color: #e9c79b;
+}
+
+.pchips {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.pchip {
+  margin: 4rpx 12rpx 0 0;
+  padding: 0 14rpx;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  border-radius: 10rpx;
+  color: rgba(255, 247, 232, 0.88);
+  border: 1rpx solid rgba(255, 236, 200, 0.22);
+  background: rgba(255, 247, 232, 0.08);
+}
+
+.pchip-gold {
+  color: #e9c79b;
+  border-color: rgba(233, 199, 155, 0.36);
+  background: rgba(233, 199, 155, 0.12);
+}
+
+.pchip-n {
+  font-family: Georgia, 'Songti SC', serif;
+  font-style: italic;
+  font-size: var(--fs-22);
+  margin-right: 4rpx;
+}
+
+/* 内容区：访客态整体降权（不伪造数字，只表示「登录后可用」） */
+.pc-main {
+  padding-top: 28rpx;
+}
+
+.pc-locked .tile,
+.pc-locked .pc-item,
+.pc-locked .pc-btn {
+  opacity: 0.55;
+}
+
+/* 邮件联系：Web 端该接口未登录也能发，访客态保持可读可点，不跟随降权 */
+.pc-locked .pc-item-any {
+  opacity: 1;
+}
+
+/* ---------- 分组标题 ---------- */
+.glabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 32rpx;
+  padding: 0 8rpx 16rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.glabel-em {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+/* ---------- 我的内容：2×2 磁贴（84px） ---------- */
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 0 32rpx 12rpx;
+}
+
+.tile {
+  position: relative;
+  width: calc((100% - 20rpx) / 2);
+  height: 168rpx;
+  margin-bottom: 20rpx;
+  padding: 24rpx 24rpx 20rpx;
+  box-sizing: border-box;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  background: radial-gradient(120% 100% at 26% 0%, var(--bg-elevated) 0%, var(--bg-card) 62%, #f7f1e5 100%);
+  box-shadow: 0 20rpx 44rpx -40rpx rgba(74, 56, 38, 0.7), inset 0 2rpx 0 rgba(255, 255, 255, 0.9);
+}
+
+.tile-hover {
+  transform: translateY(-2rpx);
+  opacity: 0.94;
+}
+
+/* 有未读：边框与图标底转朱砂淡色（效果图 .tile.has-unread） */
+.tile-unread {
+  border-color: rgba(156, 63, 44, 0.22);
+}
+
+.tile-unread .tile-ico {
+  background: rgba(156, 63, 44, 0.07);
+}
+
+/* 右下角小箭头（效果图 6px，这里用 22rpx 字符） */
+.tchev {
+  position: absolute;
+  right: 24rpx;
+  bottom: 22rpx;
+  font-size: var(--fs-22);
+  line-height: 1;
+  color: #7a6552;
+}
+
+.tile-ico {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 18rpx;
+  background: #f7f4ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-26);
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+/* 数字层：衬线斜体，右上角（仅消息通知有；其余留空） */
+.tile-num {
+  position: absolute;
+  right: 24rpx;
+  top: 20rpx;
+  display: flex;
+  align-items: baseline;
+}
+
+.tile-num-n {
+  font-family: Georgia, 'Songti SC', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: var(--fs-40);
+  line-height: 1;
+  color: var(--accent-gold-ink);
+}
+
+.tile-num-u {
+  margin-left: 4rpx;
+  font-size: var(--fs-20);
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.tile-num-off {
+  position: absolute;
+  right: 24rpx;
+  top: 24rpx;
+  font-size: var(--fs-22);
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+
+.tile-title {
+  margin-top: auto;
+  font-size: var(--fs-28);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.tile-sub {
+  margin-top: 4rpx;
+  font-size: var(--fs-20);
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+
+/* ---------- 列表卡：行高统一 50px ---------- */
+.pc-list-card {
+  margin: 0 32rpx 28rpx;
+  overflow: hidden;
+}
+
+.pc-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100rpx;
+  padding: 0 28rpx;
+  box-sizing: border-box;
+}
+
+.pc-item-hover {
+  background-color: var(--bg-elevated);
+}
+
+/* 条目分隔线：左侧从图标右侧起（28 + 60 + 20 = 108rpx）。
+   用 2rpx 而非 1rpx —— 1rpx 在部分安卓机型会被舍入成 0 而整条消失 */
+.pc-item-line::after {
+  content: '';
+  position: absolute;
+  left: 108rpx;
+  right: 28rpx;
+  bottom: 0;
+  height: 2rpx;
+  background-color: rgba(107, 90, 69, 0.10);
+}
+
+/* 图标底：木质棕文字 + 浅木色圆角底（替代效果图 SVG，文字更适合小程序） */
+.pc-item-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 18rpx;
+  background-color: #f7f4ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.pc-item-icon-text {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* 管理后台图标：用深棕区分 */
+.pc-icon-admin {
+  color: #5c452e;
+}
+
+.pc-item-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-28);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pc-item-value {
+  flex-shrink: 0;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  margin-right: 8rpx;
+  display: flex;
+  align-items: center;
+}
+
+/* 状态圆点：已绑定=金，未绑定=木棕 */
+.pc-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background-color: var(--accent-gold-ink);
+  margin-right: 10rpx;
+}
+
+.pc-dot-off {
+  background-color: #7a6552;
+}
+
+.pc-item-arrow {
+  flex-shrink: 0;
+  font-size: var(--fs-30);
+  line-height: 1;
+  color: #7a6552;
+}
+
+/* 「设置」行右侧的当前偏好摘要：以次要色收在箭头左侧，长了截断不换行 */
+.pc-item-value {
+  flex: none;
+  max-width: 300rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 管理员小签（仅管理员账号的「管理后台」行） */
+.tag-admin {
+  flex-shrink: 0;
+  margin-right: 8rpx;
+  padding: 0 10rpx;
+  font-size: var(--fs-20);
+  line-height: 1.6;
+  border-radius: 8rpx;
+  color: var(--accent-gold-ink);
+  border: 1rpx solid rgba(181, 113, 58, 0.34);
+  background: rgba(181, 113, 58, 0.08);
+}
+
+/* ---------- 账号操作区：退出 50px / 注销 44px ---------- */
+.pc-actions {
+  padding: 4rpx 32rpx 40rpx;
+}
+
+.pc-btn {
+  width: 100%;
+  height: 100rpx;
+  line-height: 100rpx;
+  border-radius: 24rpx;
+  background: var(--bg-card);
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12rpx 36rpx -32rpx rgba(74, 56, 38, 0.55);
+  font-size: var(--fs-30);
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 12rpx;
+  box-sizing: border-box;
+}
+
+.pc-btn-hover {
+  background-color: var(--bg-elevated);
+}
+
+/* 注销账号：朱砂红 + 无底无框，与「退出登录」形成主次 */
+.pc-btn-danger {
+  height: 88rpx;
+  line-height: 88rpx;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #9c3f2c;
+  font-size: var(--fs-26);
+  font-weight: 400;
+  margin-bottom: 0;
+}
+
+.pc-btn-danger-hover {
+  background-color: rgba(156, 63, 44, 0.05);
+  border-radius: 20rpx;
+}
+
+/* ---------- 注销冷静期横幅 ----------
+   位置：已登录视图最顶部（资料卡之上）。用朱砂红系强调「这是待注销状态」，
+   但整块用浅底、不用实心红，避免过度惊扰（用户还能正常使用）。 */
+.pc-cancel {
+  margin: 0 32rpx 28rpx;
+  padding: 32rpx 28rpx;
+  border: 2rpx solid rgba(156, 63, 44, 0.35);
+  background: rgba(156, 63, 44, 0.05);
+  box-shadow: none;
+}
+
+.pc-cancel-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.pc-cancel-tag {
+  font-size: var(--fs-20);
+  color: var(--bg-elevated);
+  background-color: var(--accent-vermillion);
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  margin-right: 12rpx;
+}
+
+.pc-cancel-title {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--accent-vermillion);
+}
+
+.pc-cancel-desc {
+  display: block;
+  font-size: var(--fs-26);
+  line-height: 1.75;
+  color: var(--text-muted);
+}
+
+/* 「尚未注销」与具体时间加粗，是本横幅最关键的两个信息 */
+.pc-cancel-strong {
+  color: var(--accent-vermillion);
+  font-weight: 600;
+}
+
+.pc-cancel-time {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pc-cancel-btn {
+  margin-top: 24rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
+  border-radius: 38rpx;
+  background: var(--accent-vermillion);
+  color: var(--bg-elevated);
+  font-size: var(--fs-28);
+  font-weight: 600;
+}
+
+.pc-cancel-btn-disabled {
+  opacity: 0.5;
+}
+
+/* ==================================================================
+   登录流程的返回按钮（从「我的」访客态点「登录 / 注册 ›」进入时才出现）
+   ================================================================== */
+.lg-guest-back {
+  position: absolute;
+  left: 16rpx;
+  z-index: 5;
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lg-guest-back-hover {
+  opacity: 0.6;
+}
+
+.lg-guest-back-icon {
+  font-size: 56rpx;
+  line-height: 1;
+  color: #4a3826;
+}
+
+
+/* ---------- 使用指南：常驻入口卡 ---------- */
+.guide-entry {
+  display: flex;
+  align-items: center;
+  margin: 0 32rpx 24rpx;
+  padding: 24rpx;
+  background: var(--bg-card);
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 36rpx -32rpx rgba(74, 56, 38, 0.55);
+}
+
+.guide-entry-ico {
+  flex-shrink: 0;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 18rpx;
+  background: rgba(181, 113, 58, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-26);
+  line-height: 1;
+  color: var(--accent-gold-ink);
+}
+
+.guide-entry-main {
+  flex: 1;
+  min-width: 0;
+  margin-left: 20rpx;
+}
+
+.guide-entry-title {
+  font-size: var(--fs-30);
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.guide-entry-sub {
+  margin-top: 6rpx;
+  font-size: var(--fs-24);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.guide-entry-tag {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  padding: 4rpx 12rpx;
+  font-size: var(--fs-20);
+  line-height: 1.5;
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.1);
+  border-radius: 8rpx;
+}
+
+.guide-entry-arrow {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  font-size: var(--fs-28);
+  line-height: 1;
+  color: #7a6552;
+}
+
+/* ---------- 使用指南：底部抽屉 ---------- */
+.guide-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9995;
+  background: rgba(23, 18, 14, 0.42);
+}
+
+.guide-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9996;
+  padding: 0 32rpx;
+  background: var(--bg-card);
+  border-radius: 32rpx 32rpx 0 0;
+  box-shadow: 0 -12rpx 48rpx rgba(23, 18, 14, 0.18);
+}
+
+.guide-sheet-grab {
+  display: flex;
+  justify-content: center;
+  padding: 16rpx 0 8rpx;
+}
+
+.guide-sheet-bar {
+  width: 72rpx;
+  height: 6rpx;
+  border-radius: var(--radius-pill);
+  background: rgba(61, 46, 31, 0.18);
+}
+
+.guide-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8rpx 0 4rpx;
+}
+
+.guide-sheet-title {
+  font-size: var(--fs-34);
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.guide-sheet-close {
+  min-width: 88rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: right;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+.guide-sheet-sub {
+  display: block;
+  padding: 8rpx 0 20rpx;
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.guide-sheet-list {
+  max-height: 44vh;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-top: 2rpx solid var(--border-subtle);
+}
+
+.guide-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-item-name {
+  display: block;
+  font-size: var(--fs-28);
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.guide-item-state {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.guide-item-state.is-done {
+  color: var(--accent-gold-ink);
+}
+
+.guide-item-btn {
+  flex-shrink: 0;
+  min-width: 112rpx;
+  height: 64rpx;
+  line-height: 60rpx;
+  margin-left: 20rpx;
+  text-align: center;
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  border: 2rpx solid rgba(143, 83, 38, 0.32);
+  border-radius: var(--radius-pill);
+  box-sizing: border-box;
+}
+
+.guide-item-hover {
+  opacity: 0.7;
+}
+
+.guide-sheet-foot {
+  padding: 20rpx 0 4rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.guide-safe {
+  height: calc(16rpx + env(safe-area-inset-bottom));
+}

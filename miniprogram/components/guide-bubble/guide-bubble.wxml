@@ -1,0 +1,16 @@
+<block wx:if="{{visible}}">
+  <!-- 高亮描边：不拦截点击，用户仍可点被框住的元素 -->
+  <view
+    class="gb-ring"
+    style="left:{{ring.left}}px;top:{{ring.top}}px;width:{{ring.width}}px;height:{{ring.height}}px;"
+  ></view>
+
+  <view class="gb-card" style="top:{{cardTop}}px;">
+    <view class="gb-head">
+      <text class="gb-title">{{step.title}}</text>
+      <view class="gb-close" catchtap="onKnow" hover-class="gb-hover">知道了</view>
+    </view>
+    <view class="gb-body">{{step.body}}</view>
+    <view wx:if="{{step.tip}}" class="gb-tip">{{step.tip}}</view>
+  </view>
+</block>

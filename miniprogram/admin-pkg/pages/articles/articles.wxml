@@ -1,0 +1,200 @@
+<import src="../../../templates/admin-nav/admin-nav.wxml" />
+<view class="page-wrapper">
+  <template is="admin-nav" data="{{title: '文章管理', safeAreaTop: safeAreaTop, emptyRightClass: 'nav-right'}}" />
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">查</text>
+      <input class="search-input" placeholder="搜索文章标题…" bindinput="onSearchInput" />
+    </view>
+    <view class="topic-filter">
+      <picker mode="selector" range="{{topicList}}" bindchange="onTopicFilterChange">
+        <text class="filter-label">{{currentTopic || '全部专题'}}</text>
+        <view class="filter-arrow css-tri-down"></view>
+      </picker>
+    </view>
+  </view>
+
+  <scroll-view class="content-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}" refresher-enabled="{{true}}" refreshertriggered="{{refreshing}}" bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore" lower-threshold="80">
+    <view class="article-list">
+      <view class="article-item" wx:for="{{articles}}" wx:for-item="art" wx:key="id">
+        <view class="article-info">
+          <view class="article-main">
+            <view class="article-title-row">
+              <text class="article-seq">#{{art._seq}}</text>
+              <text class="article-title">{{art.title}}</text>
+              <text class="pinned-badge" wx:if="{{art.isPinned}}">置顶</text>
+            </view>
+            <view class="article-meta">
+              <text class="meta-tag">{{art.topicTitle || art.topicKey}}</text>
+              <text class="meta-text" wx:if="{{art.author}}">{{art.author}}</text>
+              <text class="meta-text" wx:if="{{art.era}}">{{art.era}}</text>
+            </view>
+            <text class="article-summary" wx:if="{{art.summary}}">{{art.summary}}</text>
+          </view>
+        </view>
+        <view class="article-actions">
+          <view class="action-btn action-pin" data-id="{{art.id}}" bindtap="onTogglePin">{{art.isPinned ? '取消置顶' : '置顶'}}</view>
+          <view class="action-btn action-edit" bindtap="onEditArticle" data-art="{{art}}">编辑</view>
+          <view class="action-btn action-delete" bindtap="onDeleteArticle" data-id="{{art.id}}" data-title="{{art.title}}">删除</view>
+        </view>
+      </view>
+      <view class="empty-state" wx:if="{{articles.length === 0 && !loading}}">
+        <text class="empty-text">暂无文章</text>
+      </view>
+      <view class="loading-more" wx:if="{{loading}}">
+        <text>加载中…</text>
+      </view>
+      <view class="loading-more" wx:if="{{!loading && !hasMore && articles.length > 0}}">
+        <text>已加载全部 {{total}} 篇</text>
+      </view>
+    </view>
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <view class="fab-btn" bindtap="onAddArticle">
+    <text class="fab-icon">＋</text>
+    <text class="fab-text">新增文章</text>
+  </view>
+
+  <view class="modal-overlay" wx:if="{{showForm}}" bindtap="onCloseForm">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{formMode === 'add' ? '新增文章' : '编辑文章'}}</text>
+        <text class="modal-close" bindtap="onCloseForm">✕</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+        <view class="form-group">
+          <text class="form-label required">标题</text>
+          <input class="form-input" placeholder="请输入文章标题" value="{{formData.title}}" bindinput="onFormInput" data-field="title" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">文章 ID</text>
+          <input class="form-input" type="number" placeholder="纯数字，自动填入" value="{{formData.id}}" bindinput="onFormInput" data-field="id" disabled="{{formMode === 'edit'}}" />
+        </view>
+        <view class="form-group">
+          <text class="form-label required">所属专题</text>
+          <picker mode="selector" range="{{topicList}}" bindchange="onFormTopicChange">
+            <view class="form-input form-picker">{{formTopicName || '请选择专题'}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">作者</text>
+          <input class="form-input" placeholder="文章作者" value="{{formData.author}}" bindinput="onFormInput" data-field="author" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">时代</text>
+          <input class="form-input" placeholder="如 现代、宋代" value="{{formData.era}}" bindinput="onFormInput" data-field="era" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">关键词（英文逗号分隔）</text>
+          <input class="form-input" placeholder="如：中元节,鬼节,河灯" value="{{formData.keywords}}" bindinput="onFormInput" data-field="keywords" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">摘要</text>
+          <textarea class="form-textarea" placeholder="文章简短摘要" value="{{formData.summary}}" bindinput="onFormInput" data-field="summary" adjust-position="true" />
+        </view>
+        <view class="form-group">
+          <view class="form-label-row">
+            <text class="form-label">正文内容</text>
+            <text class="form-label-action" bindtap="onToggleContentFullscreen">全屏</text>
+          </view>
+          <textarea class="form-textarea form-textarea-lg" placeholder="文章正文，支持HTML标签" value="{{formData.content}}" bindinput="onFormInput" data-field="content" />
+        </view>
+        <!-- 相关人物：搜索选人，存姓名（详情页「相关阅读」按姓名匹配） -->
+        <view class="form-group">
+          <text class="form-label">相关人物</text>
+          <view class="chip-wrap" wx:if="{{formData.relatedFigures.length > 0}}">
+            <view class="chip-item" wx:for="{{formData.relatedFigures}}" wx:key="index" wx:for-item="nm">
+              <text class="chip-text">{{nm}}</text>
+              <text class="chip-x" data-name="{{nm}}" bindtap="onRemoveFigure">✕</text>
+            </view>
+          </view>
+          <input class="form-input" placeholder="输入人物姓名搜索，从下方结果中选择" value="{{figKeyword}}" bindinput="onFigKeywordInput" />
+          <view class="cand-list" wx:if="{{figCandidates.length > 0}}">
+            <view class="cand-item" wx:for="{{figCandidates}}" wx:key="id" wx:for-item="cf" data-name="{{cf.name}}" bindtap="onPickFigure">
+              <text class="cand-name">{{cf.name}}</text>
+              <text class="cand-meta">{{cf.dynasty || ''}}{{cf.nationality ? ' · ' + cf.nationality : ''}}</text>
+            </view>
+          </view>
+          <text class="hint-line" wx:if="{{figSearching}}">搜索中…</text>
+          <text class="hint-line" wx:elif="{{figKeyword && figCandidates.length === 0}}">没有匹配的人物</text>
+        </view>
+
+        <!-- 文献引用（可增删） -->
+        <view class="form-group">
+          <view class="form-label-row">
+            <text class="form-label">文献引用{{formData.citations.length ? '（' + formData.citations.length + '）' : ''}}</text>
+            <text class="form-label-action" bindtap="onAddCitation">＋ 添加</text>
+          </view>
+          <view class="cite-card" wx:for="{{formData.citations}}" wx:key="ciIdx" wx:for-item="ci" wx:for-index="ciIdx">
+            <view class="cite-head">
+              <text class="cite-no">引用 {{ciIdx + 1}}</text>
+              <text class="cite-del" data-index="{{ciIdx}}" bindtap="onRemoveCitation">删除</text>
+            </view>
+            <input class="form-input cite-input" placeholder="文献/资料名称，如：《清史稿·张作霖传》"
+              value="{{ci.name}}" data-index="{{ciIdx}}" data-field="name" bindinput="onCitationInput" />
+            <view class="form-row">
+              <view class="form-half">
+                <input class="form-input cite-input" placeholder="作者" value="{{ci.author}}"
+                  data-index="{{ciIdx}}" data-field="author" bindinput="onCitationInput" />
+              </view>
+              <view class="form-half">
+                <input class="form-input cite-input" placeholder="年份" value="{{ci.year}}"
+                  data-index="{{ciIdx}}" data-field="year" bindinput="onCitationInput" />
+              </view>
+            </view>
+            <input class="form-input cite-input" placeholder="出处 / 出版社"
+              value="{{ci.source}}" data-index="{{ciIdx}}" data-field="source" bindinput="onCitationInput" />
+            <input class="form-input cite-input" placeholder="链接（可选）"
+              value="{{ci.url}}" data-index="{{ciIdx}}" data-field="url" bindinput="onCitationInput" />
+          </view>
+          <text class="hint-line" wx:if="{{formData.citations.length === 0}}">暂无引用，点右上角「＋ 添加」</text>
+        </view>
+
+        <!-- 发布状态：立即发布 / 保存草稿 / 定时发布 -->
+        <view class="form-group">
+          <text class="form-label">发布状态</text>
+          <picker mode="selector" range="{{statusLabels}}" value="{{statusIndex}}" bindchange="onStatusChange">
+            <view class="form-input form-picker">{{statusLabels[statusIndex]}}</view>
+          </picker>
+        </view>
+        <view class="form-group" wx:if="{{formData.status === 'scheduled'}}">
+          <text class="form-label">定时发布时间</text>
+          <view class="form-row">
+            <view class="form-half">
+              <picker mode="date" value="{{scheduleDate}}" bindchange="onScheduleDateChange">
+                <view class="form-input form-picker">{{scheduleDate || '选择日期'}}</view>
+              </picker>
+            </view>
+            <view class="form-half">
+              <picker mode="time" value="{{scheduleTime}}" bindchange="onScheduleTimeChange">
+                <view class="form-input form-picker">{{scheduleTime || '选择时间'}}</view>
+              </picker>
+            </view>
+          </view>
+          <text class="hint-line">到点后由服务端自动转为已发布；时间已过则立即发布</text>
+        </view>
+        <!-- 置顶不在这里：服务端文章保存接口不接受 isPinned，置顶走列表上的「置顶」按钮
+             （PUT /topics/:key/pin/:articleId，toggle） -->
+        <view class="form-group">
+          <text class="form-label">排序值</text>
+          <input class="form-input" placeholder="数字，越小越前" value="{{formData.sortOrder}}" bindinput="onFormInput" data-field="sortOrder" type="number" />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <view class="form-btn form-btn-cancel" bindtap="onCloseForm">取消</view>
+        <view class="form-btn form-btn-submit" bindtap="onSubmitForm">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 全屏正文编辑器 -->
+  <view class="fullscreen-editor" wx:if="{{showContentFullscreen}}">
+    <view class="fullscreen-header">
+      <text class="fullscreen-title">编辑正文</text>
+      <text class="fullscreen-done" bindtap="onToggleContentFullscreen">完成</text>
+    </view>
+    <textarea class="fullscreen-textarea" placeholder="文章正文，支持HTML标签" value="{{formData.content}}" bindinput="onFormInput" data-field="content" adjust-position="true" />
+  </view>
+</view>

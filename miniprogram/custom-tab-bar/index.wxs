@@ -1,0 +1,352 @@
+/**
+ * 底部导航 · 液态水滴拖尾（WXS 版）
+ * ==================================================================
+ * 设计目标：拖动全程「零 setData」——水滴的宽度、水平位置、液态形变
+ *          全部由 WXS 直接 setStyle 驱动，避免跨线程通信造成掉帧。
+ *
+ * 物理模型：
+ *   targetX —— 水滴「前端」，紧跟手指（touchmove 里只更新这个值）
+ *   backX   —— 水滴「尾巴」，每个动画帧追赶一次：backX += (targetX - backX) * 0.12
+ *   拖尾越长 → 宽度拉长、高度（scaleY）压扁、圆角变成「水滴/胶囊」形。
+ *
+ * 动画帧（关键：自终止循环，勿改回常驻循环）：
+ *   用官方 ComponentDescriptor 的 requestAnimationFrame（跑在视图层）逐帧绘制。
+ *   循环每帧检测「尾巴是否已追上前端」，收敛后立即 st.loop = false 停止，
+ *   等下一次 touchmove 再重启。绝不会出现「没在动却仍 60fps 写样式」的空转，
+ *   也就不会因为 touchEnd 丢失（被 wx.switchTab 打断）而拖垮视图层。
+ *
+ * 状态隔离（关键）：
+ *   自定义 tabBar 每个 tab 页各有一个组件实例，逻辑层里各有各的 data。
+ *   因此状态一律走 ins.getState()（per-instance），不使用模块级共享对象，
+ *   避免两个实例的 rAF 回调互相清对方的 st.raf 造成死锁。
+ *
+ * 复位：
+ *   水滴一旦被 WXS setStyle，其优先级高于 wxml 样式，靠 setData 重渲染覆盖不掉
+ *   （官方文档明确说明），因此复位走官方的 WxsPropObserver：
+ *   wxml 上 change:synckey="{{liquid.syncObserver}}"，
+ *   逻辑层每次 setData(syncKey) 都会触发 syncObserver，把水滴直接摆正。
+ *
+ * 本文件严格遵守 WXS 解析器的限制（踩过的坑，勿改）：
+ *   1. 不支持科学计数法：1e9 会报 Unexpected token e，必须写 999999999；
+ *   2. 不支持 `return` 后紧跟同行的 `}`（解析器在 } 前不做 ASI），
+ *      所有 return 一律补显式分号；
+ *   3. 不用 typeof / undefined，不用跨行断开的表达式（+ 拼接一律单行）。
+ * ==================================================================
+ */
+var ITEM_COUNT = 4          // 导航项数量：首页 / 专题 / 查询 / 我的
+var DROP_RPX = 84           // 水滴基准直径（rpx），需与 index.wxss 的 .ctb-drop 一致
+var TAIL_EASE = 0.12        // 尾巴阻尼系数（每帧追赶 12%，对齐参考稿 底部.txt）
+var MOVE_TOLERANCE = 6      // 超过该位移（px）判定为「拖动」而非「点击」
+var STRETCH_SQUASH = 0.001  // 每拉伸 1px 压扁的比例（参考稿取值，形变很轻微）
+var MIN_SCALE_Y = 0.75      // 压扁下限，避免拉成一根线
+var CONVERGE = 0.5          // 尾巴与前端距离小于该值（px）即认为收敛，停止循环
+var ACTIVE_COLOR = '#8f5326'
+var IDLE_COLOR = '#75654f'
+var SNAP_TRANSITION = 'width .5s cubic-bezier(0.34,1.56,0.64,1), left .5s cubic-bezier(0.34,1.56,0.64,1), transform .5s cubic-bezier(0.34,1.56,0.64,1), border-radius .4s ease'
+
+/* ins.getState() 不可用时的兜底状态（正常机型走 per-instance 状态） */
+var FALLBACK = { inited: false }
+
+var missLogged = false
+// 日志总开关（2026-10-29）：生产保持 false ⇒ 真机控制台零输出。
+// 排查水滴样式不生效时改为 true 即可看到一次性告警（WXS 只支持 console.log）。
+var DEBUG = false
+
+/**
+ * 取当前组件实例的状态容器（per-instance）。
+ * 首次调用时初始化字段；getState 不可用时退回 FALLBACK。
+ */
+function getSt(ins) {
+  var st = null
+  if (ins && ins.getState) st = ins.getState()
+  if (!st) st = FALLBACK
+  if (st.inited) return st;
+  st.inited = true
+  st.dragging = false
+  st.moved = false
+  st.startX = 0
+  st.targetX = 0
+  st.backX = 0
+  st.lastActive = -1
+  st.w = 375
+  st.raf = 0
+  st.loop = false
+  st.epoch = 0
+  return st;
+}
+
+/* rpx → px（WXS 拿到的 pageX/clientX 单位都是 px） */
+function toPx(rpx, w) {
+  return rpx * w / 750;
+}
+
+/* 第 i 个导航项的中心 x */
+function centerOf(i, w) {
+  return w * (i + 0.5) / ITEM_COUNT;
+}
+
+/* 限制水滴中心不越出导航栏（左右各留半个水滴） */
+function clampCenter(x, w) {
+  var half = toPx(DROP_RPX, w) / 2
+  if (x < half) return half;
+  if (x > w - half) return w - half;
+  return x;
+}
+
+/* 离 x 最近的导航项序号 */
+function nearestIndex(x, w) {
+  var best = 0
+  var min = 999999999
+  for (var i = 0; i < ITEM_COUNT; i++) {
+    var d = x - centerOf(i, w)
+    if (d < 0) d = -d
+    if (d < min) { min = d; best = i }
+  }
+  return best;
+}
+
+/* 取触点横坐标：优先 pageX，无则退 clientX；都取不到返回 -1 */
+function pointX(e) {
+  var t = e.touches && e.touches[0]
+  if (!t) t = e.changedTouches && e.changedTouches[0]
+  if (!t) return -1;
+  if (t.pageX) return t.pageX;
+  if (t.clientX) return t.clientX;
+  return -1;
+}
+
+function round1(n) {
+  return Math.round(n * 10) / 10;
+}
+
+function round3(n) {
+  return Math.round(n * 1000) / 1000;
+}
+
+function logMiss() {
+  if (!DEBUG) return;
+  if (missLogged) return;
+  missLogged = true
+  // WXS 只支持 console.log 打日志，连续重复日志会被框架过滤
+  console.log('[ctb] 未取到 .ctb-drop 节点，水滴样式未写入')
+}
+
+/* 运行环境是否支持视图层 requestAnimationFrame */
+function hasRaf(ins) {
+  if (ins && ins.requestAnimationFrame) return true;
+  return false;
+}
+
+/* 从 "index:width:tick" 里取第 n 段（不用 split，避免多余依赖） */
+function keyPart(key, n) {
+  var s = '' + key
+  var i = 0
+  while (i < n) {
+    var p = s.indexOf(':')
+    if (p < 0) return '';
+    s = s.substring(p + 1)
+    i = i + 1
+  }
+  var q = s.indexOf(':')
+  if (q >= 0) s = s.substring(0, q)
+  return s;
+}
+
+/* 按「前端 targetX / 尾巴 backX」绘制水滴：两点距离即拉伸量 */
+function paintStretch(ins, st, transition) {
+  var node = ins.selectComponent('.ctb-drop')
+  if (!node) {
+    logMiss()
+    return;
+  }
+  var base = toPx(DROP_RPX, st.w)
+  var minX = st.targetX < st.backX ? st.targetX : st.backX
+  var maxX = st.targetX > st.backX ? st.targetX : st.backX
+  var stretch = maxX - minX
+  var scaleY = 1 - stretch * STRETCH_SQUASH
+  if (scaleY < MIN_SCALE_Y) scaleY = MIN_SCALE_Y
+  var transform = 'translateY(-50%)'
+  if (scaleY < 0.999) transform = transform + ' scaleY(' + round3(scaleY) + ')'
+  var radius = '50%'
+  if (stretch > 5) radius = '50% 50% 50% 50% / 45% 45% 55% 55%'
+  node.setStyle({
+    transition: transition,
+    width: round1(base + stretch) + 'px',
+    left: round1(minX - base / 2) + 'px',
+    borderRadius: radius,
+    transform: transform,
+    opacity: 1
+  })
+}
+
+/* 吸附到某个导航项中心：写终态 + cubic-bezier 过渡，由 CSS 完成果冻回弹 */
+function snapTo(ins, idx, w, transition) {
+  var node = ins.selectComponent('.ctb-drop')
+  if (!node) {
+    logMiss()
+    return;
+  }
+  var base = toPx(DROP_RPX, w)
+  var c = centerOf(idx, w)
+  node.setStyle({
+    transition: transition,
+    width: round1(base) + 'px',
+    left: round1(c - base / 2) + 'px',
+    borderRadius: '50%',
+    transform: 'translateY(-50%)',
+    opacity: 1
+  })
+}
+
+/* 高亮当前项（颜色 + 轻微放大），过渡交给 index.wxss 的 transition */
+function paintItems(ins, st, active) {
+  if (active === st.lastActive) return;
+  st.lastActive = active
+  for (var i = 0; i < ITEM_COUNT; i++) {
+    var node = ins.selectComponent('.ctb-i' + i)
+    if (!node) continue
+    var on = i === active
+    node.setStyle({
+      color: on ? ACTIVE_COLOR : IDLE_COLOR,
+      transform: on ? 'scale(1.15)' : 'scale(1)'
+    })
+  }
+}
+
+/**
+ * 单个动画帧：尾巴阻尼追赶一次，返回「是否还需要继续追」。
+ * 收敛时不再重绘（避免静止状态下仍逐帧写样式）。
+ */
+function step(ins, st) {
+  var gap = st.targetX - st.backX
+  var abs = gap < 0 ? -gap : gap
+  if (abs < CONVERGE) {
+    st.backX = st.targetX
+    return false;
+  }
+  st.backX = st.backX + gap * TAIL_EASE
+  paintStretch(ins, st, 'none')
+  return true;
+}
+
+/*
+ * 递归排下一帧（命名函数声明，可直接自引用）。
+ * epoch 守卫：stopLoop 会递增 st.epoch，任何「已被作废」的挂起回调立即退出，
+ * 保证同一实例任意时刻最多只有一条循环在跑（可防止循环成倍增长导致卡死）。
+ */
+function nextFrame(ins, st) {
+  var e0 = st.epoch
+  st.raf = ins.requestAnimationFrame(function () {
+    st.raf = 0
+    if (e0 !== st.epoch) return;
+    if (!st.dragging) {
+      st.loop = false
+      return;
+    }
+    var more = step(ins, st)
+    if (more && st.loop) nextFrame(ins, st)
+    else st.loop = false        // 收敛即停，等下一次 touchmove 再启动
+  })
+}
+
+/* 启动（幂等）：已有循环在跑就直接返回 */
+function startLoop(ins, st) {
+  if (st.loop) return;
+  if (!hasRaf(ins)) return;
+  st.loop = true
+  nextFrame(ins, st)
+}
+
+/* 停止并作废挂起的帧，防止残留回调在新一轮拖动时回写样式 */
+function stopLoop(ins, st) {
+  st.loop = false
+  st.epoch = st.epoch + 1
+  if (st.raf && ins && ins.cancelAnimationFrame) ins.cancelAnimationFrame(st.raf)
+  st.raf = 0
+}
+
+function touchStart(e, ins) {
+  var ds = e.currentTarget.dataset || {}
+  var w = ds.w * 1 || 375
+  var cur = ds.selected * 1 || 0
+  var x = pointX(e)
+  var st = getSt(ins)
+
+  if (x < 0) return;
+  stopLoop(ins, st)            // 清掉上一轮可能残留的循环
+  st.dragging = true
+  st.moved = false
+  st.w = w
+  st.startX = clampCenter(x, w)
+  st.targetX = st.startX
+  st.backX = centerOf(cur, w)  // 尾巴留在当前选中项 → 起手就有拉力
+  st.lastActive = cur
+
+  paintStretch(ins, st, 'none') // 前端立刻跟手
+  startLoop(ins, st)
+}
+
+function touchMove(e, ins) {
+  var st = getSt(ins)
+  if (!st.dragging) return;
+  var x = pointX(e)
+  if (x < 0) return;
+  st.targetX = clampCenter(x, st.w)
+
+  var moved = st.targetX - st.startX
+  if (moved < 0) moved = -moved
+  if (moved > MOVE_TOLERANCE) st.moved = true
+
+  // 有 rAF：交给逐帧循环（每帧追赶一次）；没有：本事件单步追赶一次
+  if (hasRaf(ins)) startLoop(ins, st)
+  else step(ins, st)
+  paintItems(ins, st, nearestIndex(st.targetX, st.w))
+}
+
+function touchEnd(e, ins) {
+  var st = getSt(ins)
+  if (!st.dragging) return;
+  st.dragging = false
+  stopLoop(ins, st)            // 先停循环再切页：避免残留帧回写，也避免死锁
+
+  var w = st.w
+  var idx = nearestIndex(st.targetX, w)
+  st.lastActive = -1           // 复位，让 paintItems 强制重绘
+  snapTo(ins, idx, w, SNAP_TRANSITION)
+  paintItems(ins, st, idx)
+
+  // 真拖动才切页；纯点击交给 bindtap，避免重复 switchTab
+  if (st.moved && ins && ins.callMethod) ins.callMethod('onWxsSelect', { index: idx })
+}
+
+/**
+ * WxsPropObserver：逻辑层每次 setData(syncKey) 都会触发
+ * 签名固定为 (newValue, oldValue, ownerInstance, instance)
+ * syncKey 形如 "2:375:17"（选中项 : 屏幕宽度 : 递增序号）
+ */
+function syncObserver(newValue, oldValue, ownerInstance) {
+  var idx = keyPart(newValue, 0) * 1 || 0
+  var w = keyPart(newValue, 1) * 1 || 375
+  var st = getSt(ownerInstance)
+
+  st.dragging = false
+  st.moved = false
+  st.w = w
+  st.targetX = centerOf(idx, w)
+  st.backX = st.targetX
+  st.lastActive = -1
+  stopLoop(ownerInstance, st)
+
+  // 复位是「瞬移归位」，不是动画：逻辑层发起的校准一律无过渡。
+  // 若用 SNAP_TRANSITION，切页时会看到水滴从旧位置滑到新位置
+  //（先滑回上一个 tab 再滑到目标 tab 的两段式）。
+  snapTo(ownerInstance, idx, w, 'none')
+  paintItems(ownerInstance, st, idx)
+}
+
+module.exports = {
+  touchStart: touchStart,
+  touchMove: touchMove,
+  touchEnd: touchEnd,
+  syncObserver: syncObserver
+}

@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "articleOverlay": "/components/articleOverlay/articleOverlay",
+    "nav-bar": "/components/navBar/navBar"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "历史专题 - 人物与事件深度解读"
+}

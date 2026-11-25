@@ -1,0 +1,617 @@
+<view class="page">
+
+  <!-- ==================== 一、登录界面（暖调两屏） ====================
+       触发方式变了：不再「未登录就直接进欢迎屏」，而是先看到「我的」访客态
+       （见下方二），点昵称区的「登录 / 注册 ›」才展开本登录流程。 -->
+  <block wx:if="{{showLoginFlow}}">
+    <view class="lg">
+
+      <!-- 1) 欢迎屏 -->
+      <view class="lg-welcome" wx:if="{{loginStage === 'welcome'}}">
+
+        <!-- 从访客态进入时给一个退出口，避免被登录流程「困住」 -->
+        <view class="lg-guest-back" style="top: {{safeAreaTop + 8}}px;" bindtap="onExitLoginFlow" hover-class="lg-guest-back-hover">
+          <text class="lg-guest-back-icon">‹</text>
+        </view>
+
+        <view class="lg-welcome-body">
+          <view class="lg-logo-mark"></view>
+          <text class="lg-title">世慧屋</text>
+          <text class="lg-subtitle">阅千年人物，见关系脉络</text>
+        </view>
+
+        <view class="lg-welcome-foot">
+        <view class="lg-btn-primary" hover-class="lg-btn-hover" bindtap="onToLoginForm">立即登录</view>
+        <view class="lg-btn-ghost" wx:if="{{showRegister}}" hover-class="lg-btn-ghost-hover" bindtap="onToRegister">注册账号</view>
+          <!-- 隐私合规（2026-10-01 微信审核驳回整改）：
+               原为「登录即代表同意《隐私政策》」——属**默认强制同意**，不合规。
+               现改为用户**主动勾选**的复选框（agreed 默认 false），未勾选时
+               onToLoginForm / onToRegister 会拦截并提示，不再视为已同意。 -->
+          <view class="lg-agree lg-agree-welcome" bindtap="onToggleAgree">
+            <view class="lg-checkbox {{agreed ? 'lg-checkbox-checked' : ''}}"></view>
+            <text class="lg-agree-text">我已阅读并同意<text class="lg-link" catchtap="onOpenPrivacyPolicy">《隐私政策》</text></text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 2) 登录屏（手机号 + 密码） -->
+      <view class="lg-login" wx:if="{{loginStage === 'form'}}">
+        <view class="lg-login-inner">
+          <view class="lg-nav" style="padding-top: {{safeAreaTop}}px;">
+            <view class="lg-nav-back" hover-class="lg-nav-back-hover" bindtap="onBackToWelcome"></view>
+          </view>
+
+          <view class="lg-header">
+            <text class="lg-h1">欢迎回来</text>
+            <text class="lg-h2">使用手机号和密码登录</text>
+          </view>
+
+          <view class="lg-form">
+            <!-- 手机号 -->
+            <view class="lg-field {{phoneFocus ? 'lg-field-active' : ''}}">
+              <text class="lg-prefix">+86</text>
+              <input
+                class="lg-input"
+                type="number"
+                maxlength="11"
+                placeholder="请输入手机号"
+                placeholder-class="lg-ph"
+                value="{{phoneInput}}"
+                bindinput="onPhoneInput"
+                bindfocus="onPhoneFocus"
+                bindblur="onPhoneBlur"
+                adjust-position="{{true}}"
+              />
+              <view class="lg-clear" wx:if="{{phoneInput}}" bindtap="onClearPhone">×</view>
+            </view>
+
+            <!-- 密码 -->
+            <view class="lg-field {{pwdFocus ? 'lg-field-active' : ''}}">
+              <input
+                class="lg-input"
+                password="{{!pwdVisible}}"
+                maxlength="20"
+                placeholder="请输入密码"
+                placeholder-class="lg-ph"
+                value="{{passwordInput}}"
+                bindinput="onPasswordInput"
+                bindfocus="onPwdFocus"
+                bindblur="onPwdBlur"
+                adjust-position="{{true}}"
+              />
+              <view class="lg-eye {{pwdVisible ? 'lg-eye-on' : ''}}" bindtap="onTogglePwd">
+                <view class="lg-eye-shape"></view>
+                <view class="lg-eye-slash" wx:if="{{pwdVisible}}"></view>
+              </view>
+            </view>
+          </view>
+
+          <view class="lg-forgot-row">
+            <text class="lg-forgot" bindtap="onForgotPassword">忘记密码？</text>
+          </view>
+
+          <view
+            class="lg-btn-submit {{phoneOk && pwdOk && loginLoading ? 'lg-btn-submit-loading' : ''}} {{phoneOk && pwdOk ? '' : 'lg-btn-submit-disabled'}}"
+            hover-class="{{phoneOk && pwdOk ? 'lg-btn-hover' : 'none'}}"
+            bindtap="onPhoneLogin"
+          >{{loginLoading ? '登录中...' : '登 录'}}</view>
+
+          <view class="lg-agree" bindtap="onToggleAgree">
+            <view class="lg-checkbox {{agreed ? 'lg-checkbox-checked' : ''}}"></view>
+            <text class="lg-agree-text">我已阅读并同意<text class="lg-link" catchtap="onOpenPrivacyPolicy">《隐私政策》</text></text>
+          </view>
+
+          <view class="lg-register-row lg-register-row-left" wx:if="{{showRegister}}">
+            <text class="lg-register-hint">还没有账号？</text>
+            <text class="lg-link" bindtap="onToRegister">注册新账号</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 3) 注册屏（分 5 步向导，与 Web 端注册流程一致：基本信息 → 密保设置 → 手机号验证 → 设置密码 → 确认注册） -->
+      <view class="lg-login" wx:if="{{loginStage === 'register' && showRegister}}">
+        <view class="lg-login-inner">
+          <view class="lg-nav" style="padding-top: {{safeAreaTop}}px;">
+            <view class="lg-nav-back" hover-class="lg-nav-back-hover" bindtap="onRegBack"></view>
+          </view>
+
+          <view class="lg-header">
+            <text class="lg-h1">创建账号</text>
+            <text class="lg-h2">第 {{regStep}}/5 步 · {{regStepTitle}}</text>
+          </view>
+
+          <!-- 步骤进度点：已完成的实心，当前的高亮 -->
+          <view class="reg-steps">
+            <view
+              class="reg-dot {{regStep > index + 1 ? 'reg-dot-done' : ''}} {{regStep === index + 1 ? 'reg-dot-cur' : ''}}"
+              wx:for="{{regStepLabels}}"
+              wx:key="index"
+            ></view>
+          </view>
+
+          <!-- 第 1 步：基本信息（昵称 + 性别） -->
+          <view class="lg-form" wx:if="{{regStep === 1}}">
+            <view class="lg-field {{regNickFocus ? 'lg-field-active' : ''}}">
+              <input
+                class="lg-input"
+                type="nickname"
+                maxlength="6"
+                placeholder="请输入昵称（最多 6 字）"
+                placeholder-class="lg-ph"
+                value="{{regNickname}}"
+                bindinput="onRegNicknameInput"
+                bindfocus="onRegNickFocus"
+                bindblur="onRegNickBlur"
+                adjust-position="{{true}}"
+              />
+            </view>
+            <view class="reg-label">性别</view>
+            <view class="reg-gender">
+              <view
+                class="reg-gender-item {{regGender === '男' ? 'reg-gender-on' : ''}}"
+                data-gender="男"
+                bindtap="onSelectRegGender"
+                hover-class="reg-gender-hover"
+              >男</view>
+              <view
+                class="reg-gender-item {{regGender === '女' ? 'reg-gender-on' : ''}}"
+                data-gender="女"
+                bindtap="onSelectRegGender"
+                hover-class="reg-gender-hover"
+              >女</view>
+            </view>
+          </view>
+
+          <!-- 第 2 步：密保设置（3 组问题 + 答案，答案至少 2 字） -->
+          <view class="lg-form" wx:if="{{regStep === 2}}">
+            <view class="reg-qa" wx:for="{{regQA}}" wx:key="key" wx:for-item="qa">
+              <picker
+                mode="selector"
+                range="{{regQuestionPool}}"
+                range-key="question"
+                data-index="{{index}}"
+                bindchange="onRegQuestionChange"
+              >
+                <view class="reg-qa-picker {{qa.questionId ? '' : 'reg-qa-picker-empty'}}">
+                  {{qa.questionId ? qa.question : '请选择密保问题'}}
+                </view>
+              </picker>
+              <input
+                class="lg-input reg-qa-input"
+                maxlength="30"
+                placeholder="请输入答案（至少 2 字）"
+                placeholder-class="lg-ph"
+                value="{{qa.answer}}"
+                data-index="{{index}}"
+                bindinput="onRegAnswerInput"
+                adjust-position="{{true}}"
+              />
+            </view>
+            <text class="reg-hint">密保问题用于忘记密码时验证身份，请牢记答案（答案区分大小写）</text>
+          </view>
+
+          <!-- 第 3 步：手机号验证（与 Web 端一致：只校验是否已被注册，不发短信验证码） -->
+          <view class="lg-form" wx:if="{{regStep === 3}}">
+            <view class="lg-field {{regPhoneFocus ? 'lg-field-active' : ''}}">
+              <text class="lg-prefix">+86</text>
+              <input
+                class="lg-input"
+                type="number"
+                maxlength="11"
+                placeholder="请输入手机号"
+                placeholder-class="lg-ph"
+                value="{{regPhone}}"
+                bindinput="onRegPhoneInput"
+                bindfocus="onRegPhoneFocus"
+                bindblur="onRegPhoneBlur"
+                adjust-position="{{true}}"
+              />
+              <view class="lg-clear" wx:if="{{regPhone}}" bindtap="onClearRegPhone">×</view>
+            </view>
+            <view class="reg-check-row">
+              <view
+                class="reg-check-btn {{regPhoneOk ? '' : 'reg-check-btn-disabled'}}"
+                hover-class="{{regPhoneOk ? 'reg-check-btn-hover' : 'none'}}"
+                bindtap="onCheckRegPhone"
+              >{{regPhoneChecking ? '验证中...' : '验证手机号'}}</view>
+              <text class="reg-check-msg {{regPhoneChecked ? 'reg-check-msg-ok' : 'reg-check-msg-bad'}}">{{regPhoneMsg}}</text>
+            </view>
+            <text class="reg-hint">注册不发短信验证码，仅校验该手机号是否已被注册</text>
+          </view>
+
+          <!-- 第 4 步：设置密码（规则与 Web 端一致） -->
+          <view class="lg-form" wx:if="{{regStep === 4}}">
+            <view class="lg-field {{regPwdFocus ? 'lg-field-active' : ''}}">
+              <input
+                class="lg-input"
+                password="{{!regPwdVisible}}"
+                maxlength="20"
+                placeholder="设置密码"
+                placeholder-class="lg-ph"
+                value="{{regPassword}}"
+                bindinput="onRegPasswordInput"
+                bindfocus="onRegPwdFocus"
+                bindblur="onRegPwdBlur"
+                adjust-position="{{true}}"
+              />
+              <view class="lg-eye {{regPwdVisible ? 'lg-eye-on' : ''}}" bindtap="onToggleRegPwd">
+                <view class="lg-eye-shape"></view>
+                <view class="lg-eye-slash" wx:if="{{regPwdVisible}}"></view>
+              </view>
+            </view>
+
+            <view class="reg-rules">
+              <view
+                class="reg-rule {{regPwdRules[index] ? 'reg-rule-on' : ''}}"
+                wx:for="{{regPwdRuleLabels}}"
+                wx:key="index"
+              >{{item}}</view>
+            </view>
+
+            <view class="lg-field {{regPwd2Focus ? 'lg-field-active' : ''}}">
+              <input
+                class="lg-input"
+                password="{{true}}"
+                maxlength="20"
+                placeholder="再次输入密码"
+                placeholder-class="lg-ph"
+                value="{{regPassword2}}"
+                bindinput="onRegPassword2Input"
+                bindfocus="onRegPwd2Focus"
+                bindblur="onRegPwd2Blur"
+                adjust-position="{{true}}"
+              />
+            </view>
+            <text class="reg-hint reg-hint-bad" wx:if="{{regPassword2 && regPassword2 !== regPassword}}">两次输入的密码不一致</text>
+          </view>
+
+          <!-- 第 5 步：确认注册 -->
+          <view class="lg-form" wx:if="{{regStep === 5}}">
+            <view class="reg-summary">
+              <view class="reg-summary-row">
+                <text class="reg-summary-k">昵称</text>
+                <text class="reg-summary-v">{{regNickname}}</text>
+              </view>
+              <view class="reg-summary-row">
+                <text class="reg-summary-k">性别</text>
+                <text class="reg-summary-v">{{regGender}}</text>
+              </view>
+              <view class="reg-summary-row">
+                <text class="reg-summary-k">手机号</text>
+                <text class="reg-summary-v">{{regPhone}}</text>
+              </view>
+              <view class="reg-summary-row" wx:for="{{regQA}}" wx:key="key" wx:for-item="qa">
+                <text class="reg-summary-k">密保{{index + 1}}</text>
+                <text class="reg-summary-v">{{qa.question}} → {{qa.answer}}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="lg-agree" wx:if="{{regStep === 5}}" bindtap="onToggleAgree">
+            <view class="lg-checkbox {{agreed ? 'lg-checkbox-checked' : ''}}"></view>
+            <text class="lg-agree-text">我已阅读并同意<text class="lg-link" catchtap="onOpenPrivacyPolicy">《隐私政策》</text></text>
+          </view>
+
+          <!-- 步骤导航：上一步 / 下一步（末步为「注册」） -->
+          <view class="reg-nav">
+            <view
+              class="reg-btn-prev"
+              wx:if="{{regStep > 1}}"
+              hover-class="lg-btn-hover"
+              bindtap="onRegPrev"
+            >上一步</view>
+            <view
+              class="lg-btn-submit {{regCanNext ? '' : 'lg-btn-submit-disabled'}}"
+              hover-class="{{regCanNext ? 'lg-btn-hover' : 'none'}}"
+              bindtap="onRegNext"
+            >{{regStep === 5 ? (regLoading ? '注册中...' : '注 册') : '下一步'}}</view>
+          </view>
+
+          <view class="lg-register-row lg-register-row-left">
+            <text class="lg-register-hint">已有账号？</text>
+            <text class="lg-link" bindtap="onToLoginForm">去登录</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ==================== 二、个人中心（已登录 / 访客态共用） ====================
+       版式按 _design/profile/plan-b-refined.html 落地：深色档案头 + 2×2 磁贴 +
+       两组列表卡（账号与安全 / 通用与关于）+ 退出 / 注销。
+       [注意] 类名统一用 pc-/p- 前缀，与登录视图（lg- 前缀）完全隔离，避免相互影响。 -->
+  <block wx:else>
+    <nav-bar title="我的" dark="{{true}}" safeAreaTop="{{safeAreaTop}}" showBack="{{false}}" />
+
+    <scroll-view class="body pc-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+      <!-- 导航占位：scroll-view 内联 padding 在部分真机不生效，改用实体占位 -->
+      <view class="nav-spacer" style="height: {{navBarHeight}}px; flex-shrink: 0;"></view>
+
+      <!-- ---------- 深色档案头：头像 / 昵称 / ID（访客态为登录入口）/ 状态签 ----------
+           设计稿 plan-b-refined：下沿 20rpx 圆角、径向金色光晕 + 115deg 斜纹。
+           头像与昵称都是修改入口（已删「✎ 编辑」胶囊），热区靠 ::after 外扩。 -->
+      <view class="phead">
+        <view class="pblock">
+          <view class="pavatar-hit" bindtap="onChangeAvatar" hover-class="p-dim">
+            <!-- 有真实头像图才显示图；否则用「名字首字」兜底 -->
+            <image class="pavatar-img" wx:if="{{isLoggedIn && userInfo.avatarUrl && !avatarError}}" src="{{userInfo.avatarUrl}}" mode="aspectFill" lazy-load binderror="onProfileAvatarError" />
+            <view class="pavatar-txt" wx:else>{{isLoggedIn ? avatarChar : '我'}}</view>
+          </view>
+
+          <view class="pmeta">
+            <!-- 已登录：昵称即入口，虚线提示可点，热区 45px -->
+            <view class="pname-hit" wx:if="{{isLoggedIn}}" bindtap="onChangeNickname" hover-class="p-dim">
+              <text class="pname">{{displayName}}</text>
+            </view>
+            <text class="pname pname-guest" wx:else>未登录</text>
+
+            <text class="pid" wx:if="{{isLoggedIn && qlId}}" selectable="{{true}}">世慧屋 ID · {{qlId}}</text>
+
+            <!-- 未登录：占 ID 行位置的登录入口，热区 44 -->
+            <view class="plogin" wx:if="{{!isLoggedIn}}" bindtap="onGuestLogin" hover-class="p-dim">
+              <text class="plogin-txt">登录 / 注册 ›</text>
+            </view>
+
+            <view class="pchips" wx:if="{{isLoggedIn}}">
+              <view class="pchip pchip-gold" wx:if="{{unreadCount > 0}}"><text class="pchip-n">{{unreadCount > 99 ? '99+' : unreadCount}}</text>条未读</view>
+              <view class="pchip">{{hasPhone ? '已绑定手机' : '未绑定手机'}}</view>
+              <view class="pchip">{{isAdmin ? '管理员' : '普通用户'}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="pc-main {{isLoggedIn ? '' : 'pc-locked'}}">
+
+        <!-- ---------- 注销冷静期横幅 ----------
+             已提交注销申请、但账号**尚未彻底注销**：数据仍在、可正常使用，也可在此撤回。
+             [注意] 文案必须说清「尚未注销」+ 给出具体时间，否则用户会以为已经注销完了。 -->
+        <view class="pc-card pc-cancel" wx:if="{{pendingDelete}}">
+          <view class="pc-cancel-head">
+            <text class="pc-cancel-tag">冷静期</text>
+            <text class="pc-cancel-title">注销申请处理中</text>
+          </view>
+          <text class="pc-cancel-desc">账号<text class="pc-cancel-strong">尚未注销</text>，数据仍然保留，目前可正常使用。</text>
+          <text class="pc-cancel-desc"><text class="pc-cancel-time">{{pendingDelete.purgeAtLocal}}</text> 后将彻底注销（数据清空且无法恢复）。</text>
+          <text class="pc-cancel-desc">在此之前登录即可撤回注销申请。</text>
+          <view class="pc-cancel-btn {{pendingRevoking ? 'pc-cancel-btn-disabled' : ''}}" bindtap="onRevokeCancel">
+            {{pendingRevoking ? '处理中…' : '撤回注销申请'}}
+          </view>
+        </view>
+
+        <!-- ---------- 我的内容：2×2 磁贴 ----------
+             未读数只出现两处（此处磁贴 + 档案区状态签），不再有右上角铃铛。 -->
+        <view class="glabel">
+          <text>我的内容</text>
+          <text class="glabel-em">4 个入口</text>
+        </view>
+        <view class="tiles">
+          <view class="tile {{isLoggedIn && unreadCount > 0 ? 'tile-unread' : ''}}" bindtap="onGoUserCenter" data-tab="messages" hover-class="tile-hover">
+            <view class="tile-ico">信</view>
+            <view class="tile-num" wx:if="{{isLoggedIn && unreadCount > 0}}">
+              <text class="tile-num-n">{{unreadCount > 99 ? '99+' : unreadCount}}</text><text class="tile-num-u">条</text>
+            </view>
+            <text class="tile-num-off" wx:elif="{{isLoggedIn}}">无未读</text>
+            <text class="tile-title">消息通知</text>
+            <text class="tile-sub" wx:if="{{isLoggedIn && unreadCount > 0}}">未读 {{unreadCount > 99 ? '99+' : unreadCount}} 条</text>
+            <text class="tile-sub" wx:elif="{{isLoggedIn}}">暂无未读</text>
+            <text class="tchev">›</text>
+          </view>
+          <view class="tile" bindtap="onGoUserCenter" data-tab="collections" hover-class="tile-hover">
+            <view class="tile-ico">藏</view>
+            <text class="tile-title">我的收藏</text>
+            <text class="tile-sub">人物与文章</text>
+            <text class="tchev">›</text>
+          </view>
+          <view class="tile" bindtap="onGoUserCenter" data-tab="history" hover-class="tile-hover">
+            <view class="tile-ico">迹</view>
+            <text class="tile-title">浏览历史</text>
+            <text class="tile-sub">最近看过的</text>
+            <text class="tchev">›</text>
+          </view>
+          <view class="tile" bindtap="onGoUserCenter" data-tab="devices" hover-class="tile-hover">
+            <view class="tile-ico">机</view>
+            <text class="tile-title">登录设备</text>
+            <text class="tile-sub">设备管理</text>
+            <text class="tchev">›</text>
+          </view>
+        </view>
+
+        <!-- ---------- 使用指南（常驻入口，随时重看） ---------- -->
+        <view class="guide-entry" bindtap="onOpenGuide" hover-class="pc-item-hover">
+          <view class="guide-entry-ico">引</view>
+          <view class="guide-entry-main">
+            <view class="guide-entry-title">使用指南</view>
+            <view class="guide-entry-sub">第一次用？全站与各功能的引导都能在这里重看</view>
+          </view>
+          <text class="guide-entry-tag">重看</text>
+          <text class="guide-entry-arrow">›</text>
+        </view>
+
+        <!-- ---------- 账号与安全 ---------- -->
+        <view class="glabel"><text>账号与安全</text></view>
+        <view class="pc-card pc-list-card">
+          <!-- 未绑定 → 可点击去绑定；已绑定 → 只读展示状态（与旧版行为一致） -->
+          <view class="pc-item pc-item-line" wx:if="{{!hasPhone}}" bindtap="onShowBindPhone" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text">绑</text></view>
+            <text class="pc-item-title">手机号</text>
+            <view class="pc-item-value"><view class="pc-dot pc-dot-off"></view>未绑定</view>
+            <text class="pc-item-arrow">›</text>
+          </view>
+          <view class="pc-item pc-item-line" wx:else>
+            <view class="pc-item-icon"><text class="pc-item-icon-text">安</text></view>
+            <text class="pc-item-title">手机号</text>
+            <view class="pc-item-value"><view class="pc-dot"></view>已绑定</view>
+            <text class="pc-item-arrow">›</text>
+          </view>
+          <!-- 管理员可见时，修改密码仍需分隔线；否则它是本卡最后一行 -->
+          <view class="pc-item {{isAdmin ? 'pc-item-line' : ''}}" bindtap="onShowChangePwd" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text">密</text></view>
+            <text class="pc-item-title">修改密码</text>
+            <text class="pc-item-arrow">›</text>
+          </view>
+          <!-- 管理后台（仅管理员账号可见；进入后由后台登录页判断是否已授权） -->
+          <view class="pc-item" wx:if="{{isAdmin}}" bindtap="onGoAdmin" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text pc-icon-admin">管</text></view>
+            <text class="pc-item-title">管理后台</text>
+            <text class="tag-admin">管理员</text>
+            <text class="pc-item-arrow">›</text>
+          </view>
+        </view>
+
+        <!-- ---------- 通用与关于：设置 + 邮件联系 + 意见反馈 + 关于世慧屋 ----------
+             隐私政策 / 免责声明 / 版本号 / 备案号 都在关于页，本页不再重复。
+             设置只承载本机偏好（专题页风格 / 默认状态），不涉及账号，访客也可改。
+             邮件联系 / 意见反馈放在本组而不是「账号与安全」：两者都是「联系产品方」
+             的通道，与「关于世慧屋」同属「关于这个产品」的语境；账号与安全只承载
+             手机号、密码这类凭证操作，混入反馈会破坏分组语义。
+             邮件联系排在设置之后：它是直达站长邮箱的一对一通道，比工单式反馈更直接。
+             pc-item-any：Web 端该接口无需登录即可发送，访客态下本行不参与 .pc-locked 降权。 -->
+        <view class="glabel"><text>通用与关于</text></view>
+        <view class="pc-card pc-list-card">
+          <view class="pc-item pc-item-line pc-item-any" bindtap="onOpenSettings" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text">设</text></view>
+            <text class="pc-item-title">设置</text>
+            <text class="pc-item-value">{{topicPrefText}}</text>
+            <text class="pc-item-arrow">›</text>
+          </view>
+          <view class="pc-item pc-item-line pc-item-any" bindtap="onEmailContact" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text">邮</text></view>
+            <text class="pc-item-title">邮件联系</text>
+            <text class="pc-item-arrow">›</text>
+          </view>
+          <view class="pc-item pc-item-line" bindtap="onFeedback" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text">馈</text></view>
+            <text class="pc-item-title">意见反馈</text>
+            <text class="pc-item-arrow">›</text>
+          </view>
+          <view class="pc-item" bindtap="onOpenAbout" hover-class="pc-item-hover">
+            <view class="pc-item-icon"><text class="pc-item-icon-text">关</text></view>
+            <text class="pc-item-title">关于世慧屋</text>
+            <text class="pc-item-arrow">›</text>
+          </view>
+        </view>
+
+        <!-- ---------- 账号操作区：退出登录 / 注销账号 ----------
+             注销账号（仅小程序提供，Web 端无此入口）：点击先弹二次确认
+             （数据清空不可恢复 + 7 天冷却），确认后进 /account-pkg/pages/cancel-account 自助注销。
+             [禁止] 旧的「意见反馈 → 注销账号（必填邮箱）」通道保留为兜底入口，不在本页暴露。 -->
+        <!-- 访客态不显示退出 / 注销（对未登录用户没有意义），登录入口在档案区 -->
+        <view class="pc-actions" wx:if="{{isLoggedIn}}">
+          <view class="pc-btn" bindtap="onLogout" hover-class="pc-btn-hover">退出登录</view>
+          <view class="pc-btn pc-btn-danger" bindtap="onTapCancelAccount" hover-class="pc-btn-danger-hover">注销账号</view>
+        </view>
+      </view>
+
+      <view class="tabbar-space"></view>
+    </scroll-view>
+  </block>
+
+  <!-- ==================== 三、页面级弹层（两种状态共用） ==================== -->
+
+  <!-- 微信登录面板：2026-10-15 **永久下线**（原为「暂时下线、待主体升级后恢复」）。
+       微信登录（chooseAvatar + code2Session）仅对已认证的非个人主体开放；本小程序为个人主体，
+       且小程序主体类型**不可变更**，故不存在恢复可能 —— 面板、入口按钮与对应 JS 已一并删除。
+       [注意] 若将来以企业主体重新注册小程序，需恢复：本面板 + 欢迎屏/登录屏的微信按钮
+          + profile.js 的 onShowWechatLogin/onChooseWechatAvatar/onConfirmWechatLogin/doLogin。 -->
+
+  <!-- 绑定手机号面板 -->
+  <view class="profile-phone-form" wx:if="{{showBindForm}}">
+    <view class="profile-phone-mask" bindtap="onHideBindPhone"></view>
+    <view class="profile-phone-panel">
+      <text class="profile-phone-title">绑定手机号</text>
+      <text class="profile-phone-desc">绑定后可跨设备同步数据</text>
+      <input class="profile-phone-input" type="number" placeholder="输入手机号" maxlength="11" value="{{bindPhoneInput}}" bindinput="onBindPhoneInput" />
+      <view class="profile-phone-actions">
+        <button class="profile-btn-phone-submit" bindtap="onBindPhone">确认绑定</button>
+      </view>
+      <text class="profile-phone-cancel" bindtap="onHideBindPhone">取消</text>
+    </view>
+  </view>
+
+  <!-- 修改密码面板：两种验证方式（旧密码 / 密保问题）
+       「忘记密码？」切到密保验证；答案由服务端校验（要求全部答对），前端只做必填与格式校验 -->
+  <view class="profile-phone-form" wx:if="{{showChangePwd}}">
+    <view class="profile-phone-mask" bindtap="onHideChangePwd"></view>
+    <view class="profile-phone-panel">
+      <text class="profile-phone-title">{{pwdMode === 'questions' ? '修改密码 · 密保验证' : '修改密码'}}</text>
+
+      <!-- ========== 方式一：验证旧密码 ========== -->
+      <block wx:if="{{pwdMode === 'old'}}">
+        <text class="profile-phone-desc">新密码至少 8 位，需含大小写字母和数字</text>
+        <input class="profile-phone-input" type="text" password="{{true}}" placeholder="当前密码" value="{{oldPwd}}" bindinput="onOldPwdInput" adjust-position="{{true}}" />
+        <input class="profile-phone-input" type="text" password="{{true}}" placeholder="新密码（至少 8 位）" value="{{newPwd}}" bindinput="onNewPwdInput" adjust-position="{{true}}" />
+        <input class="profile-phone-input" type="text" password="{{true}}" placeholder="确认新密码" value="{{newPwd2}}" bindinput="onNewPwd2Input" adjust-position="{{true}}" />
+        <!-- 忘记旧密码 → 切到密保验证 -->
+        <view class="profile-pwd-switch" bindtap="onSwitchPwdMode" data-mode="questions" hover-class="profile-pwd-switch-hover">
+          <text class="profile-pwd-switch-text">忘记密码？改用密保验证</text>
+          <text class="profile-pwd-switch-arrow">›</text>
+        </view>
+      </block>
+
+      <!-- ========== 方式二：密保问题验证 ========== -->
+      <block wx:else>
+        <text class="profile-phone-desc">回答注册时设置的密保问题，即可设置新密码</text>
+
+        <view class="profile-sq-loading" wx:if="{{sqLoading}}">
+          <text class="profile-sq-loading-text">密保问题加载中…</text>
+        </view>
+
+        <block wx:elif="{{sqList.length}}">
+          <view class="profile-sq-item" wx:for="{{sqList}}" wx:key="id">
+            <text class="profile-sq-q">{{index + 1}}. {{item.question}}</text>
+            <input
+              class="profile-phone-input"
+              type="text"
+              placeholder="请输入答案"
+              value="{{sqAnswers[index]}}"
+              data-index="{{index}}"
+              bindinput="onSqAnswerInput"
+              adjust-position="{{true}}"
+            />
+          </view>
+          <input class="profile-phone-input profile-pwd-new-top" type="text" password="{{true}}" placeholder="新密码（至少 8 位）" value="{{newPwd}}" bindinput="onNewPwdInput" adjust-position="{{true}}" />
+          <input class="profile-phone-input" type="text" password="{{true}}" placeholder="确认新密码" value="{{newPwd2}}" bindinput="onNewPwd2Input" adjust-position="{{true}}" />
+        </block>
+
+        <!-- 未设置密保 / 加载失败时的提示（朱砂红底，明确告知走不通） -->
+        <text class="profile-sq-tip" wx:if="{{sqTip}}">{{sqTip}}</text>
+
+        <!-- 返回旧密码验证 -->
+        <view class="profile-pwd-switch" bindtap="onSwitchPwdMode" data-mode="old" hover-class="profile-pwd-switch-hover">
+          <text class="profile-pwd-switch-arrow profile-pwd-switch-arrow-back">‹</text>
+          <text class="profile-pwd-switch-text">改用旧密码验证</text>
+        </view>
+      </block>
+
+      <view class="profile-phone-actions">
+        <button class="profile-btn-phone-submit" bindtap="onSubmitChangePwd" disabled="{{pwdChanging}}">{{pwdChanging ? '提交中…' : '确认修改'}}</button>
+      </view>
+      <text class="profile-phone-cancel" bindtap="onHideChangePwd">取消</text>
+    </view>
+  </view>
+
+  <!-- 「关于世慧屋」已从弹层改为独立页（account-pkg/pages/about），本页不再保留弹层 -->
+
+  <!-- ========== 使用指南抽屉 ========== -->
+  <view class="guide-mask" wx:if="{{guideOpen}}" bindtap="onCloseGuide" catchtouchmove="noopGuide"></view>
+  <view class="guide-sheet" wx:if="{{guideOpen}}" catchtouchmove="noopGuide">
+    <view class="guide-sheet-grab"><view class="guide-sheet-bar"></view></view>
+    <view class="guide-sheet-head">
+      <text class="guide-sheet-title">使用指南</text>
+      <text class="guide-sheet-close" bindtap="onCloseGuide">关闭</text>
+    </view>
+    <text class="guide-sheet-sub">重看不会清空已完成记录；版本更新后会自动再出现一次。</text>
+    <scroll-view class="guide-sheet-list" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+      <view wx:for="{{guideList}}" wx:key="key" class="guide-item">
+        <view class="guide-item-main">
+          <text class="guide-item-name">{{item.name}}</text>
+          <text class="guide-item-state {{item.done ? 'is-done' : ''}}">{{item.stateText}}</text>
+        </view>
+        <view class="guide-item-btn" data-key="{{item.key}}" bindtap="onReplayGuide" hover-class="guide-item-hover">{{item.done ? '重看' : '开始'}}</view>
+      </view>
+    </scroll-view>
+    <view class="guide-sheet-foot">更多功能的引导会随版本逐步开放。</view>
+    <view class="guide-safe"></view>
+  </view>
+</view>

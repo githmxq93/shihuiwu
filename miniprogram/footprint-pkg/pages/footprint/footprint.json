@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "人物足迹地图 - 历史人物生平地点轨迹"
+}

@@ -1,0 +1,34 @@
+<import src="../../templates/article-reader/article-reader.wxml" />
+
+<view class="article-overlay" wx:if="{{currentArticle}}" bindtap="onClose">
+  <view class="article-overlay-content {{expanded ? 'is-expanded' : ''}}" catchtap="noop">
+    <!-- 抓手行：整行可点 86vh ⇄ 96vh；左提示、中抓手、右关闭（44×44 热区） -->
+    <view class="overlay-grab" bindtap="onToggleExpand">
+      <text class="grab-hint">{{expanded ? '收起' : '展开'}}</text>
+      <view class="grabber"></view>
+      <view class="overlay-close" catchtap="onClose">
+        <text class="overlay-close-icon">✕</text>
+      </view>
+    </view>
+
+    <scroll-view class="overlay-body" scroll-y enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}" scroll-top="{{scrollTop}}" bindscroll="onBodyScroll">
+      <view class="overlay-body-inner">
+        <!-- 阅读主体与整页共用 templates/article-reader（结构与样式唯一来源） -->
+        <template
+          is="articleReader"
+          data="{{title: currentArticle.title, era: currentArticle.era, wordCount: wordCount, readMin: readMin, blocks: blocks, hasBody: hasBody, fullText: fullText, isExcerpt: isExcerpt, figures: figures, citations: citations, keywords: keywords}}"
+        />
+      </view>
+    </scroll-view>
+
+    <!-- 底部轻量条：上一篇 / 回到专题 / 下一篇，进度线贴在条顶 -->
+    <view class="ar-foot">
+      <view class="ar-progress" wx:if="{{scrollPercent > 0}}">
+        <view class="ar-progress-bar" style="width: {{scrollPercent}}%"></view>
+      </view>
+      <view class="ar-foot-side ar-foot-prev {{currentArticle.hasPrev ? '' : 'is-dim'}}" bindtap="onPrev">‹ 上一篇</view>
+      <view class="ar-foot-home" catchtap="onHome">{{homeText}}</view>
+      <view class="ar-foot-side ar-foot-next {{currentArticle.hasNext ? '' : 'is-dim'}}" bindtap="onNext">下一篇 ›</view>
+    </view>
+  </view>
+</view>

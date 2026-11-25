@@ -1,0 +1,23 @@
+<view class="policy-page">
+  <nav-bar title="{{title}}" safeAreaTop="{{safeAreaTop}}" />
+
+  <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+    <view class="content">
+      <view class="content-title">{{title}}</view>
+      <view class="skeleton-wrap" wx:if="{{loading}}">
+  <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+    <view class="skeleton-line skeleton-line-title"></view>
+    <view class="skeleton-line"></view>
+    <view class="skeleton-line skeleton-line-short"></view>
+  </view>
+  <view class="skeleton-hint">正在加载…</view>
+</view>
+      <view class="error-retry" wx:elif="{{loadFailed}}">
+        <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+        <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+      </view>
+      <text wx:else class="content-text" user-select="{{true}}">{{content}}</text>
+    </view>
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+</view>

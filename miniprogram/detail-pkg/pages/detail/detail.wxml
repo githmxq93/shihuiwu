@@ -1,0 +1,641 @@
+<page-meta root-background-color="#f4ede1" />
+
+<!-- 底部五标签 dock：与世系页 / 足迹页共用 templates/dock/dock.wxml + dock.wxss（唯一来源） -->
+<import src="../../../templates/dock/dock.wxml" />
+
+<!-- ===== 年表 / 关系页 · 深色窄条标签头（对应原型 .mini，2026-11-08） =====
+     原型里这块 .mini 在滚动容器之外，**一直钉在顶部不动**，正文在它下面滚。
+     本轮改为常驻吸顶，取消「滚走 + 收成只写名字的浅色栏」的做法。
+     实现用 position: sticky（不是 fixed）：
+       · sticky 仍占文档流位置 → 正文自然排在它下面，不会先被它盖住，也不需要 JS 量高补占位；
+         吸顶后它只覆盖滚到它下面的正文，这与原型固定头部的行为一致；
+       · 外层 .b2-mini-wrap 负责吸顶并垫一层页面底色 → 正文不从内层圆角的缺口里漏出；
+       · 内层 .b2-mini 保留圆角 + 阴影，观感与原型一致。
+     [为什么本块放在 .page 之前] .page 上有 overflow-x:hidden，它会变成「不滚动的滚动容器」，
+     sticky 放在 .page 里永远吸不住（图一"深色头部整块滚走"就是这个原因）。
+     放在 .page 之前的同级位置后，最近的可滚动祖先就是页面本身，sticky 才能相对视口生效；
+     同时也无需改动 .page 的横向裁切规则，档案页与其他页面的溢出行为零影响。
+     外层 top 取 0，内层 padding-top = navBarHeight 把内容落到固定 nav-bar 下方：
+     吸顶后姓名的视口位置与未滚动时完全相同，头部与导航栏之间不会露浅色缝。
+     档案页（pageTab === 'archive'）不渲染本块，仍是大头部随页面滚走 + 滚过阈值只留姓名栏。 -->
+<view class="b2-mini-wrap" wx:if="{{figure && pageTab !== 'archive'}}">
+  <view class="b2-mini" style="padding-top: {{navBarHeight}}px;">
+    <view class="b2-mini-row">
+      <view class="b2-mini-nm">
+        <view class="b2-mini-nameline">
+          <text class="b2-mini-name">{{figure.name}}</text>
+          <text class="b2-mini-era" wx:if="{{figure.dynasty}}">{{figure.dynasty}}</text>
+        </view>
+        <text class="b2-mini-sub">{{pageTab === 'timeline' ? ('时间线 · ' + (tabCounts.timeline || 0) + ' 条' + (timelineHasPhase ? ' · ' + timelineGroups.length + ' 段' : '')) : ('关系 · ' + (relTotal > 0 ? relTotal + ' 位' : '按需加载'))}}</text>
+      </view>
+      <text class="b2-mini-tag">{{pageTab === 'timeline' ? '年表' : '关系'}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- ===== 档案页 · 上滑后的深色吸顶条（2026-11-08 统一顶部样式） =====
+     首屏仍用 .b2-hero 深色大头部；大头部底边滚过导航栏下沿后（showArchiveBar 由
+     detail.js::_syncScrollState 结算），顶部换成与年表 / 关系页同款的一条深色窄条，
+     滚回顶部即隐藏、大头部重新出现。
+     这里用 fixed（不是 sticky）：本块只在「已滚过大头部」时渲染，fixed 不占文档流，
+     显隐都不会让正文跳动；sticky 若写在 .page 内会被 overflow-x:hidden 吃掉，
+     写在 .page 之前又会常驻文案流顶部，与「首屏不出现」冲突。
+     内层 padding-top = navBarHeight 把深色区垫到 nav-bar 之下，与 dark 态导航拼成一块。 -->
+<view class="b2-mini-wrap b2-mini-wrap--fixed" wx:if="{{figure && pageTab === 'archive' && showArchiveBar}}">
+  <view class="b2-mini" style="padding-top: {{navBarHeight}}px;">
+    <view class="b2-mini-row">
+      <view class="b2-mini-nm">
+        <view class="b2-mini-nameline">
+          <text class="b2-mini-name">{{figure.name}}</text>
+          <text class="b2-mini-era" wx:if="{{figure.dynasty}}">{{figure.dynasty}}</text>
+        </view>
+        <text class="b2-mini-sub">人物档案 · {{archiveFilled}} 段有内容</text>
+      </view>
+      <text class="b2-mini-tag">档案</text>
+    </view>
+  </view>
+</view>
+
+<view class="page">
+  <!-- 微信搜一搜：自定义导航显示真实人物姓名（首屏可抓取文本 + 用户可读性）。
+       dark：年表 / 关系页顶部是常驻深色条（.b2-mini-wrap 粘）→ 导航栏恒深色；
+       档案页首屏是深色大头部、导航栏保持浅色，滚过大头部后顶部换成深色吸顶条
+       （showArchiveBar）时导航栏同步转深色，否则浅色导航压在深色条上会露白缝。
+       姓名不再写进 nav-bar：档案页由吸顶条承担，年表 / 关系页由常驻条承担，避免重复。 -->
+  <nav-bar safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" dark="{{pageTab !== 'archive' || showArchiveBar}}" />
+
+  <!-- 正文区刻意不用 scroll-view 承载：关系 tab 的 <relation-graph> 内含 canvas
+       （ec-canvas，type="2d"），而 canvas 落在 scroll-view 内的同层渲染在真机上位置不同步
+       —— 滚动时 WebView 内容滚走、canvas 层停在视口原位，图谱「浮」在列表上。
+       统一改页面级滚动（canvas 随整个 WebView 滚动最稳）。
+       联动改动：回顶从 scroll-into-view 锚点改为 wx.pageScrollTo，滚动监听从 bindscroll
+       改为页面生命周期 onPageScroll（见 detail.js::scrollToTop / onPageScroll）。 -->
+  <view class="content-scroll">
+    <!-- 回顶锚点：保留 id 供将来锚点跳转复用；当前回顶走 wx.pageScrollTo -->
+    <view id="detailTop"></view>
+    <!-- 骨架屏 -->
+    <view class="skeleton" wx:if="{{loading}}" style="padding-top: {{navBarHeight + 8}}px;">
+      <view class="skeleton-header">
+        <view class="skeleton-avatar skeleton-shimmer"></view>
+        <view class="skeleton-info">
+          <view class="skeleton-line skeleton-shimmer" style="width: 40%; height: 24px;"></view>
+          <view class="skeleton-line skeleton-shimmer" style="width: 60%; height: 16px; margin-top: 8px;"></view>
+        </view>
+      </view>
+      <view class="skeleton-body">
+        <view class="skeleton-line skeleton-shimmer" style="width: 100%; height: 16px;"></view>
+        <view class="skeleton-line skeleton-shimmer" style="width: 80%; height: 16px; margin-top: 8px;"></view>
+        <view class="skeleton-line skeleton-shimmer" style="width: 90%; height: 16px; margin-top: 8px;"></view>
+      </view>
+      <view class="skeleton-tabs">
+        <view class="skeleton-tab skeleton-shimmer" wx:for="{{5}}" wx:for-item="i" wx:key="*this" style="width: 60px; height: 32px; margin-right: 8px;"></view>
+      </view>
+    </view>
+
+    <!-- 失败态：分别交代「网络不通（可重试）」与「确无此人」，
+         不再一律报「人物不存在」，也不留白屏 -->
+    <view class="load-state" wx:if="{{!loading && !figure}}">
+      <view class="load-state-glyph {{loadError === 'network' ? 'css-net' : 'css-moon'}}">{{loadError === 'network' ? '!' : ''}}</view>
+      <text class="load-state-title">{{loadError === 'network' ? '网络不畅，未能加载' : (loadError === 'param' ? '缺少人物编号' : '未找到该人物')}}</text>
+      <text class="load-state-desc">{{loadError === 'network' ? '检查网络后可以重新加载，或稍后再来' : (loadError === 'param' ? '请从列表或搜索结果重新进入' : '该编号可能已合并或删除')}}</text>
+      <view class="load-state-btn" wx:if="{{loadError === 'network'}}" bindtap="retryLoad">
+        <text>重新加载</text>
+      </view>
+      <view class="load-state-link" bindtap="goTimeline">
+        <text>去看看大事年表</text>
+      </view>
+    </view>
+
+    <!-- ===== 档案页 · 深色身份头（2026-11-08 整合版） =====
+         与「方案 B」头部一致，但按用户本轮修订调整次序：
+           姓名 → 拼音 → 国家·生卒 → 标签（文学家/唐宋八大家…）→ 三数 → 收藏
+         [已取消] 头部标语（2026-11-08）：原取生平首句，与下方「生平介绍」正文重复，整段移除，
+         取值逻辑 buildTagline 一并删除；不要再加回来，人物介绍只在「生平介绍」出现一次。
+         [关键] 本头随页面级滚动一起收起；滚过大头部后顶部换成深色吸顶条
+         （见文件上方 .b2-mini-wrap--fixed / showArchiveBar，2026-11-08 统一顶部样式）。 -->
+    <view class="b2-hero" wx:if="{{figure && pageTab === 'archive'}}" style="padding-top: {{navBarHeight + 8}}px;">
+      <view class="b2-head">
+        <view class="b2-seal">
+          <image wx:if="{{avatarView.image}}" class="b2-seal-img" src="{{avatarView.image}}" mode="aspectFill" lazy-load="{{true}}" binderror="onAvatarError" />
+          <text wx:else class="b2-seal-text">{{sealText}}</text>
+        </view>
+        <view class="b2-id">
+          <view class="b2-nameline">
+            <text class="b2-name">{{figure.name}}</text>
+            <text class="b2-era" wx:if="{{figure.dynasty}}">{{figure.dynasty}}</text>
+            <!-- 人物编号：恒显的「藏品编号」小签，不抢姓名视觉，但每一档都在 -->
+            <text class="b2-no" wx:if="{{figure.id}}">#{{figure.id}}</text>
+          </view>
+          <!-- 用户本轮修订：拼音紧贴姓名下方（不是排到 meta 之后） -->
+          <text class="b2-name-en" wx:if="{{figure.nameEn}}">{{figure.nameEn}}</text>
+          <!-- meta 只含「国家 · 生卒」：朝代已在姓名行右侧胶囊里，不再重复 -->
+          <text class="b2-meta" wx:if="{{figureMeta}}">{{figureMeta}}</text>
+          <!-- 帝王序号（如「明朝第十二位皇帝」）：服务端随人物下发 emperor 才渲染 -->
+          <text class="b2-emperor" wx:if="{{figure.emperorLabel}}">{{figure.emperorLabel}}</text>
+        </view>
+      </view>
+
+      <!-- 身份标签：紧接姓名块，是头部最后一行文字（标语已移除，见上方说明） -->
+      <view class="b2-tags" wx:if="{{figure.tagChips && figure.tagChips.length > 0}}">
+        <text class="b2-tag" wx:for="{{figure.tagChips}}" wx:key="this">{{item}}</text>
+      </view>
+
+      <!-- 三数：全部取真实数据（大事条数 / 作品条数 / 关联人物数，后者未就绪时显示 —） -->
+      <view class="b2-stats" wx:if="{{heroStats.length > 0}}">
+        <view class="b2-stat" wx:for="{{heroStats}}" wx:key="label">
+          <text class="b2-stat-v">{{item.value}}</text>
+          <text class="b2-stat-l">{{item.label}}</text>
+        </view>
+      </view>
+
+      <view class="b2-rule"></view>
+      <!-- 操作条只留「收藏」：世系、足迹已移到底部标签栏，不在头部重复入口 -->
+      <view class="b2-actions">
+        <view class="b2-act {{faved ? 'b2-act-on' : ''}}" hover-class="b2-act-hover" bindtap="onToggleFav">
+          <text class="b2-ico">藏</text><text>{{faved ? '已收藏' : '收藏'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===================== 档案（默认页） =====================
+         结构：生平介绍（短篇直出 / 长篇折叠） → 档案与延伸（可折叠分段）
+         分段顺序：基础档案 / 作品与成果 / 纪念与遗产 / 时代背景 / 相关文章
+                   + 组织机构 / 成就与荣誉（按「保留不删」追加在最后） -->
+    <view class="arc-view" wx:if="{{figure && pageTab === 'archive'}}">
+      <!-- 古籍引文式生平导语：标题左对齐。
+           按篇幅分档（2026-11-08）：≤10 行的短篇直出全文、不显示「展开全部」；
+           更长的才折叠，折叠态保留约 10 行（bio-folded），点「展开全部」看全文、可再收起。 -->
+      <view class="b2-quote">
+        <view class="bio-hd">
+          <view class="bio-hd-bar"></view>
+          <text class="bio-hd-title">生平介绍</text>
+          <view class="bio-hd-more" wx:if="{{bioFoldable}}" bindtap="toggleBio">
+            <text class="bio-hd-more-t">{{bioExpanded ? '收起' : '展开全部'}}</text>
+            <view class="{{bioExpanded ? 'css-tri-up' : 'css-tri-down'}}"></view>
+          </view>
+        </view>
+        <view class="bio-body">
+          <text class="b2-quote-mark">「</text>
+          <view class="bio-content {{bioFoldable && !bioExpanded ? 'bio-folded' : ''}}">
+            <view class="bio-inner">
+              <text class="bio-text">{{figure.fullBio || figure.bio || '仅存姓名，生平事迹待考。'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="arc-card">
+        <view class="arc-hd">
+          <text class="arc-hd-t">档案与延伸</text>
+          <text class="arc-hd-s">{{archiveFilled}} 段有内容</text>
+        </view>
+
+        <!-- 基础档案：17 行字段与取值全保留（buildProfileRows），一个都没删。
+             默认只渲染有值行；斜体「待补充」收进「展开全部 17 项」后再显示。 -->
+        <view class="arc-sec {{arcOpen.profile ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="profile" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">基础档案</text>
+            <text class="arc-sh-n">{{tabCounts.profile}} 项</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.profile}}">
+            <view class="profile-grid b2-profile-grid">
+              <view class="profile-row" wx:for="{{profileAllExpanded ? profileRows : profileRowsFilled}}" wx:key="label">
+                <text class="profile-label">{{item.label}}</text>
+                <text class="profile-value {{item.value ? '' : 'profile-value-empty'}}">{{item.value || '待补充'}}</text>
+              </view>
+            </view>
+            <view class="b2-prof-more" wx:if="{{profileRowsFilled.length < profileTotal}}" bindtap="toggleProfileAll">
+              <text>{{profileAllExpanded ? '收起未收录字段' : '展开全部 ' + profileTotal + ' 项'}}</text>
+              <text class="b2-prof-more-arrow">›</text>
+            </view>
+            <!-- 薄档收尾：一句话 + 一个出口，不做插画、不放大空白 -->
+            <view class="b2-empty" wx:if="{{isThin}}">
+              <text class="b2-empty-t">本站暂未收录更多档案</text>
+              <text class="b2-empty-h">可看看同一时期的其他人物</text>
+              <view class="b2-empty-go" bindtap="goTimeline">看同期人物 ›</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 作品与成果 -->
+        <view class="arc-sec {{arcOpen.works ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="works" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">作品与成果</text>
+            <text class="arc-sh-n">{{tabCounts.works}} 条</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.works}}">
+            <view class="works-grid" wx:if="{{workCards.length > 0}}">
+              <view class="work-card" wx:for="{{workCards}}" wx:key="title">
+                <text class="work-category" wx:if="{{item.category}}">{{item.category}}</text>
+                <text class="work-title">{{item.title}}</text>
+                <text class="work-year">{{item.year}}</text>
+                <text class="work-desc" wx:if="{{item.description}}">{{item.description}}</text>
+                <view class="meta-rows" wx:if="{{item.metaRows.length > 0}}">
+                  <view class="meta-row" wx:for="{{item.metaRows}}" wx:for-item="m" wx:key="label">
+                    <text class="meta-label">{{m.label}}</text>
+                    <text class="meta-value">{{m.value}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="empty-relations" wx:else>
+              <text class="empty-text">暂无作品与成果数据</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 纪念与遗产（故居 / 纪念馆 / 墓地 / 祠堂 / 命名物 / 纪念活动 / 纪念日 / 后世影响 / 文化符号 / 数字化） -->
+        <view class="arc-sec {{arcOpen.legacy ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="legacy" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">纪念与遗产</text>
+            <text class="arc-sh-n">{{tabCounts.legacy}} 条</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.legacy}}">
+            <view class="group-block" wx:for="{{legacyGroups}}" wx:key="category" wx:for-item="group">
+              <view class="group-title-row">
+                <text class="group-title">{{group.category}}</text>
+              </view>
+              <view class="legacy-item" wx:for="{{group.items}}" wx:key="title" wx:for-item="it">
+                <text class="legacy-title">{{it.title}}</text>
+                <text class="legacy-desc" wx:if="{{it.description}}">{{it.description}}</text>
+                <view class="meta-rows" wx:if="{{it.metaRows.length > 0}}">
+                  <view class="meta-row" wx:for="{{it.metaRows}}" wx:for-item="m" wx:key="label">
+                    <text class="meta-label">{{m.label}}</text>
+                    <text class="meta-value">{{m.value}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="empty-relations" wx:if="{{legacyGroups.length === 0}}">
+              <text class="empty-text">暂无纪念与遗产数据</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 时代背景（时期/政治大事/经济状况/文化事件/科技进展/对外关系/同代人物/前后对比/社会风气/对人物的影响） -->
+        <view class="arc-sec {{arcOpen.eraContext ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="eraContext" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">时代背景</text>
+            <text class="arc-sh-n">{{tabCounts.eraContext}} 条</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.eraContext}}">
+            <view class="group-block" wx:for="{{eraGroups}}" wx:key="category" wx:for-item="group">
+              <view class="group-title-row">
+                <text class="group-title">{{group.category}}</text>
+              </view>
+              <view class="era-item" wx:for="{{group.items}}" wx:key="title" wx:for-item="it">
+                <text class="era-year" wx:if="{{it.year}}">{{it.year}}</text>
+                <view class="era-body">
+                  <text class="era-title">{{it.title}}</text>
+                  <text class="era-desc" wx:if="{{it.description}}">{{it.description}}</text>
+                </view>
+              </view>
+            </view>
+            <view class="empty-relations" wx:if="{{eraGroups.length === 0}}">
+              <text class="empty-text">暂无时代背景数据</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 相关文章 -->
+        <view class="arc-sec {{arcOpen.articles ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="articles" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">相关文章</text>
+            <text class="arc-sh-n">{{tabCounts.articles}} 篇</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.articles}}">
+            <view wx:if="{{relatedArticles.length > 0}}">
+              <view class="rel-article-item" wx:for="{{relatedArticles}}" wx:key="id" data-id="{{item.id}}" bindtap="onReadArticle">
+                <view class="rel-article-body">
+                  <text class="rel-article-title">{{item.title}}</text>
+                  <text class="rel-article-summary">{{item.summary}}</text>
+                  <view class="rel-article-footer">
+                    <text class="rel-article-topic">{{item.topicIcon}} {{item.topicName}}</text>
+                    <text class="rel-article-era">{{item.era}}</text>
+                  </view>
+                </view>
+                <text class="rel-article-arrow">›</text>
+              </view>
+            </view>
+            <view class="empty-relations" wx:else>
+              <text class="empty-text">暂无相关文章</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 组织机构（「保留不删」：原 tab 内容搬到这里，位于相关文章之后、可折叠） -->
+        <view class="arc-sec {{arcOpen.organizations ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="organizations" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">组织机构</text>
+            <text class="arc-sh-n">{{tabCounts.organizations}} 条</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.organizations}}">
+            <view class="group-block" wx:for="{{orgGroups}}" wx:key="role" wx:for-item="group">
+              <view class="group-title-row">
+                <text class="group-title">{{group.role}}</text>
+                <text class="group-count">{{group.items.length}}</text>
+              </view>
+              <view class="org-item" wx:for="{{group.items}}" wx:key="name" wx:for-item="org">
+                <view class="org-head">
+                  <text class="org-name">{{org.name}}</text>
+                  <text class="org-year" wx:if="{{org.yearText}}">{{org.yearText}}</text>
+                </view>
+                <text class="org-desc" wx:if="{{org.description}}">{{org.description}}</text>
+                <view class="meta-rows" wx:if="{{org.metaRows.length > 0}}">
+                  <view class="meta-row" wx:for="{{org.metaRows}}" wx:for-item="m" wx:key="label">
+                    <text class="meta-label">{{m.label}}</text>
+                    <text class="meta-value">{{m.value}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="empty-relations" wx:if="{{orgGroups.length === 0}}">
+              <text class="empty-text">暂无组织机构数据</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 成就与荣誉（「保留不删」，同上） -->
+        <view class="arc-sec {{arcOpen.achievements ? 'arc-sec-on' : ''}}">
+          <view class="arc-sh" data-key="achievements" bindtap="toggleArc" hover-class="arc-sh-hover">
+            <text class="arc-sh-t">成就与荣誉</text>
+            <text class="arc-sh-n">{{tabCounts.achievements}} 条</text>
+            <text class="arc-sh-a">›</text>
+          </view>
+          <view class="arc-sb" wx:if="{{arcOpen.achievements}}">
+            <view class="group-block" wx:for="{{achievementGroups}}" wx:key="category" wx:for-item="group">
+              <view class="group-title-row">
+                <text class="group-title">{{group.category}}</text>
+                <text class="group-count">{{group.items.length}}</text>
+              </view>
+              <view class="ach-item" wx:for="{{group.items}}" wx:key="title" wx:for-item="it">
+                <view class="ach-head">
+                  <text class="ach-title">{{it.title}}</text>
+                  <text class="ach-year" wx:if="{{it.year}}">{{it.year}}</text>
+                </view>
+                <text class="ach-org" wx:if="{{it.org}}">{{it.org}}</text>
+                <text class="ach-desc" wx:if="{{it.description}}">{{it.description}}</text>
+              </view>
+            </view>
+            <view class="empty-relations" wx:if="{{achievementGroups.length === 0}}">
+              <text class="empty-text">暂无成就与荣誉数据</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===================== 年表（只显示年表） =====================
+         2026-11-08：去掉卡片上方的「| 大事年表 N 条」小节标题，页面直接进入卡片；
+         摘要文案统一写「时间线」。 -->
+    <view class="arc-view" wx:elif="{{figure && pageTab === 'timeline'}}" style="padding-top: 8rpx;">
+      <!-- ===== 双人生命线入口（2026-11-15，从底部移到顶部）=====
+           只在「精选 + 生卒双全」时出现（dualEntry 由 _initDetail 用 canOpenDual 结算）。
+           全库生卒双全仅 7.09%，不放开条件会让绝大多数人点进去看到空白，
+           故这里宁可不出入口，也不给半截线。
+           [位置] 放在时间轴列表之前：有的人物几十条事件，入口放底部多数人滚不到。
+           它是独立卡片（自带描边与圆角），不与 tab 切换条、阶段卡头形成双重分隔线。 -->
+      <!-- 引导锚点 guide-dual-entry：入口上滑会收起（max-height:0），
+           引导切到年表时会把 dualEntryHidden 清掉再测量，量不到则按 optional 跳过 -->
+      <view class="dual-entry {{dualEntryHidden ? 'is-hidden' : ''}}" id="guide-dual-entry" wx:if="{{dualEntry}}" bindtap="openDualPicker" hover-class="dual-entry-hover">
+        <view class="dual-entry-main">
+          <text class="dual-entry-k">双人生命线</text>
+          <text class="dual-entry-t">把两个人放到同一条时间上</text>
+          <text class="dual-entry-s">选一位生卒可算的人，看同在多少年、谁先走</text>
+        </view>
+        <text class="dual-entry-arrow">›</text>
+      </view>
+
+      <block wx:if="{{hasEvents}}">
+        <!-- 每个阶段一张卡片。timelineGroups 恒为卡片数组：
+             有 phase 的人物按 phase.no 分卡，卡头＝序号 + 阶段名 + 区间；
+             无 phase 的人物只有一张卡，卡头不写「大事年表」，只保留能算出的年份区间，
+             没有区间时整行头行都不渲染，不编造阶段名。 -->
+        <view class="tl-card" wx:for="{{timelineGroups}}" wx:key="key" wx:for-item="group" wx:for-index="gi">
+          <!-- 引导锚点只给首张卡片的阶段头：整卡可能高于视口，量孔会失败；
+               卡头仅在「有阶段或年份区间」时渲染，缺失时引导按 optional 跳过该步 -->
+          <view class="tl-hd" id="{{gi === 0 ? 'guide-tl-hd' : ''}}" wx:if="{{group.isPhase || group.range}}">
+            <view class="tl-hd-no" wx:if="{{group.noLabel}}">{{group.noLabel}}</view>
+            <text class="tl-hd-name" wx:if="{{group.isPhase}}">{{group.name}}</text>
+            <text class="tl-hd-range" wx:if="{{group.range}}">{{group.range}}</text>
+          </view>
+          <!-- 单个事件两栏：左年份（橙色小字）+ 右标题 / 描述 / 地点。
+               2026-11-15：只标朝代的连续条目收进「朝代区间带」（带首 + 灰底竖条），
+               带内条目左列年份留空、右侧标题描述不变；未详/不详在末尾单独分隔。 -->
+          <block wx:for="{{group.events}}" wx:key="_k" wx:for-item="item">
+            <!-- 区间带带首：朝代 + 起止区间（争议朝代不写年份）+ 朝代区间 + 条数 -->
+            <view class="tl-band-hd" wx:if="{{item._bandFirst}}">
+              <text class="tl-band-name">{{item._bandName}}</text>
+              <text class="tl-band-range" wx:if="{{item._bandRange}}">{{item._bandRange}}</text>
+              <text class="tl-band-note">朝代区间</text>
+              <text class="tl-band-count">{{item._bandCount}} 条</text>
+            </view>
+            <!-- 无法定年分隔：未详/不详/空年份已由排序统一压到末尾 -->
+            <view class="tl-undated-hd" wx:if="{{item._undatedFirst}}">
+              <text class="tl-undated-txt">以下 {{item._undatedCount}} 条无法定年</text>
+            </view>
+            <view class="tl-ev{{item._band ? ' is-band' : ''}}{{item._bandLast ? ' is-band-last' : ''}}">
+              <view class="tl-ev-y" wx:if="{{!item._band}}">
+                <text class="tl-year{{item._unknown ? ' is-unknown' : (item._period ? ' is-period' : '')}}">{{item._unknown ? '年份不详' : item.year}}</text>
+              </view>
+              <view class="tl-ev-main">
+                <text class="tl-ev-title">{{item.title}}</text>
+                <text class="tl-ev-desc" wx:if="{{item.description}}">{{item.description}}</text>
+                <text class="event-location" wx:if="{{item.location}}">{{item.location}}</text>
+              </view>
+            </view>
+          </block>
+        </view>
+      </block>
+      <view class="arc-card arc-card-pad" wx:else>
+        <!-- 占位文案已在 formatEventYears 里剔除；剔完为空时不能留白板 -->
+        <view class="empty-relations">
+          <text class="empty-title">暂无可考的生平事件</text>
+          <text class="empty-text">本库暂未收录该人物的具体事迹与年份，未收录不代表不存在。</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===================== 关系（图谱 / 列表二选一） =====================
+         2026-11-09：去掉「| 人物关系 N 位」区块标题栏，原位换成「图谱 / 列表」切换；
+         默认停图谱。两个视图共用同一份 relationData，切换只改 relView（一次 setData），
+         不重新请求、不重排已加载数据。 -->
+    <view class="arc-view" wx:elif="{{figure && pageTab === 'relations'}}" style="padding-top: 8rpx;">
+      <view class="rel-switch" id="guide-rel-switch">
+        <view class="rel-switch-btn {{relView === 'graph' ? 'rel-switch-on' : ''}}" data-view="graph" bindtap="switchRelView">图谱</view>
+        <view class="rel-switch-btn {{relView === 'list' ? 'rel-switch-on' : ''}}" data-view="list" bindtap="switchRelView">列表</view>
+      </view>
+      <view class="arc-card arc-card-pad">
+        <!-- 关系加载占位（2026-11-09 切换提速）：切到关系标签的第一帧就出骨架，
+             数据回来再填内容；预取命中时这里通常一闪而过甚至看不到。 -->
+        <view class="relations-loading" wx:if="{{relationsLoading}}">
+          <view class="rel-skel" wx:for="{{3}}" wx:for-item="i" wx:key="*this">
+            <view class="rel-skel-av skeleton-shimmer"></view>
+            <view class="rel-skel-body">
+              <view class="rel-skel-line skeleton-shimmer" style="width: 40%;"></view>
+              <view class="rel-skel-line skeleton-shimmer" style="width: 78%;"></view>
+            </view>
+          </view>
+          <!-- 引导进行中不拉关系数据（guideHold），骨架留着但文案说明原因，
+               避免用户以为页面坏了 -->
+          <text class="loading-text">{{guideHold ? '先看完引导，再加载关系数据' : '加载关系数据中...'}}</text>
+        </view>
+        <!-- 图谱态：只在「图谱」下挂载。wx:if 而非 hidden —— ec-canvas 实例按需创建，
+             列表态不初始化 canvas，避免两个视图同时占内存。 -->
+        <relation-graph
+          wx:if="{{!relationsLoading && relView === 'graph' && relationData.relationList.length > 0}}"
+          nodes="{{relationData.nodes}}"
+          links="{{relationData.links}}"
+          currentId="{{figure.id}}"
+          bindnodeclick="goToFigure"
+        />
+        <!-- 列表态：与图谱共用同一份 relationData.relationList，切换不重新请求 -->
+        <view class="relation-list" wx:if="{{!relationsLoading && relView === 'list' && relationData.relationList.length > 0}}">
+          <view class="relation-item" wx:for="{{relationData.relationList || []}}" wx:key="targetId" data-id="{{item.targetId}}" bindtap="goToFigure">
+            <view class="relation-avatar">
+              <image wx:if="{{item.avatarImage}}" class="relation-avatar-img" src="{{item.avatarImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="onRelationAvatarError" data-index="{{index}}" />
+              <text wx:else class="relation-emoji">{{item.avatarText}}</text>
+            </view>
+            <view class="relation-info">
+              <view class="relation-name-row">
+                <text class="relation-name">{{item.name}}</text>
+                <view class="relation-category-tag" style="border-color: {{item.color}};">
+                  <text class="relation-category-text" style="color: {{item.color}};">{{item.category}}</text>
+                </view>
+              </view>
+              <view class="relation-sub-row">
+                <text class="relation-type">{{item.displayType || item.type}}</text>
+              </view>
+              <text class="relation-desc">{{item.description}}</text>
+            </view>
+            <text class="relation-arrow">›</text>
+          </view>
+          <!-- 分页：50 条以上关系的 701 人不再一次铺满整屏 -->
+          <view class="rel-more" wx:if="{{relMore > 0}}" bindtap="showMoreRelations">
+            <text class="rel-more-text">展开更多（{{relationData.relationList.length}} / {{relTotal}}）</text>
+          </view>
+        </view>
+        <!-- 失败 / 空态放在两视图之外：图谱态也要能看到「重新加载」与出口，
+             不能因为切到图谱就把错误态藏进列表容器里。 -->
+        <view class="empty-relations" wx:if="{{!relationsLoading && relationsError}}">
+          <text class="empty-text">关系数据加载失败</text>
+          <view class="retry-btn" bindtap="loadRelationData">重新加载</view>
+        </view>
+        <!-- 无关系的另一半人：滚到底不再是无出口的死胡同 -->
+        <view class="empty-relations" wx:elif="{{!relationsLoading && !relationsError && (!relationData.relationList || relationData.relationList.length === 0)}}">
+          <text class="empty-text">暂无关联人物</text>
+          <text class="empty-hint">本站尚未收录此人物的亲属与交游</text>
+          <view class="empty-actions">
+            <view class="empty-btn" bindtap="goTimeline">看同期人物</view>
+            <view class="empty-btn ghost" bindtap="scrollToTop">回到顶部</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <articleOverlay currentArticle="{{currentArticle}}" bind:close="onCloseArticle" bind:nav="onOverlayNav" wx:if="{{currentArticle}}" />
+
+    <view class="bottom-spacer"></view>
+  </view>
+
+  <!-- 回到顶部：fixed，阈值按屏高算（见 onPageScroll）；抬高到标签栏之上 -->
+  <view class="to-top" wx:if="{{showTop && figure}}" bindtap="scrollToTop">
+    <text class="to-top-arrow">↑</text>
+  </view>
+
+  <!-- ===== 使用引导（文案唯一来源：config/guide-steps.js::detail） =====
+       state：关系 / 年表锚点要先切标签才渲染，由组件通知页面切过去；
+       done：看完或跳过时回到进入引导前的标签，不把用户留在中途切过去的页；
+       scrollto：页面级滚动（无 scroll-view），容器取视口，按「当前滚动量 + 锚点矩形」算 scrollTop。 -->
+  <guide-layer
+    id="guideLayer"
+    bind:scrollto="onGuideScrollTo"
+    bind:state="onGuideState"
+    bind:done="onGuideDone"
+  />
+
+  <!-- ===== 底部五标签（共享模板 templates/dock/dock.wxml）=====
+       档案在最左且默认进入；足迹在关系右边。
+       世系 / 足迹沿用线上既有分包页（点击即 navTo，样式与现在完全一致）；
+       档案 / 年表 / 关系为本页内切换，只显示对应内容。
+       active 取 pendingTab || pageTab：跳世系 / 足迹时手指抬起即点亮，返回后由 onShow 清掉 pendingTab。 -->
+  <block wx:if="{{figure}}">
+    <template is="dock" data="{{active: pendingTab || pageTab}}" />
+  </block>
+
+  <!-- ===== 双人生命线 · 半屏选人（2026-11-15）=====
+       入口只在年表 tab 底部出现，这里做成半屏 sheet：
+       先按「同时代 / 其他时代 / 年份不全」分组，组内按并存年数降序；
+       年份双缺者不进列表（dual-life.rankCandidates 已过滤），不让人选到空白。 -->
+  <view class="dual-picker" wx:if="{{dualPickerOpen}}">
+    <view class="dual-picker-mask" bindtap="closeDualPicker" catchtouchmove="noop"></view>
+    <view class="dual-picker-sheet">
+      <view class="dual-picker-hd">
+        <view class="dual-picker-hd-main">
+          <text class="dual-picker-t">选一位同看的人</text>
+          <text class="dual-picker-s">优先同时代；年份不全者单列，只能看单线</text>
+        </view>
+        <text class="dual-picker-x" bindtap="closeDualPicker">×</text>
+      </view>
+
+      <view class="dual-picker-search">
+        <text class="dual-picker-search-ico">搜</text>
+        <input class="dual-picker-input" value="{{dualPickerKeyword}}" placeholder="搜名字，如 杜甫" placeholder-class="dual-picker-ph" confirm-type="search" bindinput="onDualSearchInput" />
+      </view>
+
+      <scroll-view scroll-y class="dual-picker-body">
+        <view class="dual-picker-loading" wx:if="{{dualPickerLoading}}">
+          <view class="dual-picker-spin"></view>
+          <text>正在找同时代的人…</text>
+        </view>
+        <block wx:else>
+          <view class="dual-picker-group" wx:for="{{dualPickerGroups}}" wx:key="key" wx:for-item="g">
+            <view class="dual-picker-gh">
+              <text class="dual-picker-gt">{{g.title}}</text>
+              <text class="dual-picker-gs">{{g.sub}}</text>
+            </view>
+            <view class="dual-picker-item {{dualPickerSelected && dualPickerSelected.id === item.id ? 'dual-picker-item-on' : ''}}"
+              wx:for="{{g.items}}" wx:key="id" wx:for-item="item"
+              data-id="{{item.id}}" data-name="{{item.name}}" data-years="{{item.yearsText}}"
+              bindtap="pickDualCandidate">
+              <view class="dual-picker-av">{{item.initial}}</view>
+              <view class="dual-picker-info">
+                <view class="dual-picker-nmline">
+                  <text class="dual-picker-nm">{{item.name}}</text>
+                  <text class="dual-picker-dyn" wx:if="{{item.dynasty}}">{{item.dynasty}}</text>
+                </view>
+                <text class="dual-picker-yr">{{item.yearsText}}</text>
+              </view>
+              <view class="dual-picker-meta" wx:if="{{item.overlapText}}">
+                <text class="dual-picker-ov">{{item.overlapText}}</text>
+                <text class="dual-picker-diff" wx:if="{{item.diffText}}">{{item.diffText}}</text>
+              </view>
+              <text class="dual-picker-meta-partial" wx:else>{{item.stateLabel}}</text>
+              <view class="dual-picker-check {{dualPickerSelected && dualPickerSelected.id === item.id ? 'dual-picker-check-on' : ''}}">{{dualPickerSelected && dualPickerSelected.id === item.id ? '✓' : ''}}</view>
+            </view>
+          </view>
+
+          <view class="dual-picker-empty" wx:if="{{dualPickerTip}}">
+            <text>{{dualPickerTip}}</text>
+          </view>
+        </block>
+      </scroll-view>
+
+      <view class="dual-picker-ft">
+        <view class="dual-picker-sel">
+          <text wx:if="{{dualPickerSelected}}">已选 {{dualPickerSelected.name}} · {{dualPickerSelected.yearsText}}</text>
+          <text wx:else>还没选人</text>
+        </view>
+        <view class="dual-picker-go {{dualPickerSelected ? '' : 'dual-picker-go-off'}}" bindtap="confirmDualPick">
+          <text>与他同看</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

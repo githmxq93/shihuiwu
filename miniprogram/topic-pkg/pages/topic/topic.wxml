@@ -1,0 +1,75 @@
+<view class="page-wrapper">
+  <!-- 顶部导航栏（fixed 组件 + 实体占位） -->
+  <nav-bar title="{{topicInfo.title || topicTitle}}" safeAreaTop="{{safeAreaTop}}" dark="{{true}}" />
+  <view style="height: {{safeAreaTop + 44}}px; flex-shrink: 0;"></view>
+
+  <!-- 吸顶条：滚过头部后浮现。fixed 定在导航栏下沿，不参与 scroll-view 滚动。
+       深色底与头部同一套渐变；右侧带一行「21 篇 · 更新 10-01」，取不到更新日期时只留篇数 -->
+  <view class="sticky-bar {{isSticky ? 'is-on' : ''}}" style="top: {{safeAreaTop + 44}}px;" wx:if="{{!loadFailed}}">
+    <text class="sticky-title">{{topicInfo.title || topicTitle}}</text>
+    <text class="sticky-meta" wx:if="{{stickyMeta}}">{{stickyMeta}}</text>
+  </view>
+
+  <!-- 文章列表 — 可滚动；头部放进 scroll-view 才会随手势滚出，吸顶条据此出现 -->
+  <scroll-view class="content-scroll" scroll-y enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}" bindscroll="onScroll" bindscrolltolower="onLoadMore" lower-threshold="100">
+
+    <!-- 专题头部（C 案「题签头」）：深底 + 下沿 20rpx 圆角。
+         衬线标题 + 数据行 → 简介（「卷」印章与时期签已按反馈移除，结构保持原样） -->
+    <view class="hero-section" wx:if="{{!loadFailed}}">
+      <view class="hero-row">
+        <view class="hero-heading">
+          <view class="hero-title">{{topicInfo.title || topicTitle}}</view>
+          <view class="hero-meta" wx:if="{{articleCount}}">
+            <text class="meta-num">{{articleCount}}</text>
+            <text class="meta-label"> 篇</text>
+            <text class="meta-dot" wx:if="{{statsWordNum}}">·</text>
+            <text class="meta-num" wx:if="{{statsWordNum}}">{{statsWordNum}}</text>
+            <text class="meta-label" wx:if="{{statsWordNum}}"> {{statsWordUnit}}</text>
+            <text class="meta-dot" wx:if="{{statsUpdated}}">·</text>
+            <text class="meta-label" wx:if="{{statsUpdated}}">更新 {{statsUpdated}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="hero-desc" wx:if="{{topicInfo.description}}">{{topicInfo.description}}</view>
+    </view>
+    <!-- 加载中 -->
+    <view class="state-block" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="state-text">正在加载专题…</text>
+    </view>
+
+    <!-- 加载失败 -->
+    <view class="state-block" wx:elif="{{loadFailed}}">
+      <text class="state-text">{{errorType === 'notfound' ? '专题不存在或已下线' : '网络连接失败，请检查网络后重试'}}</text>
+      <view class="state-btn" wx:if="{{errorType !== 'notfound'}}" bindtap="onRetry">重新加载</view>
+      <view class="state-btn" wx:else bindtap="onBack">返回</view>
+    </view>
+
+    <!-- 空列表 -->
+    <view class="state-block" wx:elif="{{!articles.length}}">
+      <text class="state-text">该专题下暂无文章</text>
+    </view>
+
+    <!-- 文章列表 -->
+    <view class="article-list" wx:else>
+      <view class="article-card" wx:for="{{articles}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapArticle">
+        <view class="article-accent"></view>
+        <view class="article-number">{{index + 1}}</view>
+        <view class="article-body">
+          <view class="article-title">{{item.title}}</view>
+          <view class="article-summary">{{item.summary}}</view>
+          <view class="article-footer">
+            <view class="article-figures" wx:if="{{item.relatedFigures.length}}">
+              <text class="figures-label">关联人物：</text>
+              <text class="figures-name" wx:for="{{item.relatedFigures}}" wx:for-item="fig" wx:key="name">{{fig.name}}<text wx:if="{{index < item.relatedFigures.length - 1}}">、</text></text>
+            </view>
+          </view>
+        </view>
+        <text class="article-arrow">›</text>
+      </view>
+    </view>
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <articleOverlay currentArticle="{{currentArticle}}" bind:close="onCloseArticle" bind:nav="onOverlayNav" wx:if="{{currentArticle}}" />
+</view>

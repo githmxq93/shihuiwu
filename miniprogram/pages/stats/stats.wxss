@@ -1,0 +1,1020 @@
+/* 实时看板 · B 章节叙事（按 _design/dashboard 恢复版落码）
+   口径：
+   1) 375 设计稿 ×2 = rpx，所有 rpx 都取偶数；分隔线用 1px（rpx 偶数约束不适用于非 2 倍像素线）。
+   2) letter-spacing 全部为 0。
+   3) 承载正文/注释的文字统一 --text-secondary(#6e5d48，纸底 5.4:1)；
+      金色小字统一 #8f5326(5.3:1)，不用 #75654f(3.7:1) / #b5713a(3.3:1) 做小字。 */
+
+.st-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.page-scroll {
+  flex: 1;
+  height: 100vh;
+  min-height: 0;
+}
+
+/* ===== 页头（mast） ===== */
+
+.hero {
+  padding: 12rpx 32rpx 16rpx;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 2rpx 16rpx;
+  border: 1px solid rgba(181, 113, 58, 0.35);
+  border-radius: 1000rpx;
+  font-size: 18rpx;
+  line-height: 1.6;
+  color: var(--accent-gold-ink);
+}
+
+.hero-title {
+  margin-top: 10rpx;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: 58rpx;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.hero-title-accent {
+  color: var(--accent-gold-ink);
+}
+
+.hero-subtitle {
+  margin-top: 8rpx;
+  font-size: var(--fs-20);
+  color: var(--text-secondary);
+}
+
+/* ===== 吸顶章节条 ===== */
+
+.chapters {
+  display: flex;
+  gap: 8rpx;
+  padding: 14rpx 28rpx 0;
+  background: var(--bg-primary);
+}
+
+/* 固定在导航下方（top 由 WXML 按 navH 注入），同高占位在文档流里防跳动。
+ * z-index 70：高于窄条 60 与顶部遮罩 55，低于 nav-bar 100 —— 三条各占一段高度，互不遮挡 */
+.chapters--fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  padding-bottom: 2rpx;
+  border-bottom: 1px solid rgba(181, 113, 58, 0.14);
+  box-shadow: 0 2rpx 12rpx -8rpx rgba(90, 70, 40, 0.35);
+}
+
+/* ===== 顶部不透明遮罩（0 → navH） =====
+ * nav-bar 自身背景是「不透明 → 底部 40% 渐隐透明」的渐变，而整页是 scroll-view、
+ * 正文能滚到屏幕最顶端，所以要在它下面补一层实底，否则导航条下半段会透出正在滚动的数字。
+ * z-index 55：高于滚动内容（static，z=0），低于窄条 60 / 章节条 70 / nav-bar 100。
+ * 高度由 WXML 内联 navH 注入（safeAreaTop + 44），不用 100vh，避免矮屏多盖正文。 */
+.top-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  background: var(--bg-primary);
+}
+
+/* ===== 收起态窄标题条（44px = 88rpx） =====
+ * fixed 覆盖，不进文档流：出现/消失只改 opacity / transform，高度恒定 88rpx，
+ * 所以滚动过程中 scrollTop 与各段 offsetTop 都不受影响（不需要二次重测）。
+ * 层叠：顶部遮罩 55 < 窄条 60 < 章节条 70 < nav-bar 100，三条互不遮挡。
+ * 关闭态 pointer-events:none，手指滑动照常穿透到下面的 scroll-view。 */
+.stick-hd {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  box-sizing: border-box;
+  background: var(--bg-primary);
+  border-bottom: 1px solid rgba(181, 113, 58, 0.14);
+  box-shadow: 0 2rpx 12rpx -8rpx rgba(90, 70, 40, 0.35);
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: var(--fs-34);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(-12rpx);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.stick-hd.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stick-hd-accent {
+  color: var(--accent-gold-ink);
+}
+
+.chap {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  padding: 10rpx 0 14rpx;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+}
+
+/* 章节页签：整块视觉高度不足 88rpx，透明层补到 44px；
+   章节条上下留白 14rpx / 2rpx，超出部分仅约 3rpx，不压到下方内容。 */
+.chap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+.chap.on {
+  color: var(--text-primary);
+  font-weight: 700;
+  border-bottom-color: var(--accent-gold-ink);
+}
+
+.chap-name {
+  font-size: var(--fs-22);
+}
+
+.chap-sub {
+  margin-top: 2rpx;
+  font-size: 16rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.chap-ph {
+  height: 92rpx;
+}
+
+/* ===== 章节内容容器 ===== */
+
+.content {
+  padding: 0;
+}
+
+/* ===== 深色数字磁贴（2×2） ===== */
+
+.tile {
+  margin: 20rpx 28rpx 0;
+  padding: 24rpx 28rpx 22rpx;
+  border-radius: var(--radius-lg);
+  color: var(--tile-deep-text);
+  background: radial-gradient(120% 100% at 90% 0%, rgba(207, 138, 75, 0.28), transparent 60%),
+    linear-gradient(155deg, var(--tile-deep) 0%, #2b2117 100%);
+  box-shadow: 0 24rpx 52rpx -36rpx rgba(30, 20, 12, 0.8);
+}
+
+.tgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx 16rpx;
+}
+
+.tg {
+  min-width: 0;
+}
+
+.tnum {
+  font-size: var(--fs-36);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.tlab {
+  margin-top: 2rpx;
+  font-size: 18rpx;
+  color: #b3a48a;
+}
+
+.tsub {
+  margin-top: 2rpx;
+  font-size: 16rpx;
+  color: #c9b899;
+}
+
+.tb {
+  color: #f0d9ae;
+  font-weight: 700;
+}
+
+/* ===== 区块小标题（带编号/注释/新增标） ===== */
+
+.sec {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin: 26rpx 32rpx 8rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 1px solid rgba(181, 113, 58, 0.14);
+}
+
+.sec-h {
+  flex: 1;
+  min-width: 0;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: var(--fs-28);
+  font-weight: 800;
+}
+
+.sec-num {
+  display: inline-block;
+  margin-right: 10rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+}
+
+.sec-note {
+  display: inline-block;
+  margin-left: 12rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 18rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.tag-new {
+  display: inline-block;
+  flex: none;
+  padding: 0 12rpx;
+  border-radius: 1000rpx;
+  background: var(--accent-gold-ink);
+  color: #fff7ec;
+  font-size: 16rpx;
+  line-height: 1.6;
+}
+
+/* 体检卡的「新增」标跟在上一条注释下面（与设计稿一致，不压住 38.2） */
+.health .tag-new {
+  margin-top: 6rpx;
+}
+
+/* ===== 数据体检卡 ===== */
+
+.health {
+  position: relative;
+  margin: 0 28rpx;
+  padding: 16rpx 24rpx 14rpx;
+  border: 1px dashed rgba(181, 113, 58, 0.6);
+  border-radius: 24rpx;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.hhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ht {
+  font-size: var(--fs-22);
+  font-weight: 700;
+}
+
+.hv {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: var(--fs-36);
+  font-weight: 900;
+  color: var(--accent-gold-ink);
+}
+
+.hrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 6rpx;
+}
+
+.hn {
+  width: 124rpx;
+  flex: none;
+  font-size: 18rpx;
+  color: var(--text-secondary);
+}
+
+.htr {
+  flex: 1;
+  height: 10rpx;
+  border-radius: 6rpx;
+  background: rgba(181, 113, 58, 0.1);
+  overflow: hidden;
+}
+
+.hfl {
+  height: 100%;
+  border-radius: 6rpx;
+  background: linear-gradient(90deg, var(--accent-gold-light), var(--accent-gold));
+}
+
+.hfl.low {
+  background: linear-gradient(90deg, var(--accent-gold-light), var(--accent-vermillion));
+}
+
+.hp {
+  width: 68rpx;
+  flex: none;
+  text-align: right;
+  font-size: 18rpx;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.hmore {
+  margin-top: 8rpx;
+  font-size: 16rpx;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ===== 史料支撑卡 ===== */
+
+.src {
+  position: relative;
+  margin: 0 28rpx;
+  padding: 16rpx 24rpx 14rpx;
+  border: 1px dashed rgba(181, 113, 58, 0.6);
+  border-radius: 24rpx;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.srch {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.srcLabel {
+  font-size: var(--fs-22);
+  font-weight: 700;
+}
+
+.srcbig {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: var(--fs-34);
+  font-weight: 900;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.srcunit {
+  margin-left: 4rpx;
+  font-size: 18rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.srow {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 10rpx;
+  font-size: 18rpx;
+  color: var(--text-secondary);
+}
+
+.sk {
+  width: 92rpx;
+  flex: none;
+}
+
+.tr {
+  flex: 1;
+  height: 10rpx;
+  border-radius: 6rpx;
+  background: rgba(181, 113, 58, 0.1);
+  overflow: hidden;
+}
+
+.fl {
+  display: block;
+  height: 100%;
+  border-radius: 6rpx;
+  background: linear-gradient(90deg, var(--accent-gold-light), var(--accent-gold));
+}
+
+.vv {
+  width: 80rpx;
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.srcn {
+  margin-top: 10rpx;
+  font-size: 16rpx;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ===== 读法条 ===== */
+
+.read {
+  margin: 16rpx 28rpx 0;
+  padding: 14rpx 20rpx;
+  border-radius: 18rpx;
+  border-left: 2px solid rgba(181, 113, 58, 0.34);
+  background: rgba(181, 113, 58, 0.05);
+  font-size: 16rpx;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* ===== 朝代构成：九行 ===== */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 8rpx 32rpx;
+}
+
+.row-nm {
+  width: 112rpx;
+  flex: none;
+  font-size: var(--fs-20);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-v {
+  width: 104rpx;
+  flex: none;
+  text-align: right;
+  font-size: 18rpx;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 朝代构成：展开入口（虚线框） ===== */
+
+.exw {
+  position: relative;
+  margin: 16rpx 28rpx 0;
+  padding: 14rpx 20rpx 16rpx;
+  border: 1px dashed rgba(181, 113, 58, 0.6);
+  border-radius: 20rpx;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.exn {
+  font-size: 18rpx;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.exbtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  height: 52rpx;
+  margin-top: 10rpx;
+  border-radius: 14rpx;
+  background: rgba(181, 113, 58, 0.07);
+  color: var(--accent-gold-ink);
+  font-size: var(--fs-20);
+  font-weight: 700;
+}
+
+/* 「展开全部」视觉 52rpx，透明层补到 88rpx（44px）。
+   上下各外扩 18rpx：上方落在说明文字上，下方落在虚线框内边距，均不可点。 */
+.exbtn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 88rpx;
+  transform: translateY(-50%);
+}
+
+.exbtn-hover {
+  background: rgba(181, 113, 58, 0.14);
+}
+
+/* ===== 朝代构成：全部 60 个（三列网格，框内滚动） ===== */
+
+.dwrap {
+  position: relative;
+  margin: 0 28rpx;
+  padding: 12rpx 18rpx 8rpx;
+  border: 1px dashed rgba(181, 113, 58, 0.6);
+  border-radius: 24rpx;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.dgrid-scroll {
+  height: 456rpx;
+}
+
+.dgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  column-gap: 18rpx;
+}
+
+.dg {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6rpx;
+  padding: 6rpx 0;
+  border-bottom: 1px solid rgba(181, 113, 58, 0.08);
+  font-size: 18rpx;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.dg-n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dg-v {
+  flex: none;
+  font-size: 16rpx;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dg.hi .dg-v {
+  color: var(--accent-gold-ink);
+}
+
+.dbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 4rpx;
+  padding: 10rpx 0 6rpx;
+  border-top: 1px solid rgba(181, 113, 58, 0.14);
+}
+
+.dbar-note {
+  flex: 1;
+  min-width: 0;
+  font-size: 16rpx;
+  color: var(--text-secondary);
+}
+
+.dback {
+  position: relative;
+  flex: none;
+  font-size: 18rpx;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+/* 「收起」原为 18rpx 裸文字（约 9px 高）。改为 view 后向下外扩到 88rpx ×88rpx：
+   向上顶到内层滚动框底部会抢滚动热区，所以热区贴着文字顶部向下延伸，
+   下方落在虚线框留白与下一段标题上，均不可点。 */
+.dback::after {
+  content: '';
+  position: absolute;
+  left: -26rpx;
+  top: 0;
+  width: 88rpx;
+  height: 88rpx;
+}
+
+/* ===== 性别构成 ===== */
+
+.gcard {
+  position: relative;
+  margin: 0 28rpx;
+  padding: 18rpx 24rpx 16rpx;
+  border: 1px dashed rgba(181, 113, 58, 0.6);
+  border-radius: 24rpx;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.gbar {
+  display: flex;
+  height: 18rpx;
+  border-radius: 1000rpx;
+  overflow: hidden;
+  background: rgba(181, 113, 58, 0.1);
+}
+
+.gm {
+  height: 100%;
+  background: linear-gradient(90deg, #8a6a45, var(--accent-gold));
+}
+
+.gf {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-vermillion), #c26a4e);
+}
+
+.gu {
+  height: 100%;
+  background: repeating-linear-gradient(45deg, rgba(143, 124, 99, 0.45) 0 3px, rgba(143, 124, 99, 0.16) 3px 6px);
+}
+
+.gleg {
+  display: flex;
+  margin-top: 14rpx;
+}
+
+.gitem {
+  flex: 1;
+  min-width: 0;
+}
+
+.glab {
+  font-size: 18rpx;
+  color: var(--text-secondary);
+}
+
+.gval {
+  font-size: var(--fs-22);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.gp {
+  margin-left: 6rpx;
+  font-size: 16rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.gdot {
+  display: inline-block;
+  width: 10rpx;
+  height: 10rpx;
+  margin-right: 8rpx;
+  border-radius: 4rpx;
+  vertical-align: 1px;
+}
+
+.gnote {
+  margin-top: 12rpx;
+  font-size: 16rpx;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* ===== 身份词云（字号由 JS 注入 20~38rpx 偶数） ===== */
+
+.cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx 18rpx;
+  padding: 12rpx 32rpx 4rpx;
+}
+
+.wc {
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.wc-cnt {
+  margin-left: 2rpx;
+  font-size: 16rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* 五个色相全部压到纸底 5:1 以上（原 #6e7f4b / #5c7a99 / #8a6a45 不达标） */
+.wc-t0 { color: var(--accent-gold-ink); }
+.wc-t1 { color: var(--accent-vermillion); }
+.wc-t2 { color: #55663a; }
+.wc-t3 { color: #45607c; }
+.wc-t4 { color: #7a5a36; }
+
+.cloud-toggle {
+  margin: 12rpx 28rpx 0;
+  height: 52rpx;
+  line-height: 52rpx;
+  text-align: center;
+  border-radius: 14rpx;
+  background: rgba(181, 113, 58, 0.07);
+  color: var(--accent-gold-ink);
+  font-size: var(--fs-20);
+  font-weight: 700;
+}
+
+/* ===== 更新时间条（今日/本周新增 + 快照） ===== */
+
+.up {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 16rpx 28rpx 0;
+  padding: 16rpx 24rpx;
+  border: 1px solid rgba(181, 113, 58, 0.18);
+  border-radius: 24rpx;
+  background: var(--bg-card);
+}
+
+.upn {
+  display: flex;
+  flex: 1;
+  gap: 28rpx;
+}
+
+.up-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.upv {
+  font-size: var(--fs-28);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.upl {
+  font-size: 16rpx;
+  color: var(--text-secondary);
+}
+
+.ups {
+  flex: none;
+  text-align: right;
+  font-size: 16rpx;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.upsb {
+  display: block;
+  font-size: 18rpx;
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 影响力指数榜 ===== */
+
+.rk {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 8rpx 32rpx;
+}
+
+.rk-hover {
+  background: rgba(181, 113, 58, 0.06);
+}
+
+.rk-no {
+  width: 28rpx;
+  flex: none;
+  text-align: right;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: var(--fs-22);
+  font-weight: 800;
+  color: var(--accent-gold-ink);
+}
+
+.rk-mid {
+  flex: 1;
+  min-width: 0;
+}
+
+.rk-name {
+  font-size: var(--fs-22);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rk-dy {
+  margin-left: 10rpx;
+  font-size: 18rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.rk-sub {
+  font-size: 16rpx;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.rk-score {
+  width: 100rpx;
+  flex: none;
+  text-align: right;
+  font-size: var(--fs-24);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 全库之最（2 列 × 3 行） ===== */
+
+.ext {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10rpx 16rpx;
+  margin: 0 28rpx;
+  padding: 14rpx 18rpx;
+  border: 1px dashed rgba(181, 113, 58, 0.6);
+  border-radius: 24rpx;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.ex {
+  min-width: 0;
+}
+
+.ex-k {
+  font-size: 16rpx;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.ex-v {
+  font-size: var(--fs-20);
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ex-d {
+  margin-left: 6rpx;
+  font-size: 16rpx;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* ===== 实时动态 ===== */
+
+.feed {
+  margin: 0 32rpx;
+  padding: 2rpx 20rpx;
+  border: 1px solid rgba(181, 113, 58, 0.12);
+  border-radius: 20rpx;
+  background: var(--bg-card);
+}
+
+.feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  padding: 12rpx 0;
+  border-bottom: 1px solid rgba(181, 113, 58, 0.08);
+}
+
+.feed-item--last {
+  border-bottom: 0;
+}
+
+.feed-badge {
+  flex: none;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  font-size: 16rpx;
+  line-height: 1.6;
+  background: rgba(181, 113, 58, 0.12);
+  color: var(--accent-gold-ink);
+}
+
+.feed-badge--add { background: rgba(110, 127, 75, 0.14); color: #55663a; }
+.feed-badge--update { background: rgba(181, 113, 58, 0.14); color: var(--accent-gold-ink); }
+.feed-badge--review { background: rgba(92, 122, 153, 0.14); color: #45607c; }
+
+.feed-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-20);
+  line-height: 1.4;
+}
+
+.feed-time {
+  flex: none;
+  padding-top: 2rpx;
+  font-size: 16rpx;
+  color: var(--text-secondary);
+}
+
+/* ===== 口径说明 ===== */
+
+.lim {
+  margin: 14rpx 32rpx 0;
+  padding-left: 14rpx;
+  border-left: 2px solid rgba(181, 113, 58, 0.32);
+  font-size: 16rpx;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.lim-b {
+  color: var(--accent-gold-ink);
+  font-weight: 600;
+}
+
+/* ===== 骨架屏 / 错误态 ===== */
+
+.skeleton-wrap {
+  padding: 24rpx 32rpx;
+}
+
+.skeleton-card {
+  margin-bottom: 20rpx;
+  padding: 28rpx 24rpx;
+  border-radius: 20rpx;
+  background: var(--bg-card);
+}
+
+.skeleton-line {
+  height: 20rpx;
+  margin-bottom: 14rpx;
+  border-radius: 10rpx;
+  background: rgba(181, 113, 58, 0.1);
+}
+
+.skeleton-line-title {
+  width: 40%;
+  height: 28rpx;
+}
+
+.skeleton-line-short {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+.skeleton-hint {
+  padding: 20rpx 0;
+  text-align: center;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+}
+
+.error-retry {
+  margin: 40rpx 32rpx;
+  padding: 40rpx 32rpx;
+  text-align: center;
+  border: 1px solid rgba(181, 113, 58, 0.16);
+  border-radius: 24rpx;
+  background: var(--bg-card);
+}
+
+.error-retry-text {
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.error-retry-btn {
+  display: inline-block;
+  height: 64rpx;
+  margin-top: 24rpx;
+  padding: 0 40rpx;
+  border-radius: 32rpx;
+  background: var(--accent-gold-ink);
+  color: #fff7ec;
+  font-size: var(--fs-24);
+  line-height: 64rpx;
+}
+
+.bottom-spacer {
+  height: calc(80rpx + env(safe-area-inset-bottom));
+}

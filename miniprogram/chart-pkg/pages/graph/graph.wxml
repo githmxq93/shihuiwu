@@ -1,0 +1,86 @@
+<!-- 独立「关系图谱」页：页面级搜索人物 → 以该人物为中心渲染关系网络 -->
+<view class="page">
+  <nav-bar title="关系图谱" safeAreaTop="{{safeAreaTop}}" />
+  <view class="nav-spacer" style="height:{{navBarHeight}}px"></view>
+
+  <!-- 页面级搜索框（隐藏组件内置搜索，搜索由本页接管） -->
+  <view class="search-area">
+    <view class="search-box {{searchFocused ? 'focused' : ''}}">
+      <view class="search-icon">
+        <view class="search-icon-circle"></view>
+        <view class="search-icon-handle"></view>
+      </view>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="搜索人物，查看 TA 的关系图谱"
+        placeholder-class="search-placeholder"
+        value="{{searchQuery}}"
+        bindinput="onSearchInput"
+        bindfocus="onSearchFocus"
+        bindblur="onSearchBlur"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{searchQuery}}" bindtap="onClearSearch">✕</text>
+    </view>
+
+    <!-- 联想下拉（悬浮在图谱上方） -->
+    <view class="search-dropdown" wx:if="{{searchFocused && searchResults.length > 0}}">
+      <view
+        class="dropdown-item"
+        wx:for="{{searchResults}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onSelectSuggestion"
+      >
+        <view class="dropdown-name">{{item.name}}</view>
+        <view class="dropdown-meta">{{item.dynasty}}{{item.gender ? ' · ' + item.gender : ''}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 当前中心人物 -->
+  <view class="center-chip" wx:if="{{figureName && !loading}}">
+    <text class="center-label">当前中心</text>
+    <text class="center-name">{{figureName}}</text>
+    <text class="center-count">{{nodes.length - 1 < 0 ? 0 : nodes.length - 1}} 位关联人物</text>
+  </view>
+
+  <!-- 图谱区 -->
+  <view class="graph-area">
+    <!-- 等待搜索 -->
+    <view class="state-view" wx:if="{{awaitingSearch}}">
+      <view class="state-icon css-ring"></view>
+      <text class="state-text">搜索人物姓名，查看 TA 的关系网络</text>
+      <text class="state-text state-text-sub">如：孔子、李白、苏轼</text>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="state-view" wx:elif="{{loading}}">
+      <view class="spinner"></view>
+      <text class="state-text">正在加载关系网络…</text>
+    </view>
+
+    <!-- 加载失败 -->
+    <view class="state-view" wx:elif="{{loadFailed}}">
+      <view class="state-icon css-warn">!</view>
+      <text class="state-text">关系网络加载失败，请检查网络后重试</text>
+      <view class="retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <!-- 无关系 -->
+    <view class="state-view" wx:elif="{{empty}}">
+      <view class="state-icon css-ring"></view>
+      <text class="state-text">该人物暂无可展示的关系网络，换个人物试试</text>
+    </view>
+
+    <!-- 图谱 -->
+    <relation-graph
+      wx:else
+      nodes="{{nodes}}"
+      links="{{links}}"
+      currentId="{{currentId}}"
+      bindnodeclick="onNodeTap"
+    />
+  </view>
+</view>

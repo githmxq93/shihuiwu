@@ -1,0 +1,745 @@
+/* 双人生命线 · 同看页
+   视觉沿用纸底 / 深色锚点 / 金色强调；A、B 两视图同一底色与主色口径。
+   字号与间距尽量走 app.wxss 的 token，避免再散落硬编码。 */
+
+/* A / B 两个视图共用同一套暖纸浅底（与详情页一致），不再整页转深色 */
+.dv-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+}
+
+.dv-body {
+  padding: 0 28rpx;
+  box-sizing: border-box;
+}
+
+/* ============ 加载 / 失败 ============ */
+.dv-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  gap: 24rpx;
+}
+.dv-state-t {
+  font-size: var(--fs-26);
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.7;
+}
+.dv-spin {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(181, 113, 58, 0.2);
+  border-top-color: var(--accent-gold);
+  animation: dv-spin 0.9s linear infinite;
+}
+@keyframes dv-spin {
+  to { transform: rotate(360deg); }
+}
+.dv-state-btn {
+  padding: 18rpx 44rpx;
+  border: 1rpx solid var(--border-color);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  background: var(--bg-card);
+}
+
+/* ============ 视图切换 ============ */
+.dv-seg {
+  display: flex;
+  margin: 8rpx 0 20rpx;
+  padding: 5rpx;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-pill);
+}
+.dv-seg-i {
+  flex: 1;
+  height: 62rpx;
+  line-height: 62rpx;
+  text-align: center;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-26);
+  color: var(--text-secondary);
+}
+.dv-seg-i text {
+  font-size: var(--fs-26);
+}
+.dv-seg-on {
+  background: var(--tile-deep);
+  color: var(--tile-deep-text);
+  box-shadow: 0 4rpx 12rpx rgba(61, 46, 31, 0.18);
+}
+
+/* ============ A 头部 ============ */
+.dv-hero {
+  padding: 12rpx 4rpx 8rpx;
+}
+.dv-kicker {
+  display: block;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+}
+.dv-h1 {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 52rpx;
+  line-height: 1.24;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dv-sub {
+  display: block;
+  margin-top: 14rpx;
+  font-size: var(--fs-26);
+  line-height: 1.72;
+  color: var(--text-secondary);
+}
+.dv-stats {
+  display: flex;
+  margin-top: 26rpx;
+  padding-top: 22rpx;
+  border-top: 1rpx solid var(--border-subtle);
+}
+.dv-stat {
+  flex: 1;
+  min-width: 0;
+}
+.dv-stat-v {
+  display: flex;
+  align-items: baseline;
+  gap: 2rpx;
+  color: var(--text-primary);
+  font-size: 40rpx;
+  font-weight: 600;
+  font-family: var(--font-serif);
+}
+.dv-stat-v text {
+  font-size: 40rpx;
+}
+.dv-stat-u {
+  font-size: var(--fs-22) !important;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.dv-stat-l {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+/* ============ 卡 ============ */
+.dv-card {
+  margin-top: 20rpx;
+  padding: 26rpx 24rpx 22rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.dv-card-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.dv-card-t {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dv-card-n {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+
+/* ============ 双轨图 ============ */
+.dv-plot {
+  position: relative;
+  height: 272rpx;
+  margin-top: 22rpx;
+}
+.dv-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 19rpx;
+  color: var(--text-muted);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  white-space: nowrap;
+}
+.dv-tick text {
+  font-size: 19rpx;
+}
+.dv-gridline {
+  position: absolute;
+  top: 30rpx;
+  height: 148rpx;
+  width: 1rpx;
+  background: rgba(61, 46, 31, 0.08);
+}
+.dv-band {
+  position: absolute;
+  top: 26rpx;
+  height: 152rpx;
+  background: rgba(181, 113, 58, 0.1);
+  border-left: 1rpx dashed rgba(181, 113, 58, 0.35);
+  border-right: 1rpx dashed rgba(181, 113, 58, 0.35);
+  border-radius: 6rpx;
+}
+.dv-band-label {
+  position: absolute;
+  top: -2rpx;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2rpx 10rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-pill);
+  font-size: 18rpx;
+  color: var(--accent-gold-ink);
+  white-space: nowrap;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+.dv-bracket {
+  position: absolute;
+  top: 110rpx;
+  height: 0;
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.55);
+}
+.dv-bracket::before,
+.dv-bracket::after {
+  content: '';
+  position: absolute;
+  top: -7rpx;
+  width: 1rpx;
+  height: 14rpx;
+  background: rgba(181, 113, 58, 0.55);
+}
+.dv-bracket::before { left: 0; }
+.dv-bracket::after { right: 0; }
+.dv-bracket-label {
+  position: absolute;
+  top: 82rpx;
+  transform: translateX(-50%);
+  padding: 0 8rpx;
+  background: var(--bg-card);
+  font-size: 18rpx;
+  color: var(--accent-gold-ink);
+  white-space: nowrap;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+.dv-bracket-label-l {
+  transform: translateX(0);
+}
+
+.dv-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.dv-lane-a { top: 34rpx; }
+.dv-lane-b { top: 132rpx; }
+.dv-lane-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  height: 30rpx;
+  gap: 16rpx;
+}
+.dv-lane-hd-b { margin-top: 6rpx; }
+.dv-lane-nm {
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dv-lane-yr {
+  font-size: 19rpx;
+  color: var(--text-muted);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dv-track {
+  position: relative;
+  height: 26rpx;
+}
+.dv-bar {
+  position: absolute;
+  top: 0;
+  height: 26rpx;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+.dv-bar-a {
+  background: linear-gradient(90deg, #4a3826 0%, #3d2e1f 100%);
+  color: #3d2e1f;
+}
+.dv-bar-b {
+  background: linear-gradient(90deg, #a86a3a 0%, #8f5326 100%);
+  color: #8f5326;
+}
+.dv-dotted {
+  background: transparent !important;
+  border: 2rpx dashed var(--accent-gold-ink);
+  box-sizing: border-box;
+}
+.dv-open-l::before,
+.dv-open-r::after {
+  content: '';
+  position: absolute;
+  top: -2rpx;
+  bottom: -2rpx;
+  width: 38%;
+  z-index: 1;
+}
+.dv-open-l::before {
+  left: -2rpx;
+  background: linear-gradient(90deg, var(--bg-card) 4%, rgba(251, 247, 239, 0) 100%);
+}
+.dv-open-r::after {
+  right: -2rpx;
+  background: linear-gradient(270deg, var(--bg-card) 4%, rgba(251, 247, 239, 0) 100%);
+}
+.dv-dot {
+  position: absolute;
+  top: 50%;
+  width: 15rpx;
+  height: 15rpx;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  box-sizing: border-box;
+}
+.dv-dot-a { background: #3d2e1f; color: #3d2e1f; }
+.dv-dot-b { background: #8f5326; color: #8f5326; }
+.dv-dot-hollow {
+  background: var(--bg-card);
+  border: 2rpx solid currentColor;
+}
+.dv-death-line {
+  position: absolute;
+  top: 26rpx;
+  height: 136rpx;
+  width: 0;
+  border-left: 1rpx dashed rgba(61, 46, 31, 0.35);
+}
+.dv-death-label {
+  position: absolute;
+  top: 200rpx;
+  transform: translateX(-50%);
+  font-size: 18rpx;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+/* 靠近右边界时改为右对齐，避免标注溢出卡片 */
+.dv-death-label-r {
+  transform: translateX(-100%);
+  text-align: right;
+}
+.dv-note {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* ============ 事件 ============ */
+.dv-events {
+  margin-top: 20rpx;
+}
+.dv-ev {
+  display: flex;
+  gap: 16rpx;
+  padding: 20rpx 0;
+  border-top: 1rpx solid var(--border-subtle);
+}
+.dv-ev:first-of-type {
+  border-top: none;
+}
+.dv-ev-yr {
+  width: 116rpx;
+  flex-shrink: 0;
+}
+.dv-ev-y {
+  display: block;
+  font-size: var(--fs-28);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.dv-ev-age {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 18rpx;
+  color: var(--text-muted);
+}
+.dv-ev-main {
+  flex: 1;
+  min-width: 0;
+}
+.dv-ev-t {
+  display: block;
+  font-size: var(--fs-28);
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+.dv-ev-d {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 6rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.dv-ev-side {
+  align-self: flex-start;
+  flex-shrink: 0;
+  padding: 3rpx 10rpx;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-20);
+  font-family: var(--font-serif);
+}
+.dv-side-a {
+  background: rgba(61, 46, 31, 0.08);
+  color: var(--text-secondary);
+}
+.dv-side-b {
+  background: rgba(143, 83, 38, 0.12);
+  color: var(--accent-gold-ink);
+}
+.dv-empty {
+  padding: 26rpx 0 10rpx;
+  font-size: var(--fs-24);
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* ============ 页脚与分享入口 ============ */
+.dv-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin: 24rpx 0 60rpx;
+}
+.dv-foot-note {
+  flex: 1;
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.dv-share-entry {
+  flex-shrink: 0;
+  padding: 16rpx 30rpx;
+  border: 1rpx solid var(--accent-gold);
+  border-radius: var(--radius-pill);
+  background: rgba(181, 113, 58, 0.06);
+}
+.dv-share-entry text {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+}
+.dv-share-off {
+  opacity: 0.45;
+}
+.dv-foot-dark .dv-foot-note {
+  color: var(--text-muted);
+}
+
+/* ============ B · 三段人生 ============ */
+.dv-darkhero {
+  padding: 24rpx 4rpx 30rpx;
+}
+.dv-dk-kicker {
+  display: block;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+}
+.dv-dk-h1 {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 46rpx;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dv-dk-sub {
+  display: block;
+  margin-top: 14rpx;
+  font-size: var(--fs-24);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.dv-ribbon {
+  display: flex;
+  height: 26rpx;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin: 4rpx 0 24rpx;
+}
+.dv-rib {
+  height: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4rpx;
+}
+.dv-rib text {
+  font-size: 16rpx;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+/* 三段彩带：与 A 视图同主色，用金色透明度分层 */
+.dv-rib-pre { background: rgba(181, 113, 58, 0.16); }
+.dv-rib-mid { background: var(--accent-gold); }
+.dv-rib-post { background: rgba(181, 113, 58, 0.34); }
+.dv-rib-pre text,
+.dv-rib-post text { color: var(--text-primary); }
+.dv-rib-mid text { color: #1a130c; }
+
+.dv-act {
+  position: relative;
+  margin-bottom: 18rpx;
+  padding: 24rpx 24rpx 24rpx 30rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.dv-act-bar {
+  position: absolute;
+  left: 0;
+  top: 26rpx;
+  bottom: 26rpx;
+  width: 5rpx;
+  border-radius: 3rpx;
+}
+.dv-act-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.dv-act-t {
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dv-act-y {
+  font-size: 20rpx;
+  color: var(--text-muted);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  white-space: nowrap;
+}
+.dv-act-ages {
+  display: block;
+  margin-top: 10rpx;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  line-height: 1.6;
+}
+.dv-act-evs {
+  margin-top: 14rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid var(--border-subtle);
+}
+.dv-act-ev {
+  display: flex;
+  gap: 14rpx;
+  padding: 6rpx 0;
+}
+.dv-act-ev-y {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  flex-shrink: 0;
+}
+.dv-act-ev-t {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.dv-act-empty {
+  display: block;
+  margin-top: 12rpx;
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+.dv-empty-card {
+  margin-top: 10rpx;
+  padding: 30rpx 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.dv-empty-card .dv-empty {
+  color: var(--text-muted);
+}
+
+/* ============ 分享卡弹层 ============ */
+.dv-modal {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 900;
+}
+.dv-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(20, 15, 10, 0.62);
+}
+.dv-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: 28rpx 28rpx 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -12rpx 40rpx rgba(20, 15, 10, 0.3);
+}
+.dv-sheet-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26rpx 30rpx 18rpx;
+}
+.dv-sheet-t {
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dv-sheet-x {
+  font-size: 44rpx;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 0 10rpx;
+}
+.dv-canvas-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: 62vh;
+  overflow-y: auto;
+  text-align: center;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 30rpx;
+  box-sizing: border-box;
+}
+/* 画布舞台：canvas 按窗口像素定尺寸（JS 下发），只在这里做一次性绘制 */
+.dv-canvas-stage {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+}
+.dv-share-canvas {
+  display: block;
+  background: #1c150f;
+  border-radius: 16rpx;
+  box-shadow: 0 10rpx 30rpx rgba(20, 15, 10, 0.28);
+}
+/* 生成中遮罩：盖在画布上，给明确的进行态 */
+.dv-canvas-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  border-radius: 16rpx;
+  background: rgba(20, 15, 10, 0.46);
+  color: var(--bg-primary);
+  font-size: var(--fs-22);
+}
+/* 成品预览：导出后的图片，替代 canvas 展示 */
+.dv-share-img {
+  display: block;
+  width: 100%;
+  border-radius: 16rpx;
+  box-shadow: 0 10rpx 30rpx rgba(20, 15, 10, 0.28);
+}
+/* 生成失败态 */
+.dv-card-fail {
+  padding: 90rpx 40rpx 70rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14rpx;
+}
+.dv-card-fail-t {
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+}
+.dv-card-fail-s {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+.dv-card-retry {
+  margin-top: 16rpx;
+  padding: 0 44rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  border-radius: var(--radius-pill);
+  background: var(--tile-deep);
+  color: var(--tile-deep-text);
+  font-size: var(--fs-26);
+}
+.dv-share-tip {
+  display: block;
+  margin: 16rpx 10rpx 8rpx;
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.dv-sheet-ft {
+  display: flex;
+  gap: 18rpx;
+  padding: 18rpx 30rpx 26rpx;
+}
+.dv-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0;
+  text-align: center;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-28);
+  margin: 0;
+  box-sizing: border-box;
+}
+.dv-btn text {
+  font-size: var(--fs-28);
+}
+.dv-btn::after {
+  border: none;
+}
+.dv-btn-ghost {
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  color: var(--text-primary);
+}
+.dv-btn-gold {
+  background: var(--tile-deep);
+  color: var(--tile-deep-text);
+}

@@ -1,0 +1,139 @@
+<!--
+  文章阅读主体（唯一来源）
+  使用方：components/articleOverlay（专题页 / 人物页浮层）、pages/article（首页等入口的整页）
+  配套：templates/article-reader/article-reader.wxss + utils/article-reader.js
+  传入 data：title / era / wordCount / readMin / blocks / hasBody / fullText /
+             isExcerpt / figures / citations / keywords
+  使用方需实现：onTapFigure（data-name）、onTapCitation（data-url）
+-->
+<template name="articleReader">
+  <view class="ar-reader">
+    <!-- 元信息一行：朝代签 + 字数 + 阅读时长，缺项不显示 -->
+    <view class="ar-meta" wx:if="{{era || wordCount || readMin}}">
+      <text class="ar-era" wx:if="{{era}}">{{era}}</text>
+      <text class="ar-dot" wx:if="{{era && wordCount}}">·</text>
+      <text wx:if="{{wordCount}}">{{wordCount}} 字</text>
+      <text class="ar-dot" wx:if="{{wordCount && readMin}}">·</text>
+      <text wx:if="{{readMin}}">约 {{readMin}} 分钟</text>
+    </view>
+
+    <view class="ar-title">{{title}}</view>
+    <view class="ar-rule"></view>
+
+    <!-- 只有摘要、没有正文：明说这是摘要，不假装读完了 -->
+    <view class="ar-note" wx:if="{{isExcerpt}}">
+      <text class="ar-note-title">本文正文仍在整理中</text>
+      <text class="ar-note-text">当前展示的是内容摘要，完整正文会在核对史料后补全。</text>
+    </view>
+
+    <!-- 正文：真段落，首行缩进 2em、段距 24rpx、行高 1.85 -->
+    <view class="ar-body" wx:if="{{hasBody}}">
+      <block wx:for="{{blocks}}" wx:key="k" wx:for-item="b">
+        <view wx:if="{{b.t === 'h2'}}" class="ar-h2">{{b.text}}</view>
+
+        <view wx:elif="{{b.t === 'p'}}" class="ar-p">
+          <!-- 首字下沉在解析阶段被摘出 runs，这里必须补回，否则首段少一个字 -->
+          <text
+            wx:if="{{b.dropChar}}"
+            class="{{b.dropFig ? 'ar-fig-link' : ''}}"
+            data-name="{{b.dropFig}}"
+            bindtap="onTapFigure"
+          >{{b.dropChar}}</text>
+          <block wx:for="{{b.runs}}" wx:key="k" wx:for-item="r">
+            <text
+              wx:if="{{r.fig}}"
+              class="ar-fig-link {{r.bold ? 'ar-b' : ''}}{{r.italic ? ' ar-i' : ''}}"
+              data-name="{{r.fig}}"
+              bindtap="onTapFigure"
+            >{{r.text}}</text>
+            <text wx:else class="{{r.bold ? 'ar-b' : ''}}{{r.italic ? ' ar-i' : ''}}">{{r.text}}</text>
+          </block>
+        </view>
+
+        <view wx:elif="{{b.t === 'quote'}}" class="ar-quote">
+          <block wx:for="{{b.runs}}" wx:key="k" wx:for-item="r">
+            <text
+              wx:if="{{r.fig}}"
+              class="ar-fig-link {{r.bold ? 'ar-b' : ''}}"
+              data-name="{{r.fig}}"
+              bindtap="onTapFigure"
+            >{{r.text}}</text>
+            <text wx:else class="{{r.bold ? 'ar-b' : ''}}">{{r.text}}</text>
+          </block>
+        </view>
+
+        <view wx:elif="{{b.t === 'table'}}" class="ar-table">
+          <view class="ar-tr ar-tr-head">
+            <view class="ar-td" wx:for="{{b.head}}" wx:key="k" wx:for-item="c">{{c.v}}</view>
+          </view>
+          <view class="ar-tr" wx:for="{{b.rows}}" wx:key="k" wx:for-item="row">
+            <view class="ar-td" wx:for="{{row.cells}}" wx:key="k" wx:for-item="cell">{{cell.v}}</view>
+          </view>
+        </view>
+
+        <view wx:elif="{{b.t === 'hr'}}" class="ar-hr"></view>
+      </block>
+    </view>
+    <view class="ar-body ar-body-plain" wx:elif="{{fullText}}">{{fullText}}</view>
+
+    <!-- · 完 ·：只在有正文时打，摘要不算读完 -->
+    <view class="ar-end" wx:if="{{hasBody}}">
+      <view class="ar-end-line"></view>
+      <text class="ar-end-text">· 完 ·</text>
+      <view class="ar-end-line"></view>
+    </view>
+
+    <!-- 文中人物：标题竖条 + 米底人卡（头像首字 + 姓名 + 朝代/籍贯/生卒 + 箭头） -->
+    <view class="ar-section" wx:if="{{figures.length}}">
+      <view class="ar-sec-head has-bar">
+        <text class="ar-sec-title">文中人物</text>
+        <text class="ar-sec-sub">{{figures.length}} 位</text>
+      </view>
+      <view
+        class="ar-fig {{f.missing ? 'is-dim' : ''}}"
+        hover-class="ar-fig-hover"
+        wx:for="{{figures}}"
+        wx:key="k"
+        wx:for-item="f"
+        data-name="{{f.name}}"
+        bindtap="onTapFigure"
+      >
+        <view class="ar-fig-avatar"><text class="ar-fig-avatar-text">{{f.initial}}</text></view>
+        <view class="ar-fig-body">
+          <view class="ar-fig-name">{{f.name}}</view>
+          <view class="ar-fig-meta" wx:if="{{f.meta}}">{{f.meta}}</view>
+        </view>
+        <text class="ar-fig-arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 参考文献与资料来源：金色描边序号 + 书名 + 作者·年份·出版社 -->
+    <view class="ar-section" wx:if="{{citations.length}}">
+      <view class="ar-sec-head has-bar">
+        <text class="ar-sec-title">参考文献与资料来源</text>
+        <text class="ar-sec-sub">{{citations.length}} 条</text>
+      </view>
+      <view class="ar-cit" wx:for="{{citations}}" wx:key="k" wx:for-item="c">
+        <text class="ar-cit-index">{{index + 1}}</text>
+        <view class="ar-cit-body">
+          <text
+            class="ar-cit-name {{c.url ? 'ar-cit-name-link' : ''}}"
+            data-url="{{c.url}}"
+            bindtap="onTapCitation"
+          >{{c.name}}</text>
+          <text class="ar-cit-meta" wx:if="{{c.meta}}">{{c.meta}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 关键词 -->
+    <view class="ar-section" wx:if="{{keywords.length}}">
+      <view class="ar-sec-head">
+        <text class="ar-sec-title">关键词</text>
+      </view>
+      <view class="ar-kw-wrap">
+        <text class="ar-kw" wx:for="{{keywords}}" wx:key="k" wx:for-item="kw">{{kw.text}}</text>
+      </view>
+    </view>
+  </view>
+</template>

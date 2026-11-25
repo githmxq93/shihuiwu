@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "六度空间 - 历史人物关系路径查询",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "guide-layer": "/components/guide-layer/guide-layer"
+  }
+}

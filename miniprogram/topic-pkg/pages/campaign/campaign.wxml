@@ -1,0 +1,161 @@
+<view class="cp-page">
+  <nav-bar title="历代战役史" safeAreaTop="{{safeAreaTop}}" />
+
+  <!-- 时期导航：scroll-view 内 position:sticky 不生效 ⇒ fixed 挂在 nav 下方，
+       由 .page-scroll 的 padding-top 给内容让位 -->
+  <view class="era-nav" style="top:{{navH}}px">
+    <scroll-view class="era-nav-scroll" scroll-x="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}">
+      <view class="era-nav-inner">
+        <block wx:for="{{dynastyGroups}}" wx:for-item="dg" wx:key="name">
+          <view class="era-group-label">{{dg.name}}</view>
+          <view
+            wx:for="{{dg.tabs}}"
+            wx:for-item="item"
+            wx:key="key"
+            class="era-tab {{activeKey === item.key ? 'active' : ''}}"
+            data-key="{{item.key}}"
+            bindtap="onTapEra"
+            hover-class="era-tab-hover"
+          >
+            <text class="era-tab-name">{{item.name}}</text>
+            <text class="era-tab-count">{{item.total}}</text>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view
+    class="page-scroll"
+    style="padding-top:{{navH + 52}}px"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollToId}}"
+    scroll-with-animation="{{true}}"
+    bindscroll="onScroll"
+  >
+    <view id="era-top" class="hero">
+      <view class="hero-badge">金戈铁马</view>
+      <view class="hero-title">历代<text class="hero-title-accent">战役史</text></view>
+      <view class="hero-subtitle">前770 — 1955 · 从春秋战国到西藏和平解放</view>
+      <view class="hero-intro">从春秋诸侯尊王攘夷，到西藏高原的和平进驻，三千年战争史在此铺陈。下面按朝代，梳理那些决定国家命运的关键战役与战斗。</view>
+
+      <view class="hero-stats">
+        <view class="stat-item">
+          <text class="stat-num">{{eraTabs.length}}</text>
+          <text class="stat-label">个时期</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-num">{{totalCampaigns}}</text>
+          <text class="stat-label">场战役</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-num">{{majorTotal}}</text>
+          <text class="stat-label">场重大</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="error-retry" wx:if="{{loadFailed}}">
+      <view class="error-retry-text">数据加载失败，请检查网络后重试</view>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <!-- 加载中骨架：弱网下内容区尚无数据，若直接渲染空数组就是整片空白 -->
+    <view class="skeleton-wrap" wx:elif="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <!-- 请求成功但内容为空（区别于加载失败） -->
+    <view class="sk-empty" wx:elif="{{isEmpty}}">
+      <view class="sk-empty-icon">卷</view>
+      <view class="sk-empty-text">暂无相关内容</view>
+    </view>
+
+    <view wx:else>
+      <!-- 切换时期后滚到这里：恰好落在固定导航下方 -->
+      <view id="era-content" class="content-anchor"></view>
+
+      <view class="content">
+        <!-- 时期小结：内凹凹槽，放时期名与筛选开关 -->
+        <view class="era-panel">
+          <view class="ep-row">
+            <view class="ep-title">
+              <text class="ep-name">{{view.name}}</text>
+              <text class="ep-years">{{view.years}}</text>
+            </view>
+            <view class="ep-filter {{onlyMajor ? 'on' : ''}}" bindtap="onToggleMajor">
+              <view class="ep-dot"></view>
+              <text class="ep-filter-text">只看重大</text>
+            </view>
+          </view>
+          <view class="ep-meta">
+            <text>{{view.groups.length}} 个阶段</text>
+            <text class="ep-meta-sep">·</text>
+            <text>{{view.shown}} 场战役</text>
+          </view>
+        </view>
+
+        <view wx:if="{{view.empty}}" class="ep-empty">该时期暂无重大战役，可关闭「只看重大」查看全部。</view>
+
+        <!-- 阶段分组 -->
+        <view wx:for="{{view.groups}}" wx:key="name" wx:for-item="group" wx:for-index="gi" class="group-block">
+          <view class="group-head" data-g="{{gi}}" bindtap="onToggleGroup">
+            <view class="gh-bar"></view>
+            <text class="gh-name">{{group.name}}</text>
+            <text class="gh-count">{{group.count}}</text>
+            <view class="gh-chev {{group.open ? 'up' : ''}}"></view>
+          </view>
+
+          <view wx:if="{{group.open}}" class="card-list">
+            <view
+              wx:for="{{group.campaigns}}"
+              wx:key="name"
+              wx:for-item="c"
+              class="cmp-card {{c.major ? 'major' : ''}}"
+            >
+              <view class="cmp-top">
+                <text class="cmp-name">{{c.name}}</text>
+                <text wx:if="{{c.major}}" class="cmp-flag">重大</text>
+              </view>
+
+              <view class="cmp-meta">
+                <text class="cmp-time">{{c.time}}</text>
+                <text wx:if="{{c.hasLoc}}" class="cmp-dot">·</text>
+                <text wx:if="{{c.hasLoc}}" class="cmp-loc">{{c.location}}</text>
+              </view>
+
+              <view wx:if="{{c.intro}}" class="cmp-intro">{{c.intro}}</view>
+
+              <view class="cmp-result">
+                <text class="cmp-result-label">结果</text>
+                <text class="cmp-result-text">{{c.result}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="footnote">
+          <view class="footnote-icon css-star"></view>
+          <view class="footnote-text">从辛亥革命推翻帝制，到解放战争结束、西藏和平解放，近现代战争史波澜壮阔。铭记这些战役，是为了铭记那段峥嵘岁月，铭记为民族独立与人民解放而奋斗的先辈。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 回到顶部 -->
+  <view wx:if="{{showTop}}" class="to-top" bindtap="onToTop" hover-class="to-top-hover">
+    <view class="to-top-arrow"></view>
+  </view>
+</view>

@@ -1,0 +1,487 @@
+/* 专题列表（双形态：A 摘要行手风琴 / D 两列封面墙）
+   版式基准：_design/topic/accordion-compare.html（A）、_design/topic/layout-v2.html（D）
+   375 屏宽下 1rpx = 0.5px；字号一律偶数 rpx；字距 0。
+   文字色口径：正文 #4a3826（卡底 10.43:1）/ 次要 #75654f（5.27:1）/
+   强调 #8f5326（卡底 5.72:1；章号位保留 #8a4f1c），全部 ≥ 4.5:1；
+   强调色不再用 #b5713a 直接写字（纸底仅 3.65:1），只用于描边、装饰与底色。 */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.body {
+  height: 100vh;
+}
+
+/* ===== 深色头 =====
+   与实时看板 / 查询页同一支渐变，下沿 20rpx 圆角。
+   整块用 margin-top 让出导航高度（WXML 内联写入）：导航栏底部末色 #332820，
+   头部渐变 0% 也是 #332820，两段同色相接，不会在导航下方露出一条浅色缝。*/
+.hero {
+  padding: 16rpx 32rpx 20rpx;
+  background: linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+}
+
+/* 深底上的次要文字：rgba(255,247,232,.66) 合成后约 7:1 */
+.hero-kicker {
+  font-size: var(--fs-20);
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: rgba(255, 247, 232, 0.66);
+}
+
+.hero-title {
+  margin-top: 8rpx;
+  font-family: var(--font-serif);
+  font-size: 52rpx;
+  font-weight: 900;
+  line-height: 1.2;
+  /* app.wxss 的全局 .hero-title 给了 1rpx 字距，这里归零 */
+  letter-spacing: 0;
+  color: #fff7e8;
+}
+
+/* 深底上的强调色（#e9c79b 在 #241c15 上 10.47:1） */
+.hero-accent {
+  color: #e9c79b;
+}
+
+.hero-stats {
+  display: flex;
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 2rpx solid rgba(255, 236, 200, 0.14);
+}
+
+.hero-stat {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.hero-stat-num {
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: var(--fs-34);
+  line-height: 1;
+  letter-spacing: 0;
+  color: #e9c79b;
+}
+
+.hero-stat-lab {
+  font-size: var(--fs-20);
+  line-height: 1;
+  color: rgba(255, 247, 232, 0.62);
+}
+
+/* ===== 分组头（文章专题 / 特别专题）=====
+   稿子：padding 11px 16px 5px；标题 13px 衬线；计数 11px 次要色；右侧一条细线收尾。 */
+.sec {
+  padding-bottom: 4rpx;
+}
+
+.sec-hd {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 22rpx 32rpx 10rpx;
+}
+
+.sec-hd-hover {
+  background: rgba(107, 90, 69, 0.04);
+}
+
+/* 金色竖条：组头左侧装饰，替代原来的 ▾ 字形位置 */
+.sec-bar {
+  flex: none;
+  width: 6rpx;
+  height: 24rpx;
+  border-radius: 3rpx;
+  background: #b5713a;
+}
+
+.sec-tt {
+  font-family: var(--font-serif);
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: #33261a;
+}
+
+.sec-meta {
+  font-size: 20rpx;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+/* 标题后的细线：用真实元素而非 ::after——::after 永远排在最后一个子元素之后，
+   会把箭头挤到线的左侧。 */
+.sec-line {
+  flex: 1;
+  height: 2rpx;
+  margin: 0 6rpx 0 8rpx;
+  background: rgba(107, 90, 69, 0.12);
+}
+
+/* 右侧展开/收起箭头：用 border-right + border-bottom 画一个方块再旋转 45°，
+   不用 ▸/▾/⌄ 字形——部分机型的中文字体缺这几个符号，会渲染成一条极淡的
+   细竖线，看起来就是「没有箭头」。展开态转 45°（朝下），收起态 -45°（朝右）。 */
+.sec-gv {
+  flex: none;
+  width: 16rpx;
+  height: 16rpx;
+  margin-bottom: 6rpx;
+  border-right: 3rpx solid #6b5a45;
+  border-bottom: 3rpx solid #6b5a45;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.sec-gv-closed {
+  margin-bottom: 0;
+  transform: rotate(-45deg);
+}
+
+/* ===== 形态 A：摘要行手风琴 =====
+   收起行 ≈ 57px（hd 28 + sub 20 + 内边距 9），与原封面卡（102px）相比一屏能多放约 3 条；
+   展开行补 3 条篇目（52rpx/条）+ 底部一行，约 +117px。 */
+.rows {
+  padding: 0 24rpx;
+}
+
+.row {
+  padding: 6rpx 20rpx 8rpx;
+  margin-bottom: 4rpx;
+  border-radius: 20rpx;
+  background: transparent;
+  border: 2rpx solid transparent;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.row-open {
+  margin-bottom: 12rpx;
+  background: var(--bg-card);
+  border-color: rgba(107, 90, 69, 0.12);
+  box-shadow: 0 20rpx 44rpx -36rpx rgba(107, 90, 69, 0.7);
+}
+
+.row-hover {
+  background: var(--bg-card-hover);
+}
+
+.row-hd {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  height: 56rpx;
+}
+
+/* 序号：页面顺序 01–05，不是数据 */
+.row-no {
+  flex: none;
+  width: 36rpx;
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: 24rpx;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #8a4f1c;
+}
+
+/* 特别专题：朱红印章位（与文章专题的斜体序号一眼区分） */
+.row-seal {
+  flex: none;
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10rpx;
+  background: linear-gradient(160deg, #f7ebe4, #eddccf);
+  border: 2rpx solid rgba(166, 59, 42, 0.22);
+  font-family: var(--font-serif);
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: #9c3f2c;
+}
+
+.row-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 34rpx;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: #33261a;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row-cnt {
+  flex: none;
+  font-size: 20rpx;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.row-cnt-n {
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: 28rpx;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #8f5326;
+}
+
+.row-flag {
+  flex: none;
+  padding: 0 8rpx;
+  border-radius: 6rpx;
+  background: rgba(166, 59, 42, 0.08);
+  font-size: 18rpx;
+  line-height: 28rpx;
+  color: #9c3f2c;
+}
+
+.row-cv {
+  flex: none;
+  width: 24rpx;
+  text-align: center;
+  font-size: 26rpx;
+  line-height: 1;
+  color: var(--accent-gold-ink);
+}
+
+.row-cv-tog {
+  font-size: 22rpx;
+}
+
+.row-sub {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  height: 40rpx;
+}
+
+.row-desc {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: #4a3826;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row-upd {
+  flex: none;
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* 展开体：3 条篇目 + 「共 N 篇 / 进入专题」 */
+.row-bd {
+  margin-top: 4rpx;
+  padding-top: 4rpx;
+  border-top: 2rpx dashed rgba(107, 90, 69, 0.12);
+}
+
+.toc {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  height: 52rpx;
+}
+
+.toc-tt {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  line-height: 1.3;
+  color: #4a3826;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.toc-tag {
+  flex: none;
+  padding: 0 8rpx;
+  border-radius: 6rpx;
+  background: rgba(181, 113, 58, 0.12);
+  font-size: 18rpx;
+  line-height: 28rpx;
+  color: #8f5326;
+}
+
+.row-more {
+  display: flex;
+  align-items: center;
+  height: 56rpx;
+}
+
+.row-total {
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.row-go {
+  margin-left: auto;
+  font-size: 22rpx;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #8f5326;
+}
+
+/* ===== 形态 D：两列封面墙 =====
+   挂两列 1fr，间距 16rpx；一块砖 ≈ 112px（与原封面卡同档），首屏 7 张 + 2 张露头。
+   展开块 / 单数收尾块都用 grid-column: 1 / -1 铺满整行（wide 由 JS 判定，WXSS 无 :has）。 */
+.wall {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  padding: 4rpx 24rpx 0;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  padding: 20rpx 20rpx 18rpx;
+  background: var(--bg-card);
+  border: 2rpx solid rgba(107, 90, 69, 0.12);
+  border-radius: 24rpx;
+  box-shadow:
+    0 20rpx 44rpx -38rpx rgba(107, 90, 69, 0.55),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.9);
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.tile-open {
+  grid-column: 1 / -1;
+  border-color: rgba(181, 113, 58, 0.42);
+}
+
+.tile-wide {
+  grid-column: 1 / -1;
+}
+
+.tile-hover {
+  background: var(--bg-card-hover);
+}
+
+.tile-top {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  height: 34rpx;
+}
+
+.tile-no {
+  flex: none;
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: 22rpx;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #8a4f1c;
+}
+
+.tile-cnt {
+  margin-left: auto;
+  flex: none;
+  font-size: 18rpx;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.tile-cnt-n {
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: 24rpx;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #8f5326;
+}
+
+.tile-seal {
+  flex: none;
+  width: 38rpx;
+  height: 38rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8rpx;
+  background: linear-gradient(160deg, #f7ebe4, #eddccf);
+  border: 2rpx solid rgba(166, 59, 42, 0.22);
+  font-family: var(--font-serif);
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: #9c3f2c;
+}
+
+.tile-name {
+  margin-top: 12rpx;
+  font-family: var(--font-serif);
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: #33261a;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 两行截断：砖宽只够 2 行（≈14 字/行），固定的 64rpx 保证奇数收尾与展开块高度一致 */
+.tile-desc {
+  margin-top: 6rpx;
+  height: 64rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: #4a3826;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tile-foot {
+  margin-top: auto;
+  padding-top: 10rpx;
+  font-size: 18rpx;
+  line-height: 24rpx;
+  color: var(--text-muted);
+}
+
+.tile-bd {
+  margin-top: 10rpx;
+  padding-top: 4rpx;
+  border-top: 2rpx dashed rgba(107, 90, 69, 0.12);
+}
+
+/* ===== 加载/错误 ===== */
+.loading-block {
+  display: flex;
+  justify-content: center;
+  padding: 160rpx 0;
+}
+
+.loading-text {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+.bottom-spacer {
+  height: calc(140rpx + env(safe-area-inset-bottom));
+}

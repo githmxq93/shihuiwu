@@ -1,0 +1,145 @@
+<view class="page">
+  <!-- 深色导航：页面里已有大标题，导航条不再重复放标题（与「实时看板」同口径） -->
+  <nav-bar safeAreaTop="{{safeAreaTop}}" showBack="{{false}}" dark="{{true}}" />
+
+  <scroll-view class="body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <!-- 深色头：整块让出导航高度（margin-top = 导航底边），导航栏自带深色渐变压在头部上方，
+         两者同为 #332820 起色，接缝处不露纸底白缝；下沿 20rpx 圆角与查询页一致。 -->
+    <view class="hero" style="margin-top: {{navBarHeight}}px;">
+      <view class="hero-kicker">世慧屋 · 历史专题</view>
+      <view class="hero-title">历史<text class="hero-accent">专题</text></view>
+      <view class="hero-stats">
+        <view class="hero-stat">
+          <text class="hero-stat-num">{{articleCount}}</text>
+          <text class="hero-stat-lab">篇文章</text>
+        </view>
+        <view class="hero-stat">
+          <text class="hero-stat-num">{{topicCount}}</text>
+          <text class="hero-stat-lab">个专题</text>
+        </view>
+        <view class="hero-stat">
+          <text class="hero-stat-num">{{specialCount}}</text>
+          <text class="hero-stat-lab">特别专题</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading-block">
+      <text class="loading-text">专题载入中...</text>
+    </view>
+    <view wx:elif="{{showRetry}}" class="error-retry">
+      <text class="error-retry-text">专题加载失败，请检查网络后重试</text>
+      <view class="error-retry-btn" bindtap="onRetry">重新加载</view>
+    </view>
+
+    <!-- ===== 两个分组（文章专题 / 特别专题）同屏 =====
+         形态由设置项 style 决定：a=摘要行手风琴，d=两列封面墙；
+         两层共用同一份数据与展开状态（openKey），切换只换呈现。
+         分组头可折叠，箭头方向跟着走。 -->
+    <block wx:else>
+      <view class="sec" wx:for="{{groups}}" wx:for-item="g" wx:key="key">
+        <!-- 组头：金色竖条 + 标题 + 统计 + 细线 + 右侧展开箭头。
+             箭头用 CSS 方块描边旋转绘制，不用 ▾/▸ 字形——部分机型中文字体缺这两个
+             符号，会把箭头渲染成一条极淡的细竖线，看起来像「没有箭头」。 -->
+        <view class="sec-hd" data-g="{{g.key}}" bindtap="onToggleGroup" hover-class="sec-hd-hover">
+          <view class="sec-bar"></view>
+          <text class="sec-tt">{{g.title}}</text>
+          <text class="sec-meta">{{g.meta}}</text>
+          <view class="sec-line"></view>
+          <view class="sec-gv {{g.closed ? 'sec-gv-closed' : ''}}"></view>
+        </view>
+
+        <block wx:if="{{!g.closed}}">
+          <!-- ---------- 形态 A：摘要行手风琴（组内单开） ----------
+               收起时一行两排：序号 + 名称 + 篇数 / 单行简介 + 更新；
+               展开时补 3 条篇目 + 「进入专题」。特别专题没有篇目，行即入口。 -->
+          <view class="rows" wx:if="{{style === 'a'}}">
+            <view
+              class="row {{it.open ? 'row-open' : ''}} {{g.type === 'special' ? 'row-special' : ''}}"
+              wx:for="{{g.items}}"
+              wx:for-item="it"
+              wx:key="key"
+              data-type="{{g.type}}"
+              data-key="{{it.key}}"
+              data-name="{{it.name}}"
+              data-url="{{it.url}}"
+              bindtap="onTapItem"
+              hover-class="row-hover"
+              hover-stay-time="60"
+            >
+              <view class="row-hd">
+                <text class="row-no" wx:if="{{g.type !== 'special'}}">{{it.no}}</text>
+                <view class="row-seal" wx:else>{{it.char}}</view>
+                <text class="row-name">{{it.name}}</text>
+                <text class="row-cnt" wx:if="{{g.type !== 'special'}}"><text class="row-cnt-n">{{it.count}}</text> 篇</text>
+                <text class="row-flag" wx:else>独立专题站</text>
+                <text class="row-cv" wx:if="{{g.type === 'special'}}">›</text>
+                <text class="row-cv row-cv-tog" wx:else>{{it.open ? '⌃' : '⌄'}}</text>
+              </view>
+
+              <view class="row-sub" wx:if="{{it.desc || it.updateText}}">
+                <text class="row-desc">{{it.desc}}</text>
+                <text class="row-upd" wx:if="{{it.updateText}}">更新 {{it.updateText}}</text>
+              </view>
+
+              <view class="row-bd" wx:if="{{g.type !== 'special' && it.open}}">
+                <view class="toc" wx:for="{{it.toc}}" wx:for-item="tc" wx:key="title">
+                  <text class="toc-tt">{{tc.title}}</text>
+                  <text class="toc-tag" wx:if="{{tc.era}}">{{tc.era}}</text>
+                </view>
+                <view class="row-more">
+                  <text class="row-total">共 {{it.count}} 篇</text>
+                  <text class="row-go" data-key="{{it.key}}" data-name="{{it.name}}" catchtap="onOpenTopic">进入专题 ›</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- ---------- 形态 D：两列封面墙（单条横展） ----------
+               一块砖 = 一个专题；点开那块 grid-column 铺满两列，露出 3 条篇目。
+               总数奇数且无展开项时，最后一块铺满整行（wide 由 JS 计算，WXSS 不支持 :has）。 -->
+          <view class="wall" wx:else>
+            <view
+              class="tile {{it.open ? 'tile-open' : ''}} {{it.wide ? 'tile-wide' : ''}} {{g.type === 'special' ? 'tile-special' : ''}}"
+              wx:for="{{g.items}}"
+              wx:for-item="it"
+              wx:key="key"
+              data-type="{{g.type}}"
+              data-key="{{it.key}}"
+              data-name="{{it.name}}"
+              data-url="{{it.url}}"
+              bindtap="onTapItem"
+              hover-class="tile-hover"
+              hover-stay-time="60"
+            >
+              <view class="tile-top">
+                <text class="tile-no" wx:if="{{g.type !== 'special'}}">{{it.no}}</text>
+                <view class="tile-seal" wx:else>{{it.char}}</view>
+                <text class="tile-cnt" wx:if="{{g.type !== 'special'}}"><text class="tile-cnt-n">{{it.count}}</text> 篇</text>
+              </view>
+              <text class="tile-name">{{it.name}}</text>
+              <text class="tile-desc">{{it.desc}}</text>
+              <view class="tile-foot" wx:if="{{g.type !== 'special'}}">
+                <text wx:if="{{it.updateText}}">更新 {{it.updateText}}</text>
+              </view>
+              <view class="tile-foot" wx:else><text>独立专题站</text></view>
+
+              <view class="tile-bd" wx:if="{{g.type !== 'special' && it.open}}">
+                <view class="toc" wx:for="{{it.toc}}" wx:for-item="tc" wx:key="title">
+                  <text class="toc-tt">{{tc.title}}</text>
+                  <text class="toc-tag" wx:if="{{tc.era}}">{{tc.era}}</text>
+                </view>
+                <view class="row-more">
+                  <text class="row-total">共 {{it.count}} 篇</text>
+                  <text class="row-go" data-key="{{it.key}}" data-name="{{it.name}}" catchtap="onOpenTopic">进入专题 ›</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+</view>

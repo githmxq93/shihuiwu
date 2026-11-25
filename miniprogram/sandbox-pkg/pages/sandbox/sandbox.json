@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "disableScroll": true,
+  "navigationBarTitleText": "沙盘推演 · 安史之乱",
+  "backgroundColor": "#efe2c6",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {}
+}

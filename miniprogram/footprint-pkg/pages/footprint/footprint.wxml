@@ -1,0 +1,231 @@
+<!-- 底部五标签 dock：与详情页 / 世系页共用 templates/dock/dock.wxml + dock.wxss（唯一来源） -->
+<import src="../../../templates/dock/dock.wxml" />
+
+<!-- padding-bottom 由 dock 实测高度动态给（onReady 里量 .dock 的 boundingClientRect），
+     不再写死 200rpx：812 屏 dock≈100px、667 屏 dock≈66px，写死会白留 34px。
+     border-box 让这段留白落进 100vh 之内（P1-4 踩过的坑）。 -->
+<view class="page-wrapper" style="padding-bottom: {{dockH}}px;">
+  <!-- loading 遮罩 -->
+  <view class="loading-mask" wx:if="{{loading}}">
+    <view class="loading-spinner">
+      <text class="loading-spinner-text">数据加载中...</text>
+    </view>
+  </view>
+
+  <nav-bar safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" dark="{{true}}" />
+
+  <!-- ===== 深色常驻头部 =====
+       右上角只保留「足迹」标签：页内搜索入口已移除，选人走下方热门人物 chips，
+       或从人物详情页的「查看足迹」进入（深链 id）。 -->
+  <view class="fp-head-wrap">
+    <view class="fp-head" style="padding-top: {{navBarHeight}}px;">
+      <view class="fp-head-row">
+        <view class="fp-head-nm">
+          <view class="fp-head-nameline">
+            <text class="fp-head-name">{{selectedFigure ? selectedFigure.name : '人物足迹'}}</text>
+            <text class="fp-head-era" wx:if="{{selectedFigure && selectedFigure.dynasty}}">{{selectedFigure.dynasty}}</text>
+          </view>
+          <text class="fp-head-sub">{{headSub}}</text>
+        </view>
+        <view class="fp-head-actions">
+          <text class="fp-head-tag">足迹</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 地图区（拿主位） =====
+       [重要] 列表展开 / 全部卡列表打开时把地图交互关掉（enable-scroll/-zoom）。
+          地图同层渲染在真机上存在**事件穿透**，落在 map 区域的 tap 可能触发
+          map 的 bindmarkertap；布局上已让浮层与地图零重叠，这里是第二道防线。 -->
+  <view class="map-section" id="mapSection">
+    <!-- 地图延迟初始化（2026-11-09 切换提速）：onReady 才挂 map，首帧先出页面骨架 -->
+    <map
+      wx:if="{{mapReady}}"
+      id="footprintMap"
+      class="footprint-map"
+      latitude="{{mapCenter.lat}}"
+      longitude="{{mapCenter.lng}}"
+      scale="{{mapScale}}"
+      markers="{{markers}}"
+      polyline="{{polyline}}"
+      show-location="{{false}}"
+      enable-zoom="{{!listOpen}}"
+      enable-scroll="{{!listOpen}}"
+      enable-rotate="{{false}}"
+      bindmarkertap="onMarkerTap"
+      bindinterpolatepoint="onWalkTick"
+      bindregionchange="onRegionChange">
+    </map>
+
+    <!-- 图例：与 marker 的 5 种状态一一对应（诞 / 终 / 途经 / 档案 / 大区），
+         不再出现「≈」前缀（大区精度改用褐色点 + 卡内文字说明）。 -->
+    <view class="map-legend" wx:if="{{selectedFigure && !noData}}">
+      <view class="lg-item"><view class="legend-dot legend-start"></view><text class="legend-text">诞生</text></view>
+      <view class="lg-item"><view class="legend-dot legend-end"></view><text class="legend-text">终老</text></view>
+      <view class="lg-item"><view class="legend-dot legend-mid"></view><text class="legend-text">途经</text></view>
+      <view class="lg-item"><view class="legend-dot legend-origin"></view><text class="legend-text">档案</text></view>
+      <view class="lg-item"><view class="legend-dot legend-coarse"></view><text class="legend-text">大区</text></view>
+    </view>
+
+    <!-- 贴当前站 marker 的浮动卡（同屏只一张）
+         位置由 JS 的 positionCard() 按「map 视口 + getRegion 投影」算出：
+         默认贴点上方 22px；上方放不下翻下方；上下都不够改贴侧方；左右越界内收。
+         尾巴三角用内联 left 指向 marker 的横坐标。 -->
+    <view class="marker-card {{cardSide}}" wx:if="{{viewMode === 'single' && playIndex >= 0 && !noData && !listOpen}}"
+          style="left: {{cardPos.left}}px; top: {{cardPos.top}}px; max-height: {{cardMaxH}}px;">
+      <view class="mc-tail" wx:if="{{cardSide === 'above' || cardSide === 'below'}}" style="left: {{cardTail}}px;"></view>
+      <view class="mc-h">
+        <!-- [2026-11-10 三修] 一站可挂多件大事（extractLocations 按坐标并站）：
+             徐霞客故居单点 6 条（1587 生→1641 卒）。卡头原只取 events[0].year，
+             卡内却是 6 个时间点，自相矛盾。现由 _cardFields 统一给：
+             cardYear = 区间「1587—1641年」（单条则原年份），cardYearNone 控制置灰；
+             cardMeta = 站号行整串（含「N 件大事」）。 -->
+        <text class="ybadge {{cardYearNone ? 'ybadge-none' : ''}}">{{cardYear || '无可定年'}}</text>
+        <text class="mc-pos">{{cardMeta}}</text>
+      </view>
+      <view class="mc-n">
+        <text class="mc-nm">{{cardName}}</text>
+        <text class="mc-full" wx:if="{{cardFull}}">{{cardFull}}</text>
+      </view>
+      <!-- [修复叠字] 正文滚动区高度由 JS 实测后**写死像素**（cardBodyH）：
+           不再靠 flex:1 + max-height:40% 去撑。百分比上限在 map-section 这个
+           flex 子项上解析不出来，scroll-view 拿不到确定高度就会把内容铺在容器外
+           （后面的事件压到前一事件上、整卡压到图例上）。
+           同时去掉 enhanced：原生滚动层会和 CSS 层各画一遍，出现重影。 -->
+      <scroll-view class="mc-ev" scroll-y="{{true}}" show-scrollbar="{{false}}"
+                   style="height: {{cardBodyH}}px;">
+        <view class="mc-ev-in">
+          <view class="evb" wx:for="{{locations[playIndex].events}}" wx:key="evtIdx">
+            <view class="et">
+              <text class="ey" wx:if="{{item.year}}">{{item.year}}</text>
+              <text class="en">{{item.title}}</text>
+            </view>
+            <text class="ed" wx:if="{{item.description}}">{{item.description}}</text>
+          </view>
+          <view class="mc-empty" wx:if="{{locations[playIndex].events.length === 0}}">该条目来自档案字段（籍贯 / 生地 / 卒地），不是编年事迹。</view>
+          <view class="mc-hint" wx:if="{{locations[playIndex].precision === 'coarse'}}">档案只记到「{{locations[playIndex].shortName}}」一级，图上按大区标示。</view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 全部展开：**不再有 HTML 缩略卡**，每站的「序号 · 站名 · 年份」由 marker
+         原生 callout（display: 'ALWAYS'）渲染，坐标由地图负责 —— 拖动/缩放不可能脱点。
+         缩放档位降级（缩到全览以下只留诞/终两个 callout）在 JS 的 _applyCalloutLevel 里整组切换。 -->
+
+    <!-- 视图开关（效果图图三）：贴地图底部、时间轴上方。
+         单卡跟随 = 同屏一张 HTML 卡并跟点缩放；全部展开 = 全览 + 每站原生 callout。 -->
+    <!-- [2026-11-10 二次调整] 视图开关恒为可见（进页面 = 图二正常态）；
+         「全部展开」属增强项，未解锁时点击由 onModeAll 内部提示，不隐藏控件。 -->
+    <view class="mode-switch" id="guide-fp-mode" wx:if="{{selectedFigure && !noData && locations.length > 0 && !listOpen}}">
+      <view class="ms-opt {{viewMode === 'single' ? 'ms-on' : ''}}" bindtap="onModeSingle">单卡跟随</view>
+      <view class="ms-opt {{viewMode === 'all' ? 'ms-on' : ''}}" bindtap="onModeAll">全部展开</view>
+    </view>
+
+    <!-- 暂无数据遮罩 -->
+    <view class="map-empty" wx:if="{{noData}}">
+      <text class="map-empty-text">{{selectedFigure ? '该人物暂无可用地名' : '查看一位人物的一生足迹'}}</text>
+      <text class="map-empty-hint">{{selectedFigure ? '生平事件与籍贯都未记到具体地点，无法上图' : '从下面的热门人物开始，或由人物详情页点「查看足迹」进入'}}</text>
+      <!-- P1-7：空态引导不再只是一句「如：李白、孔子」（那几个字点了没反应） -->
+      <view class="hot-figures" wx:if="{{!selectedFigure}}">
+        <text class="hot-figures-title">从这些人物开始</text>
+        <view class="hot-figures-chips">
+          <view class="hot-figure-chip" wx:for="{{hotFigures}}" wx:key="index" data-name="{{item}}" bindtap="onHotTap">{{item}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 只有档案位置、没有任何编年事件时的说明条：
+       否则地图上一个灰点会被当成「完整足迹」，而它其实只是籍贯。 -->
+  <view class="fp-note" wx:if="{{selectedFigure && !noData && totalEventCount === 0 && extraSiteCount > 0}}">
+    <text class="fp-note-text">该人物的生平事迹未记到具体地点，图上仅标示档案所载的籍贯 / 生地 / 卒地，不是行迹记录。</text>
+  </view>
+
+  <!-- ===== 时间轴条（48px，流内，不遮地图） =====
+       年份刻度尺（当前站高亮）+ 上一站 / 下一站 + 「全部 N 卡」+ 播放 / 暂停。
+       刻度位置按「站点序号」等分（小程序里年份可能是「万历十八年」「公元前」这类
+       非数字串，不能直接换算成比例），文字标签只给首 / 中 / 末三处。
+       [2026-11-10 位置调整] 播放按钮由最左侧移到**最右侧**：右手单手握持时
+       左下角够不到（用户反馈「点播放不顺手」），右下角才是拇指自然落点。
+       只调整 DOM 顺序 + 按钮尺寸，逻辑 / 绑定 / 解锁行为一律不变。 -->
+  <!-- [2026-11-10 二次调整] 播放条恒为可见、恒可点：进页面就能正常按播放，
+       未解锁只是「免费连续回放前 2 站」，不是把播放条隐藏或一按就拦。 -->
+  <view class="scrub" id="guide-fp-scrub" wx:if="{{selectedFigure && !noData && locations.length > 0}}">
+    <view class="track" bindtap="onTrackTap">
+      <view class="rail"></view>
+      <view class="fill" style="width: {{trackPct}}%;"></view>
+      <view class="tick {{index === 0 ? 'tick-first' : (index === ticks.length - 1 ? 'tick-last' : '')}}" wx:for="{{ticks}}" wx:key="uid" style="left: {{item.pct}}%;">
+        <text class="tick-yr" wx:if="{{item.label}}">{{item.label}}</text>
+      </view>
+      <view class="pin" wx:if="{{playIndex >= 0}}" style="left: {{trackPct}}%;"></view>
+    </view>
+    <view class="steps">
+      <view class="step" bindtap="onPrevStation">‹</view>
+      <view class="step" bindtap="onNextStation">›</view>
+    </view>
+    <view class="allbtn" bindtap="openAllList">全部 {{locations.length}} 卡</view>
+    <view class="play-btn {{playing ? 'play-btn-on' : ''}}" bindtap="onPlayToggle">
+      <view wx:if="{{!playing}}" class="play-triangle"></view>
+      <view wx:else class="play-pause">
+        <view class="play-pause-bar"></view>
+        <view class="play-pause-bar"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 增值激励条（2026-11-10 二次调整）：**进页面不显示**。
+       showUnlockBar 只有两种时机被点亮：
+         ① 免费连续回放播完前 2 站（_onPlayLimitReached）；
+         ② 用户主动点「全部展开 / 全部卡」这类增强控件（_promptUnlock）。
+       流内一条、与地图零重叠，不是全屏遮罩、不是页面唯一出口；
+       全部站点位 / 事件卡 / 手动换站 / 搜索始终免费可看。 -->
+  <view class="unlock-bar" wx:if="{{selectedFigure && !noData && locations.length > 0 && !unlocked && showUnlockBar}}">
+    <view class="ub-info">
+      <!-- 触发无关文案：此条既可能由「播完前 2 站」点亮，也可能由「用户主动点
+           全部展开/全部卡」点亮，故不写「已播放 N 站」，只陈述恒成立的免费范围。 -->
+      <text class="ub-title">全部 {{totalSiteCount}} 站点位免费可看</text>
+      <text class="ub-desc">看一段广告，解锁更多地图 · 完整轨迹 · 全览</text>
+    </view>
+    <view class="ub-btn" hover-class="ub-btn-on" hover-stay-time="80" bindtap="onTapUnlock">看广告解锁</view>
+  </view>
+
+  <!-- ===== 使用引导（文案唯一来源：config/guide-steps.js::footprint） =====
+       本页是一屏固定布局（page 不滚动），两步都不需要滚动；
+       两个锚点都要求「已选人物 + 有站点」，空态由页面侧直接不启动（不写完成），
+       选中人物后再排期；两步仍标 optional，个别缺失时跳过并正常收尾。 -->
+  <guide-layer id="guideLayer" />
+
+  <!-- 底部五标签：固定点亮「足迹」，其余标签由 onDockTap 负责跨页跳转 -->
+  <template is="dock" data="{{active: 'footprint'}}" />
+
+  <!-- ===== 全部站点卡片：1→21 纵向卡片列表（覆盖地图，底边不越过 dock） ===== -->
+  <view class="alllist {{listOpen ? 'alllist-on' : ''}}" wx:if="{{listOpen}}" style="bottom: {{dockH}}px; padding-top: {{navBarHeight}}px;">
+    <view class="al-head">
+      <view class="al-head-t">
+        <text class="al-title">全部站点卡片</text>
+        <text class="al-sub">共 {{traceCount}} 站 · {{locations.length}} 处点位 · 点任一卡跳到该点</text>
+      </view>
+      <view class="al-close" bindtap="closeAllList">✕</view>
+    </view>
+    <scroll-view class="al-body" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}" show-scrollbar="{{false}}" scroll-into-view="{{alScrollInto}}">
+      <view class="al-c {{playIndex === index ? 'al-c-on' : ''}}" wx:for="{{locations}}" wx:key="uid" id="alc-{{index}}" data-idx="{{index}}" bindtap="onAllCardTap">
+        <view class="al-n" wx:if="{{item.synthetic}}">档</view>
+        <view class="al-n" wx:else>{{item.stationNo}}</view>
+        <view class="al-info">
+          <view class="al-t1">
+            <text class="al-nm">{{item.displayName}}</text>
+            <text class="ybadge {{item.yearLabel ? '' : 'ybadge-none'}}">{{item.yearLabel || '无可定年'}}</text>
+            <text class="al-arch" wx:if="{{item.synthetic}}">档案所载</text>
+          </view>
+          <!-- [2026-11-10 四修] 标题与站号行改读 selectFigure 预计算的 titleText / posText：
+               多条事件补「等 N 件大事」；窄屏站号行缩成「第 1/27 站」，两种读法不再打架。 -->
+          <text class="al-t3">{{item.titleText || item.siteLabel || '档案所载地点'}}</text>
+          <text class="al-pos" wx:if="{{item.synthetic}}">档案所载 · {{item.siteLabel}}</text>
+          <text class="al-pos" wx:else>{{item.posText}}</text>
+        </view>
+      </view>
+      <view class="al-bottom"></view>
+    </scroll-view>
+  </view>
+</view>

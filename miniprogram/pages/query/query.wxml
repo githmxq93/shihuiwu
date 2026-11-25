@@ -1,0 +1,70 @@
+<view class="page">
+  <nav-bar title="查询" safeAreaTop="{{safeAreaTop}}" showBack="{{false}}" dark="{{true}}" />
+
+  <!-- 深色头下沿 20rpx 圆角：nav-bar 深色渐变以 #332820 收尾，本圆角条同色叠在
+       导航栏底部 20rpx 之上（右下角正好落在导航栏下沿），两段相接不露白缝，
+       头部总高仍是 状态栏 + 44px，不把内容整体下推。 -->
+  <view class="head-tail" style="top: {{navBottom}}px;"></view>
+
+  <scroll-view class="body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <!-- 导航占位：scroll-view 内联 padding 在部分真机不生效，改用实体占位 -->
+    <view class="nav-spacer" style="height: {{navBarHeight}}px;"></view>
+
+    <!-- 最近查询：标题独立成胶囊底座，右侧「清空」留在胶囊外（行为不变：有记录才出现） -->
+    <view class="section-header-row" wx:if="{{recentQueries.length > 0}}">
+      <view class="section-header">
+        <view class="section-header-bar"></view>
+        <text class="section-header-title">最近查询</text>
+      </view>
+      <view class="section-header-clear" bindtap="onClearRecent">
+        <text class="section-header-more">清空</text>
+      </view>
+    </view>
+    <view class="recent-list" wx:if="{{recentQueries.length > 0}}">
+      <view
+        class="recent-item"
+        wx:for="{{recentQueries}}"
+        wx:key="index"
+        data-q="{{item}}"
+        bindtap="onTapRecent"
+      >{{item}}</view>
+    </view>
+
+    <!-- 工具分组：5 组，组头 + 2 列卡片 / 整宽行混排（layout 由数据决定） -->
+    <view class="q-groups">
+      <view
+        class="q-group {{group.last ? 'is-last' : ''}}"
+        wx:for="{{groups}}"
+        wx:key="key"
+        wx:for-item="group"
+      >
+        <view class="q-ghead">
+          <text class="q-gname">{{group.name}}</text>
+          <text class="q-gcount">{{group.count}} 项</text>
+          <view class="q-grule"></view>
+        </view>
+        <view class="q-gbody">
+          <view
+            class="q-card {{group.layout === 'row' ? 'q-card-row' : ''}}"
+            wx:for="{{group.items}}"
+            wx:key="key"
+            wx:for-item="tool"
+            hover-class="q-card-hover"
+            hover-stay-time="80"
+            data-url="{{tool.url}}"
+            bindtap="onTapTool"
+          >
+            <view class="q-badge">{{tool.badge}}</view>
+            <view class="q-text">
+              <view class="q-name">{{tool.name}}</view>
+              <view class="q-desc">{{tool.desc}}</view>
+            </view>
+            <view class="q-chev" wx:if="{{group.layout === 'row'}}"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="tabbar-space"></view>
+  </scroll-view>
+</view>

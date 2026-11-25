@@ -1,0 +1,274 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.body {
+  height: 100vh;
+}
+
+.nav-spacer {
+  width: 100%;
+}
+
+/* ===== 深色头下沿 20rpx 圆角（页面侧补） =====
+   nav-bar 传 dark 后走 --head-grad-mid → --head-grad-top，末色 --head-grad-top；
+   本圆角条自上而下由同色 --head-grad-top 收到 --head-edge，并向上压住导航栏底部 20rpx
+   （translateY(-100%) 让下沿正好落在导航栏下沿），两段同色相接，不露白缝，
+   也不额外增加头部高度。z-index 高于 nav-bar，pointer-events 关掉避免挡点击。 */
+.head-tail {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 20rpx;
+  transform: translateY(-100%);
+  z-index: 101;
+  pointer-events: none;
+  border-radius: 0 0 20rpx 20rpx;
+  background: linear-gradient(180deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-edge) 100%);
+}
+
+/* ===== 分区标题：胶囊底座 + 立体红竖线 =====
+   与首页新拟态皮肤同源。注意 app.wxss 里的 .section-header 是全宽 flex 行，
+   这里改为内容宽度的胶囊，所以必须在页内覆盖（左右 40rpx 与页面其余元素对齐）。 */
+.section-header {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  margin: 36rpx 40rpx 24rpx;
+  padding: 12rpx 36rpx 12rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    -6rpx -6rpx 16rpx rgba(255, 255, 255, 0.9),
+    8rpx 8rpx 20rpx rgba(163, 149, 137, 0.25),
+    inset 2rpx 2rpx 4rpx rgba(255, 255, 255, 0.8);
+}
+.section-header-bar {
+  width: 10rpx;
+  height: 32rpx;
+  border-radius: 8rpx;
+  background: var(--accent-gold);
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  box-shadow:
+    -2rpx -2rpx 4rpx rgba(255, 255, 255, 0.6),
+    4rpx 4rpx 8rpx rgba(163, 149, 137, 0.6);
+}
+.section-header-title {
+  font-size: var(--fs-32);
+  font-weight: bold;
+  color: #4A342E;
+  letter-spacing: 0;
+}
+/* 「最近查询」一行：胶囊标题靠左、清空按钮靠右（清空不进胶囊） */
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40rpx;
+  margin: 48rpx 0 24rpx;
+}
+.section-header-row .section-header {
+  margin: 0;
+}
+/* 「清空」原为裸 text（约 14px 高），包一层 view 后向上外扩热区到 88rpx（44px）；
+   向上扩可以避开下方 recent-list 首行的热区，视觉与行高不变。 */
+.section-header-clear {
+  position: relative;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0;
+}
+.section-header-clear::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translateX(-50%);
+}
+
+/* ===== 最近查询 ===== */
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 8rpx 40rpx 0;
+}
+.recent-item {
+  position: relative;
+  padding: 10rpx 28rpx;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-subtle);
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+}
+/* 热区补到 88rpx（44px）：视觉仍是原胶囊，透明层不占布局。
+ * 行间距 16rpx，纵向上下各外扩约 15rpx，与相邻行仍留约 1rpx 间隙。 */
+.recent-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--tap-min);
+  transform: translateY(-50%);
+}
+.recent-item:active {
+  background: var(--bg-card-hover);
+}
+
+/* ===== 工具分组（2026-11-13 B 案：5 组，2 列卡片与整宽行混排） =====
+   落地稿：_design/query/b-purpose-groups.html。
+   布局与稿子一致：组头 20px + 8px，组内卡片自适应，组间靠
+   “卡片 10px 下边距 + 组 4px 下边距”拼出 14px，最后一行不再留尾距。 */
+.q-groups {
+  padding: 12rpx 40rpx 0;
+}
+.q-group {
+  margin-bottom: 8rpx;
+}
+.q-group.is-last {
+  margin-bottom: 0;
+}
+
+/* 组头：名称 + 计数 + 发丝线 */
+.q-ghead {
+  display: flex;
+  align-items: center;
+  height: 40rpx;
+  margin-bottom: 16rpx;
+}
+.q-gname {
+  font-family: var(--font-serif);
+  font-size: var(--fs-30);
+  font-weight: bold;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+.q-gcount {
+  margin-left: 16rpx;
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+.q-grule {
+  flex: 1;
+  height: 2rpx;
+  margin-left: 16rpx;
+  background: rgba(61, 46, 31, 0.10);
+}
+
+/* 组体：不用 calc/gap，纯百分比 + space-between，兼容性最稳 */
+.q-gbody {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+/* 卡片：白底 + 双层外投影 + 内高光，质感沿用首页磁贴 */
+.q-card {
+  width: 48.5%;
+  box-sizing: border-box;
+  margin-bottom: 20rpx;
+  padding: 24rpx;
+  background: var(--bg-card);
+  border: 2rpx solid rgba(61, 46, 31, 0.10);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 12rpx 32rpx -28rpx rgba(61, 46, 31, 0.45),
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.q-card-hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-4rpx);
+  box-shadow:
+    0 20rpx 36rpx -12rpx rgba(61, 46, 31, 0.26),
+    0 6rpx 14rpx -6rpx rgba(61, 46, 31, 0.14),
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.95);
+}
+.q-group.is-last .q-card {
+  margin-bottom: 0;
+}
+
+/* 徽标：赭石底 + 深赭字（#7d4a1c 落在混合底 #f3e7d9 上 6.01:1） */
+.q-badge {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: #7d4a1c;
+  background: var(--accent-glow);
+  flex-shrink: 0;
+}
+
+.q-text {
+  min-width: 0;
+  margin-top: 16rpx;
+}
+/* 名称 30rpx / 副标题 24rpx #6e5d48（5.92:1），字距全部归零 */
+.q-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-30);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+.q-desc {
+  margin-top: 8rpx;
+  font-size: var(--fs-24);
+  line-height: 1.4;
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+
+/* 整宽行：单工具组（关系 / 数据）用，避免半列留白；仅换形态，不改内容 */
+.q-card-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  height: 112rpx;
+  padding: 0 28rpx;
+}
+.q-card-row .q-badge {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+}
+.q-card-row .q-text {
+  flex: 1;
+  margin-top: 0;
+  margin-left: 24rpx;
+}
+.q-card-row .q-desc {
+  margin-top: 4rpx;
+}
+.q-chev {
+  width: 14rpx;
+  height: 14rpx;
+  margin-left: 16rpx;
+  border-top: 3rpx solid #9a866c;
+  border-right: 3rpx solid #9a866c;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* 底部占位：全局 .tabbar-space 的高度恰好等于 tabBar 本身高
+   （--tabbar-h 100rpx + env(safe-area-inset-bottom)），滑到底时最后一张卡片
+   正好顶在 tabBar 上沿，看着像粘在一起。
+   本页在此之上再加 56rpx（=28px）呼吸空间，落在 24–32px 的视觉间隙区间；
+   安全区仍由 env(safe-area-inset-bottom) 跟随机型，不写死机型高度。
+   只覆盖查询页，其他页继续用全局值。 */
+.tabbar-space {
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 56rpx);
+}

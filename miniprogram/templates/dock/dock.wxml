@@ -1,0 +1,34 @@
+<!-- ===== 底部五标签 dock（共享模板 · 唯一来源） =====
+     详情页 / 世系页 / 足迹页共用本模板，页面里 import 后按需传入 active：
+       · 详情页：active = pendingTab || pageTab（跳世系/足迹时的即时点亮优先）
+       · 世系页：active = 'lineage'（固定点亮）
+       · 足迹页：active = 'footprint'（固定点亮）
+     事件统一绑定 onDockTap，由各页面自行实现（archive / timeline / relations 走详情页，
+     lineage / footprint 走分包页）。不要在本模板里写页面专属逻辑。
+     id="guide-dock"：三页的「使用引导」都按这个 id 挖孔讲底栏，改一处三页生效。 -->
+<template name="dock">
+  <view class="dock" id="guide-dock">
+    <view class="dock-in">
+      <view class="dock-i {{active === 'archive' ? 'dock-on' : ''}}" data-tab="archive" bindtap="onDockTap" hover-class="dock-hover">
+        <text class="dock-g">档</text>
+        <text class="dock-t">档案</text>
+      </view>
+      <view class="dock-i {{active === 'timeline' ? 'dock-on' : ''}}" data-tab="timeline" bindtap="onDockTap" hover-class="dock-hover">
+        <text class="dock-g">年</text>
+        <text class="dock-t">年表</text>
+      </view>
+      <view class="dock-i {{active === 'lineage' ? 'dock-on' : ''}}" data-tab="lineage" bindtap="onDockTap" hover-class="dock-hover">
+        <text class="dock-g">系</text>
+        <text class="dock-t">世系</text>
+      </view>
+      <view class="dock-i {{active === 'relations' ? 'dock-on' : ''}}" data-tab="relations" bindtap="onDockTap" hover-class="dock-hover">
+        <text class="dock-g">关</text>
+        <text class="dock-t">关系</text>
+      </view>
+      <view class="dock-i {{active === 'footprint' ? 'dock-on' : ''}}" data-tab="footprint" bindtap="onDockTap" hover-class="dock-hover">
+        <text class="dock-g">迹</text>
+        <text class="dock-t">足迹</text>
+      </view>
+    </view>
+  </view>
+</template>

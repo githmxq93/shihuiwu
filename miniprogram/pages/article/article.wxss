@@ -1,0 +1,576 @@
+/* ==========================================================================
+   文章详情页（整页壳）
+   阅读主体（元信息 / 标题 / 正文 / · 完 · / 文中人物 / 参考文献 / 关键词 /
+   底部翻篇条）全部来自 templates/article-reader/article-reader.wxss，
+   与专题页浮层 components/articleOverlay 共用同一份结构与数值。
+   本文件只保留整页壳：导航栏、进度条、互动、相关阅读、版权、同名人物面板。
+   2026-11-14：统一首页入口与专题入口的阅读样式。
+   ========================================================================== */
+@import "../../templates/article-reader/article-reader.wxss";
+
+page {
+  background: var(--bg-primary, var(--bg-primary));
+}
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-primary, var(--bg-primary));
+  color: var(--text-primary, var(--text-primary));
+}
+
+/* ---------- 阅读进度条 ---------- */
+/* top 由模板内联给出（导航栏高度）：写死 top:0 会被状态栏压住 */
+.progress {
+  position: fixed;
+  left: 0;
+  height: 4rpx;
+  z-index: 60;
+  background: var(--accent-gold, var(--accent-gold));
+  transition: width 0.1s linear;
+}
+
+/* ---------- 顶部导航 ---------- */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 92rpx;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.navbar-solid {
+  background: rgba(244, 237, 225, 0.94);
+  box-shadow: 0 2rpx 0 rgba(181, 113, 58, 0.12);
+}
+
+.nav-btn {
+  position: relative;
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* 返回/分享：视觉 72rpx，热区补到 88rpx（44px）。
+   导航条高 92rpx、左右内边距 16rpx，各外扩 8rpx 不越界，也不碰居中标题。 */
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88rpx;
+  height: 88rpx;
+  transform: translate(-50%, -50%);
+}
+
+.nav-btn-hover {
+  background: rgba(61, 46, 31, 0.06);
+}
+
+.nav-back-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  margin-left: 8rpx;
+  border-left: 4rpx solid var(--text-primary, var(--tile-deep));
+  border-bottom: 4rpx solid var(--text-primary, var(--tile-deep));
+  transform: rotate(45deg);
+}
+
+.nav-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 50%;
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary, var(--text-primary));
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+}
+
+/* 分享图标：CSS 画的方框加箭头，避免引入本地图片 */
+.nav-share-icon {
+  position: relative;
+  width: 30rpx;
+  height: 30rpx;
+  border: 3rpx solid var(--text-primary, var(--tile-deep));
+  border-radius: 4rpx;
+}
+
+.nav-share-icon::after {
+  content: '';
+  position: absolute;
+  left: 8rpx;
+  top: -10rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border-top: 3rpx solid var(--text-primary, var(--tile-deep));
+  border-right: 3rpx solid var(--text-primary, var(--tile-deep));
+  transform: rotate(-45deg);
+}
+
+/* ---------- 滚动容器 ---------- */
+.scroller {
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.loading {
+  padding: 200rpx 48rpx;
+  text-align: center;
+  font-size: var(--fs-28);
+  color: var(--text-muted, var(--text-muted));
+}
+
+.error-box {
+  padding: 180rpx 48rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 失败态：标题说清是「文章没了」还是「网断了」，处置完全不同 */
+.error-title {
+  font-size: var(--fs-34);
+  font-weight: 700;
+  color: var(--text-primary, var(--text-primary));
+  text-align: center;
+  line-height: 1.5;
+}
+
+.error-text {
+  margin-top: 16rpx;
+  font-size: var(--fs-28);
+  color: var(--text-muted, var(--text-muted));
+  text-align: center;
+  line-height: 1.7;
+}
+
+.error-btn {
+  margin-top: 32rpx;
+  padding: 18rpx 48rpx;
+  border: 2rpx solid rgba(181, 113, 58, 0.5);
+  color: var(--accent-gold-ink, var(--accent-gold-ink));
+  font-size: var(--fs-28);
+}
+
+.error-btn-ghost {
+  border-color: rgba(61, 46, 31, 0.18);
+  color: var(--text-muted, var(--text-muted));
+}
+
+.error-btn-hover {
+  background: rgba(181, 113, 58, 0.06);
+}
+
+/* ---------- 文章容器：与浮层同一左右留白（32rpx），两边行宽一致 ---------- */
+.article {
+  padding: 0 32rpx;
+}
+
+/* ---------- 点赞 / 收藏（图标用 CSS 画，不引本地图片） ---------- */
+.actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 64rpx;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  height: 92rpx;
+  border: 2rpx solid rgba(181, 113, 58, 0.22);
+  color: var(--text-muted, var(--text-muted));
+  font-size: var(--fs-26);
+  letter-spacing: 0;
+}
+
+.action-btn-hover {
+  background: rgba(242, 237, 228, 0.6);
+}
+
+.action-btn-liked {
+  color: var(--accent-vermillion, var(--accent-vermillion));
+  border-color: rgba(166, 59, 42, 0.5);
+  background: rgba(166, 59, 42, 0.05);
+}
+
+.action-btn-stared {
+  color: var(--accent-gold-ink, var(--accent-gold-ink));
+  border-color: rgba(181, 113, 58, 0.5);
+  background: rgba(181, 113, 58, 0.05);
+}
+
+.action-text {
+  font-size: var(--fs-26);
+  letter-spacing: 0;
+}
+
+/* 心形：两个圆角方块旋转 45° 拼成 */
+.icon-heart {
+  position: relative;
+  width: 26rpx;
+  height: 26rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 0 0 6rpx 0;
+  transform: rotate(45deg) scale(0.72);
+  margin-top: -6rpx;
+}
+
+.icon-heart::before,
+.icon-heart::after {
+  content: "";
+  position: absolute;
+  width: 26rpx;
+  height: 26rpx;
+  border: 3rpx solid currentColor;
+  background: transparent;
+}
+
+.icon-heart::before {
+  left: -16rpx;
+  top: 0;
+  border-radius: 50% 0 0 50%;
+  border-right: none;
+}
+
+.icon-heart::after {
+  left: 0;
+  top: -16rpx;
+  border-radius: 50% 50% 0 0;
+  border-bottom: none;
+}
+
+.icon-heart-on {
+  background: var(--accent-vermillion, var(--accent-vermillion));
+  border-color: var(--accent-vermillion, var(--accent-vermillion));
+}
+
+.icon-heart-on::before,
+.icon-heart-on::after {
+  border-color: var(--accent-vermillion, var(--accent-vermillion));
+}
+
+/* 五角星：用两个三角形叠出来 */
+.icon-star {
+  position: relative;
+  width: 0;
+  height: 0;
+  border-left: 15rpx solid transparent;
+  border-right: 15rpx solid transparent;
+  border-bottom: 26rpx solid currentColor;
+  opacity: 0.85;
+}
+
+.icon-star::after {
+  content: "";
+  position: absolute;
+  left: -15rpx;
+  top: 9rpx;
+  width: 0;
+  height: 0;
+  border-left: 15rpx solid transparent;
+  border-right: 15rpx solid transparent;
+  border-top: 26rpx solid currentColor;
+}
+
+.icon-star-on {
+  opacity: 1;
+}
+
+/* ---------- 相关阅读 ---------- */
+.related-read {
+  margin-top: 64rpx;
+}
+
+.rr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 28rpx;
+  padding: 32rpx 8rpx;
+  border-top: 2rpx dashed rgba(181, 113, 58, 0.18);
+}
+
+.rr-item:first-of-type {
+  border-top: 2rpx solid rgba(181, 113, 58, 0.18);
+}
+
+.rr-item:last-child {
+  border-bottom: 2rpx solid rgba(181, 113, 58, 0.18);
+}
+
+.rr-item-hover {
+  background: rgba(242, 237, 228, 0.5);
+}
+
+.rr-num {
+  flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  background: #f2ede4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
+  font-size: var(--fs-24);
+  font-weight: 700;
+  color: var(--accent-gold-ink, var(--accent-gold-ink));
+  margin-top: 4rpx;
+}
+
+.rr-num-top {
+  background: var(--accent-gold-ink, var(--accent-gold-ink));
+  color: #faf7f2;
+}
+
+.rr-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.rr-title {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--text-primary, var(--text-primary));
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.rr-meta {
+  margin-top: 14rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted, var(--text-muted));
+}
+
+.rr-cat {
+  color: var(--accent-gold-ink, var(--accent-gold-ink));
+}
+
+.rr-dot {
+  width: 6rpx;
+  height: 6rpx;
+  border-radius: 50%;
+  background: rgba(61, 46, 31, 0.18);
+}
+
+/* ---------- 版权 ---------- */
+.copyright {
+  margin-top: 52rpx;
+  padding-top: 36rpx;
+  border-top: 2rpx solid rgba(181, 113, 58, 0.18);
+  font-size: var(--fs-24);
+  line-height: 1.85;
+  color: var(--text-muted, var(--text-muted));
+}
+
+.copyright-strong {
+  color: var(--text-muted, var(--text-muted));
+  font-weight: 600;
+}
+
+/* ---------- 回到顶部 ---------- */
+.to-top {
+  position: fixed;
+  right: 36rpx;
+  bottom: calc(140rpx + env(safe-area-inset-bottom));
+  z-index: 45;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 50%;
+  background: var(--bg-primary, var(--bg-primary));
+  border: 2rpx solid rgba(181, 113, 58, 0.22);
+  box-shadow: 0 8rpx 32rpx rgba(42, 37, 32, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20rpx) scale(0.85);
+  transition: all 0.28s;
+}
+
+.to-top-show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.to-top-hover {
+  transform: scale(0.9);
+}
+
+.to-top-icon {
+  font-size: var(--fs-34);
+  color: var(--accent-gold-ink, var(--accent-gold-ink));
+  line-height: 1;
+}
+
+/* ---------- 底部翻篇条：fixed 在页面底部（浮层内则是面板底部） ---------- */
+.page-foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 46;
+}
+
+/* 无相邻篇目时：文字退到 --text-muted 再降不透明度，让「不可翻」一眼可见；
+   仍保留点击热区，点一下由 onTapFootPrev/Next 说明原因（静默无响应才是坏体验） */
+.page-foot .ar-foot-side.is-dim {
+  opacity: 0.5;
+}
+
+/* 文末留白：让开固定翻篇条与全面屏手势条 */
+.article-end-space {
+  height: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+/* ---------- 同名人物选择面板 ---------- */
+.pick-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 200;
+  background: rgba(26, 20, 14, 0.46);
+  display: flex;
+  align-items: flex-end;
+}
+
+.pick-sheet {
+  width: 100%;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, var(--bg-primary));
+  border-radius: var(--radius-lg) 28rpx 0 0;
+  padding-bottom: calc(12rpx + env(safe-area-inset-bottom));
+  animation: pickUp 0.22s cubic-bezier(0.32, 1, 0.32, 1);
+}
+
+@keyframes pickUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.pick-head {
+  padding: 36rpx 40rpx 24rpx;
+  border-bottom: 2rpx solid rgba(181, 113, 58, 0.14);
+}
+
+.pick-title {
+  display: block;
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary, var(--text-primary));
+  letter-spacing: 0;
+}
+
+.pick-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted, var(--text-muted));
+}
+
+.pick-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8rpx 0;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  padding: 22rpx 40rpx;
+}
+
+.pick-item:active {
+  background: rgba(61, 46, 31, 0.05);
+}
+
+.pick-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-primary, var(--tile-deep));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pick-avatar-text {
+  font-family: var(--font-serif, 'Noto Serif SC', serif);
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--tile-deep-text);
+}
+
+.pick-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-name {
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary, var(--text-primary));
+}
+
+.pick-meta {
+  margin-top: 6rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted, var(--text-muted));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-arrow {
+  flex-shrink: 0;
+  font-size: var(--fs-34);
+  color: var(--text-muted, var(--text-muted));
+}
+
+.pick-cancel {
+  margin: 12rpx 32rpx 20rpx;
+  padding: 26rpx 0;
+  text-align: center;
+  font-size: var(--fs-28);
+  color: var(--text-muted, var(--text-muted));
+  background: #f2ece3;
+  border-radius: 12rpx;
+}
+
+.pick-cancel-hover {
+  background: #e8e0d5;
+}

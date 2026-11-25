@@ -1,0 +1,258 @@
+/* 三专题页公共壳：campaign / treaty / liberation
+   2026-11-14 B6 抽壳：仅收录三页声明完全一致的部分（28 条规则 + 15 行 token 块）。
+   各页差异（内容区、底部占位、回到顶部、动画名）全部留在页内。
+   三页 wxss 通过 @import 引入；改动此处即三页同步。 */
+
+.cp-page,
+.tt-page,
+.lb-page {
+  --cp-bg: #f4ede1;
+  --cp-card: #fbf7ef;
+  --cp-card-hi: #fffdf7;
+  --cp-ink: #3d2e1f;
+  --cp-ink-2: #4a3826;
+  --cp-ink-soft: var(--text-muted);
+  --cp-muted: #75654f;
+  --cp-gold: #b5713a;
+  --cp-accent: #b5713a;
+  /* 新拟态双阴影：左上白高光 + 右下灰投影 */
+  --cp-sl: rgba(255, 255, 255, 0.9);
+  --cp-sl-2: rgba(255, 255, 255, 0.95);
+  --cp-sd: rgba(139, 115, 85, 0.25);
+  --cp-sd-2: rgba(139, 115, 85, 0.35);
+
+  min-height: 100vh;
+  background: var(--cp-bg);
+  color: var(--cp-ink);
+}
+
+.page-scroll {
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.era-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  height: 52px;
+  box-sizing: border-box;
+  background: var(--cp-bg);
+  box-shadow: 0 10rpx 18rpx -12rpx rgba(139, 115, 85, 0.5);
+}
+
+.era-nav-scroll {
+  height: 100%;
+  white-space: nowrap;
+}
+
+.era-nav-inner {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 22rpx;
+  gap: 18rpx;
+  box-sizing: border-box;
+}
+
+.era-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+  background: var(--cp-card);
+  color: var(--cp-ink-soft);
+  font-size: var(--fs-24);
+  line-height: 1.35;
+  box-shadow:
+    -4rpx -4rpx 10rpx var(--cp-sl),
+    5rpx 5rpx 12rpx var(--cp-sd),
+    inset 1rpx 1rpx 3rpx rgba(255, 255, 255, 0.8);
+  transition: box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.era-tab-hover {
+  box-shadow:
+    inset 4rpx 4rpx 9rpx var(--cp-sd-2),
+    inset -4rpx -4rpx 9rpx var(--cp-sl-2);
+}
+
+.era-tab.active {
+  color: var(--accent-gold-ink);
+  font-weight: 700;
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd-2),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+.era-tab-name {
+  font-size: var(--fs-24);
+}
+
+.era-tab-count {
+  font-size: var(--fs-20);
+  line-height: 1.6;
+  color: var(--cp-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.era-tab.active .era-tab-count {
+  color: var(--accent-gold-ink);
+}
+
+.hero {
+  padding: 26rpx 40rpx 30rpx;
+  text-align: center;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 8rpx 28rpx;
+  border-radius: 999rpx;
+  background: var(--cp-card);
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  box-shadow:
+    -4rpx -4rpx 10rpx var(--cp-sl),
+    6rpx 6rpx 14rpx var(--cp-sd);
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: 52rpx;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.35;
+  margin-top: 20rpx;
+  color: var(--cp-ink);
+}
+
+.hero-title-accent {
+  background: linear-gradient(180deg, var(--accent-gold-light) 0%, #8F6B2E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+  font-size: var(--fs-24);
+  color: var(--cp-muted);
+  letter-spacing: 0;
+  margin-top: 14rpx;
+}
+
+.hero-intro {
+  margin-top: 20rpx;
+  font-size: var(--fs-24);
+  line-height: 1.9;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  margin-top: 28rpx;
+  padding: 22rpx 12rpx;
+  border-radius: 32rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 6rpx 6rpx 12rpx var(--cp-sd-2),
+    inset -6rpx -6rpx 12rpx var(--cp-sl-2);
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rpx;
+}
+
+.stat-num {
+  font-family: Georgia, var(--font-serif);
+  font-style: italic;
+  font-size: var(--fs-40);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 2rpx 2rpx 4rpx rgba(181, 113, 58, 0.18);
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: var(--cp-ink-soft);
+}
+
+.stat-divider {
+  width: 4rpx;
+  height: 36rpx;
+  border-radius: 2rpx;
+  background: rgba(139, 115, 85, 0.5);
+  box-shadow: 2rpx 2rpx 4rpx var(--cp-sl-2);
+}
+
+.content-anchor {
+  height: 0;
+}
+
+.content {
+  padding: 0 28rpx;
+}
+
+.footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  margin: 36rpx 0 0;
+  padding: 28rpx 26rpx;
+  border-radius: 32rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+.footnote-icon {
+  flex: none;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cp-card);
+  color: var(--accent-gold-ink);
+  font-size: var(--fs-28);
+  box-shadow:
+    -3rpx -3rpx 7rpx var(--cp-sl),
+    4rpx 4rpx 9rpx var(--cp-sd);
+}
+
+.footnote-text {
+  flex: 1;
+  font-size: var(--fs-22);
+  line-height: 1.9;
+  color: var(--cp-muted);
+  text-align: justify;
+}
+
+.to-top-hover {
+  box-shadow:
+    inset 5rpx 5rpx 12rpx var(--cp-sd-2),
+    inset -5rpx -5rpx 12rpx var(--cp-sl-2);
+}
+
+.to-top-arrow {
+  width: 18rpx;
+  height: 18rpx;
+  margin-top: 8rpx;
+  border-left: 4rpx solid var(--cp-gold);
+  border-top: 4rpx solid var(--cp-gold);
+  transform: rotate(45deg);
+}

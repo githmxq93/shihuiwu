@@ -1,0 +1,413 @@
+@import "../../styles/topic-shell.wxss";
+
+/* ============================================================
+   历代战役史 · 新拟态（与「朝代时间轴」「历代帝王」同源皮肤）
+   皮肤令牌逐字对齐 pages/dynasty-timeline/dynasty-timeline.wxss 与
+   pages/emperors/emperors.wxss：
+     纸底 #f4ede1 · 白卡 #fbf7ef · 墨 #3d2e1f/#75654f
+     金棕 #b5713a · 赭石强调 #b5713a
+     高光 rgba(255,255,255,.9)/.95 · 投影 rgba(163,149,137,.25)/.35
+   换算规则：参考稿 1px = 2rpx
+   变量挂在 .cp-page，不污染全局主题。
+
+   结构说明：
+   1) 时期导航由 scroll-view 内 sticky（不生效）改为 fixed 挂 nav 下方，
+      .page-scroll 用行内 padding-top（navH + 52px）给内容让位；
+   2) 一次只渲染当前时期，导航点击即换内容；
+   3) 每张战役卡新增「介绍」正文段，结果收进内凹槽。
+   注意：.era-nav 不加 backdrop-filter —— 2026-10-03 真机白屏专项的修复结论。
+   ============================================================ */
+
+/* 按朝代分组标签：横滑导航里的朝代分隔标 */
+.era-group-label {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8rpx 0 18rpx;
+  font-size: var(--fs-22);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+  position: relative;
+}
+
+.era-group-label:first-child {
+  padding-left: 0;
+}
+
+.era-group-label::after {
+  content: '';
+  margin-left: 18rpx;
+  width: 2rpx;
+  height: 26rpx;
+  background: rgba(140, 90, 68, 0.32);
+  box-shadow: 1rpx 1rpx 2rpx var(--cp-sl);
+}
+
+/* 时期小结：微凸软包卡片 */
+.era-panel {
+  margin-top: 8rpx;
+  padding: 26rpx 28rpx;
+  border-radius: 32rpx;
+  background: radial-gradient(circle at 30% 30%, var(--cp-card-hi), var(--bg-card) 60%, var(--bg-primary));
+  box-shadow:
+    0 18rpx 36rpx -14rpx rgba(139, 115, 85, 0.2),
+    6rpx 6rpx 14rpx var(--cp-sd),
+    -6rpx -6rpx 14rpx var(--cp-sl),
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.9);
+}
+
+.ep-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.ep-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.ep-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--cp-ink);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+.ep-years {
+  font-size: var(--fs-22);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 筛选开关：常驻内凹槽；开启后转强调色并染一层极淡朱砂 */
+.ep-filter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--cp-bg);
+  color: var(--cp-muted);
+  font-size: var(--fs-22);
+  box-shadow:
+    inset 4rpx 4rpx 9rpx var(--cp-sd-2),
+    inset -4rpx -4rpx 9rpx var(--cp-sl-2);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.ep-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 1rpx 1rpx 3rpx var(--cp-sd-2);
+  box-sizing: border-box;
+}
+
+.ep-filter.on {
+  color: var(--accent-gold-ink);
+  font-weight: 600;
+  background: rgba(181, 113, 58, 0.08);
+  box-shadow:
+    inset 4rpx 4rpx 9rpx rgba(181, 113, 58, 0.16),
+    inset -4rpx -4rpx 9rpx var(--cp-sl-2);
+}
+
+.ep-filter.on .ep-dot {
+  background: var(--cp-accent);
+  box-shadow:
+    2rpx 2rpx 5rpx rgba(181, 113, 58, 0.35),
+    inset 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.9);
+}
+
+/* 文字节点显式给字号：text 虽可继承，但显式声明可避免不同基础库的继承差异 */
+.ep-filter-text {
+  font-size: var(--fs-22);
+}
+
+.ep-meta {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 12rpx;
+  font-size: var(--fs-22);
+  color: var(--cp-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ep-meta-sep {
+  color: rgba(139, 115, 85, 0.8);
+}
+
+.ep-empty {
+  margin-top: 22rpx;
+  padding: 34rpx 26rpx;
+  text-align: center;
+  font-size: var(--fs-24);
+  line-height: 1.7;
+  color: var(--cp-muted);
+  border-radius: var(--radius-lg);
+  background: var(--cp-bg);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+/* ================= 阶段分组 ================= */
+.group-block {
+  margin-top: 32rpx;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 2rpx 6rpx 18rpx;
+}
+
+/* 分组色条：凸起的微浮雕竖条 */
+.gh-bar {
+  flex: none;
+  width: 10rpx;
+  height: 34rpx;
+  border-radius: 6rpx;
+  background: linear-gradient(180deg, var(--accent-gold-light) 0%, var(--cp-accent) 100%);
+  box-shadow:
+    -2rpx -2rpx 4rpx rgba(255, 255, 255, 0.6),
+    4rpx 4rpx 8rpx var(--cp-sd-2);
+}
+
+.gh-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--cp-ink-2);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+/* 计数：内凹小槽 */
+.gh-count {
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--cp-bg);
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+  box-shadow:
+    inset 3rpx 3rpx 6rpx var(--cp-sd-2),
+    inset -3rpx -3rpx 6rpx var(--cp-sl-2);
+}
+
+/* ================= 折叠箭头（纯 CSS 微凸圆钮，不引用本地图片） ================= */
+.gh-chev {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: var(--cp-card);
+  box-shadow:
+    -3rpx -3rpx 7rpx var(--cp-sl),
+    4rpx 4rpx 9rpx var(--cp-sd);
+  transition: transform 0.25s ease;
+}
+
+.gh-chev::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 11rpx;
+  height: 11rpx;
+  border-right: 2rpx solid var(--cp-muted);
+  border-bottom: 2rpx solid var(--cp-muted);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.gh-chev.up {
+  transform: rotate(180deg);
+}
+
+/* ================= 战役卡片 ================= */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+/* 微凸软包：多层外阴影（大范围柔光 + 紧贴平面的明暗）＋ 极淡径向渐变底 */
+.cmp-card {
+  padding: 28rpx 30rpx 26rpx;
+  border-radius: 32rpx;
+  background: radial-gradient(circle at 30% 30%, var(--cp-card-hi), var(--bg-card) 60%, var(--bg-primary));
+  box-shadow:
+    0 20rpx 40rpx -14rpx rgba(139, 115, 85, 0.17),
+    0 10rpx 20rpx -8rpx rgba(139, 115, 85, 0.11),
+    7rpx 7rpx 15rpx var(--cp-sd),
+    -7rpx -7rpx 15rpx var(--cp-sl),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+}
+
+/* 重大战役：底色略暖、投影略重，靠「重大」标签点明，不用硬边框 */
+.cmp-card.major {
+  background: radial-gradient(circle at 30% 30%, var(--bg-elevated), #FDF8F4 60%, #F8F0E9);
+  box-shadow:
+    0 22rpx 44rpx -14rpx rgba(181, 113, 58, 0.14),
+    0 10rpx 20rpx -8rpx rgba(139, 115, 85, 0.13),
+    7rpx 7rpx 15rpx var(--cp-sd-2),
+    -7rpx -7rpx 15rpx var(--cp-sl),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.95);
+}
+
+.cmp-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.cmp-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--cp-ink);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+/* 重大标签：右上角微凸小胶囊 */
+.cmp-flag {
+  flex: none;
+  margin-top: 4rpx;
+  padding: 3rpx 14rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid rgba(181, 113, 58, 0.35);
+  background: rgba(181, 113, 58, 0.08);
+  color: var(--accent-gold-ink);
+  font-size: 18rpx;
+  font-weight: 600;
+  letter-spacing: 0;
+  box-shadow:
+    2rpx 2rpx 6rpx rgba(139, 115, 85, 0.18),
+    inset 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.9);
+}
+
+.cmp-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+/* 时间：下沉凹槽（配方同「年份区间」） */
+.cmp-time {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 6rpx 16rpx;
+  border-radius: 14rpx;
+  background: var(--cp-bg);
+  font-size: var(--fs-24);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 4rpx 4rpx 8rpx var(--cp-sd-2),
+    inset -4rpx -4rpx 8rpx var(--cp-sl-2);
+}
+
+.cmp-dot {
+  font-size: var(--fs-22);
+  color: rgba(139, 115, 85, 0.9);
+}
+
+.cmp-loc {
+  font-size: var(--fs-22);
+  color: var(--cp-muted);
+}
+
+/* 介绍正文 */
+.cmp-intro {
+  margin-top: 16rpx;
+  font-size: var(--fs-26);
+  line-height: 1.88;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+/* 结果：内凹备注槽，与正文区分层级 */
+.cmp-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 18rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 20rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 4rpx 4rpx 9rpx var(--cp-sd),
+    inset -4rpx -4rpx 9rpx var(--cp-sl-2);
+}
+
+.cmp-result-label {
+  flex: none;
+  padding-top: 2rpx;
+  font-size: var(--fs-20);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.cmp-result-text {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.75;
+  color: var(--cp-ink-soft);
+}
+
+/* ================= 回到顶部 ================= */
+.to-top {
+  position: fixed;
+  right: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 28px);
+  z-index: 88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--cp-card);
+  box-shadow:
+    -6rpx -6rpx 14rpx var(--cp-sl),
+    8rpx 8rpx 18rpx var(--cp-sd-2),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+  animation: toTopIn 0.22s ease-out;
+}
+
+@keyframes toTopIn {
+  from { opacity: 0; transform: translateY(12rpx) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bottom-spacer {
+  height: calc(80rpx + env(safe-area-inset-bottom));
+}

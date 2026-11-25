@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "历史人物数据统计 - 历代人物分布 - 世慧屋",
+  "disableScroll": true,
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar"
+  }
+}

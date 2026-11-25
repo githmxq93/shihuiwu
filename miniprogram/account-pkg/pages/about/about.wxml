@@ -1,0 +1,50 @@
+<view class="ab-page">
+  <nav-bar title="关于世慧屋" dark="{{true}}" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <scroll-view class="ab-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <view class="nav-spacer" style="height: {{navBarHeight}}px; flex-shrink: 0;"></view>
+
+    <!-- ==================== 深色品牌头 ====================
+         版式来源：_design/profile/plan-about.html -->
+    <view class="ab-head">
+      <view class="ab-logo"><text class="ab-logo-txt">世</text></view>
+      <text class="ab-name">世慧屋</text>
+      <text class="ab-sub">历史人物关系图谱</text>
+      <view class="ab-ver">v{{appVersion}}{{appVersionEnv}}</view>
+    </view>
+
+    <view class="ab-main">
+      <!-- ---------- 版本与备案 ---------- -->
+      <view class="ab-group-label"><text>版本与备案</text></view>
+      <view class="ab-card">
+        <view class="ab-row {{icp ? 'ab-row-line' : ''}}">
+          <text class="ab-row-title">当前版本</text>
+          <text class="ab-row-value">v{{appVersion}}{{appVersionEnv}}</text>
+        </view>
+        <!-- 备案号：有值才显示；点击整行复制 -->
+        <view class="ab-row" wx:if="{{icp}}" bindtap="onCopyIcp" hover-class="ab-row-hover">
+          <text class="ab-row-title">备案号</text>
+          <text class="ab-row-value">{{icp}}</text>
+          <text class="ab-copy">复制</text>
+        </view>
+      </view>
+
+      <!-- ---------- 条款与声明 ---------- -->
+      <view class="ab-group-label"><text>条款与声明</text></view>
+      <view class="ab-card">
+        <view class="ab-row ab-row-line" bindtap="onOpenPolicy" data-type="privacy" hover-class="ab-row-hover">
+          <text class="ab-row-title">隐私政策</text>
+          <text class="ab-row-arrow">›</text>
+        </view>
+        <view class="ab-row" bindtap="onOpenPolicy" data-type="disclaimer" hover-class="ab-row-hover">
+          <text class="ab-row-title">免责声明</text>
+          <text class="ab-row-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- ---------- 帮助与反馈已移回「我的」页（「通用与关于」组），本页不再重复 ---------- -->
+
+      <text class="ab-footer">世慧屋 · 历史人物关系图谱</text>
+    </view>
+  </scroll-view>
+</view>

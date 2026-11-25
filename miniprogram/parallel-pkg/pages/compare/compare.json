@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "nav-bar": "/components/navBar/navBar",
+    "guide-layer": "/components/guide-layer/guide-layer"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "中外对照"
+}

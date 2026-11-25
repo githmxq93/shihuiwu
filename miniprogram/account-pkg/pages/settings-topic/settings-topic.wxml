@@ -1,0 +1,70 @@
+<view class="st-page">
+  <nav-bar title="专题设置" dark="{{true}}" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <scroll-view class="st-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+    <view class="nav-spacer" style="height: {{navBarHeight}}px; flex-shrink: 0;"></view>
+
+    <text class="st-intro">以下偏好只保存在本机，不写服务端，也不跨设备同步。</text>
+
+    <!-- ---------- 专题页风格 ----------
+         顺序固定：第一项摘要行、第二项两列封面墙（默认值取第二项）。 -->
+    <view class="st-label"><text>专题页风格</text></view>
+    <view class="st-card">
+      <view
+        class="st-row st-row-line"
+        data-style="a"
+        bindtap="onPickStyle"
+        hover-class="st-row-hover"
+      >
+        <view class="st-row-main">
+          <text class="st-row-title">摘要行手风琴</text>
+          <text class="st-row-desc">一行一个专题，点开看 3 条篇目；一屏能放下 5 个专题</text>
+        </view>
+        <text class="st-check" wx:if="{{style === 'a'}}">✓</text>
+      </view>
+      <view
+        class="st-row"
+        data-style="d"
+        bindtap="onPickStyle"
+        hover-class="st-row-hover"
+      >
+        <view class="st-row-main">
+          <text class="st-row-title">两列封面墙</text>
+          <text class="st-row-desc">两列卡片，点开一块横展整行；一屏 7 张，更容易看出有哪几个专题</text>
+        </view>
+        <text class="st-check" wx:if="{{style === 'd'}}">✓</text>
+      </view>
+    </view>
+
+    <!-- ---------- 默认状态 ---------- -->
+    <view class="st-label"><text>默认状态</text></view>
+    <view class="st-card">
+      <view
+        class="st-row st-row-line"
+        data-expanded="0"
+        bindtap="onPickDefault"
+        hover-class="st-row-hover"
+      >
+        <view class="st-row-main">
+          <text class="st-row-title">默认收起</text>
+          <text class="st-row-desc">进页面先看全貌，需要时再点开</text>
+        </view>
+        <text class="st-check" wx:if="{{!defaultExpanded}}">✓</text>
+      </view>
+      <view
+        class="st-row"
+        data-expanded="1"
+        bindtap="onPickDefault"
+        hover-class="st-row-hover"
+      >
+        <view class="st-row-main">
+          <text class="st-row-title">默认展开首条</text>
+          <text class="st-row-desc">进页面直接展开第一个专题的 3 条篇目；封面墙下是首块横展</text>
+        </view>
+        <text class="st-check" wx:if="{{defaultExpanded}}">✓</text>
+      </view>
+    </view>
+
+    <text class="st-foot">改完返回专题页即生效，无需重启；切换风格或默认状态后，展开项会回到默认。</text>
+  </scroll-view>
+</view>

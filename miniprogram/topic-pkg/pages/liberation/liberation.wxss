@@ -1,0 +1,538 @@
+@import "../../styles/topic-shell.wxss";
+
+/* ============================================================
+   解放战争 · 各地解放时间线 · 新拟态
+   （与 topic-pkg/pages/campaign 同源皮肤，令牌逐字对齐
+     pages/dynasty-timeline/dynasty-timeline.wxss 与 pages/emperors/emperors.wxss）
+     纸底 #f4ede1 · 白卡 #fbf7ef · 墨 #3d2e1f/#75654f
+     金棕 #b5713a · 赭石强调 #b5713a
+     高光 rgba(255,255,255,.9)/.95 · 投影 rgba(163,149,137,.25)/.35
+   换算规则：参考稿 1px = 2rpx
+   变量挂在 .lb-page，不污染全局主题。
+
+   结构说明：
+   1) 大区导航由流内横向条改为 fixed 挂 nav 下方，.page-scroll 用行内
+      padding-top（navH + 52px）给内容让位；
+   2) 一次只渲染当前大区的省份，导航点击即换内容；
+   3) 省份卡的城市明细默认折叠，展开后落进内凹槽；
+   4) 主要战役区整体可折叠，每张战役卡新增「介绍」正文，
+      解放城市收进内凹槽。
+   注意：.era-nav 不加 backdrop-filter —— 2026-10-03 真机白屏专项的修复结论。
+   ============================================================ */
+
+/* 当前大区小结：内凹凹槽 */
+.region-panel {
+  margin-top: 8rpx;
+  padding: 26rpx 28rpx;
+  border-radius: 32rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+.rp-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.rp-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-36);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--cp-ink-2);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+.rp-label {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.rp-meta {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 10rpx;
+  font-size: var(--fs-22);
+  color: var(--cp-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-sep {
+  color: rgba(139, 115, 85, 0.8);
+}
+
+/* ================= 省份卡片 ================= */
+.prov-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 26rpx;
+}
+
+/* 微凸软包：多层外阴影 ＋ 极淡径向渐变底 */
+.prov-card {
+  border-radius: 32rpx;
+  background: radial-gradient(circle at 30% 30%, var(--cp-card-hi), var(--bg-card) 60%, var(--bg-primary));
+  box-shadow:
+    0 20rpx 40rpx -14rpx rgba(139, 115, 85, 0.17),
+    0 10rpx 20rpx -8rpx rgba(139, 115, 85, 0.11),
+    7rpx 7rpx 15rpx var(--cp-sd),
+    -7rpx -7rpx 15rpx var(--cp-sl),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+}
+
+/* 展开态：整体更「浮起」一点，暗示内部还有内容 */
+.prov-card.open {
+  box-shadow:
+    0 24rpx 48rpx -14rpx rgba(139, 115, 85, 0.22),
+    0 12rpx 24rpx -8rpx rgba(139, 115, 85, 0.13),
+    7rpx 7rpx 15rpx var(--cp-sd-2),
+    -7rpx -7rpx 15rpx var(--cp-sl),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.95);
+}
+
+.prov-head {
+  padding: 28rpx 30rpx 24rpx;
+  border-radius: 32rpx;
+}
+
+.prov-head-hover {
+  box-shadow:
+    inset 4rpx 4rpx 10rpx var(--cp-sd),
+    inset -4rpx -4rpx 10rpx var(--cp-sl-2);
+}
+
+.prov-top {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.prov-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-34);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--cp-ink);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+/* 大区时间标签（港澳台为「关键时间」）：微凸小胶囊 */
+.prov-tag {
+  flex: none;
+  padding: 3rpx 14rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid rgba(181, 113, 58, 0.35);
+  background: rgba(181, 113, 58, 0.08);
+  color: var(--accent-gold-ink);
+  font-size: 18rpx;
+  font-weight: 600;
+  letter-spacing: 0;
+  box-shadow:
+    2rpx 2rpx 6rpx rgba(139, 115, 85, 0.18),
+    inset 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.9);
+}
+
+/* 时间：下沉凹槽 */
+.prov-time {
+  display: inline-block;
+  margin-top: 16rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 14rpx;
+  background: var(--cp-bg);
+  font-size: var(--fs-24);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 1rpx 1rpx 2rpx rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 4rpx 4rpx 8rpx var(--cp-sd-2),
+    inset -4rpx -4rpx 8rpx var(--cp-sl-2);
+}
+
+.prov-event {
+  margin-top: 14rpx;
+  font-size: var(--fs-26);
+  line-height: 1.8;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+/* 解放经过：左侧细朱砂条，把「一句结论」与「一段经过」分开 */
+.prov-intro {
+  margin-top: 12rpx;
+  padding-left: 18rpx;
+  border-left: 4rpx solid rgba(181, 113, 58, 0.3);
+  font-size: 26rpx;
+  line-height: 1.85;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+.prov-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx solid rgba(139, 115, 85, 0.18);
+}
+
+.pt-count {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 折叠箭头：纯 CSS 微凸圆钮，不引用本地图片 */
+.pt-chev {
+  position: relative;
+  flex: none;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: var(--cp-card);
+  box-shadow:
+    -3rpx -3rpx 7rpx var(--cp-sl),
+    4rpx 4rpx 9rpx var(--cp-sd);
+  transition: transform 0.25s ease;
+}
+
+.pt-chev::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 11rpx;
+  height: 11rpx;
+  border-right: 2rpx solid var(--cp-muted);
+  border-bottom: 2rpx solid var(--cp-muted);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.pt-chev.up {
+  transform: rotate(180deg);
+}
+
+/* ================= 城市明细 ================= */
+.city-list {
+  margin: 0 18rpx 18rpx;
+  padding: 4rpx 20rpx 12rpx;
+  border-radius: 24rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+.city-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 16rpx 0 16rpx 24rpx;
+  border-bottom: 2rpx solid rgba(139, 115, 85, 0.12);
+}
+
+.city-row:last-child {
+  border-bottom: none;
+}
+
+.city-dot {
+  position: absolute;
+  left: 0;
+  top: 26rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: rgba(140, 90, 68, 0.55);
+  box-shadow: 1rpx 1rpx 3rpx var(--cp-sl-2);
+}
+
+.city-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.city-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.city-name {
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--cp-ink-2);
+}
+
+.city-time {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.city-note {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  line-height: 1.7;
+  color: var(--cp-muted);
+}
+
+/* ================= 主要战役 ================= */
+.cm-section {
+  margin-top: 40rpx;
+}
+
+.cm-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 22rpx 26rpx;
+  border-radius: var(--radius-lg);
+  background: var(--cp-card);
+  box-shadow:
+    -4rpx -4rpx 10rpx var(--cp-sl),
+    6rpx 6rpx 14rpx var(--cp-sd),
+    inset 1rpx 1rpx 3rpx rgba(255, 255, 255, 0.85);
+}
+
+.cm-head-hover {
+  box-shadow:
+    inset 4rpx 4rpx 10rpx var(--cp-sd),
+    inset -4rpx -4rpx 10rpx var(--cp-sl-2);
+}
+
+/* 分组色条：凸起的微浮雕竖条 */
+.cm-bar {
+  flex: none;
+  width: 10rpx;
+  height: 34rpx;
+  border-radius: 6rpx;
+  background: linear-gradient(180deg, var(--accent-gold-light) 0%, var(--cp-accent) 100%);
+  box-shadow:
+    -2rpx -2rpx 4rpx rgba(255, 255, 255, 0.6),
+    4rpx 4rpx 8rpx var(--cp-sd-2);
+}
+
+.cm-title {
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--cp-ink-2);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+/* 计数：内凹小槽 */
+.cm-count {
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--cp-bg);
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+  box-shadow:
+    inset 3rpx 3rpx 6rpx var(--cp-sd-2),
+    inset -3rpx -3rpx 6rpx var(--cp-sl-2);
+}
+
+.cm-chev {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: var(--cp-card);
+  box-shadow:
+    -3rpx -3rpx 7rpx var(--cp-sl),
+    4rpx 4rpx 9rpx var(--cp-sd);
+  transition: transform 0.25s ease;
+}
+
+.cm-chev::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 11rpx;
+  height: 11rpx;
+  border-right: 2rpx solid var(--cp-muted);
+  border-bottom: 2rpx solid var(--cp-muted);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.cm-chev.up {
+  transform: rotate(180deg);
+}
+
+.cm-hint {
+  margin-top: 18rpx;
+  padding: 24rpx 26rpx;
+  border-radius: 24rpx;
+  background: var(--cp-bg);
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--cp-muted);
+  box-shadow:
+    inset 5rpx 5rpx 11rpx var(--cp-sd),
+    inset -5rpx -5rpx 11rpx var(--cp-sl-2);
+}
+
+.cm-body {
+  margin-top: 26rpx;
+}
+
+.cm-group {
+  margin-bottom: 34rpx;
+}
+
+.cm-group-name {
+  padding-left: 6rpx;
+  margin-bottom: 16rpx;
+  font-family: var(--font-serif);
+  font-size: var(--fs-28);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+/* ================= 战役卡片 ================= */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.cmp-card {
+  padding: 28rpx 30rpx 26rpx;
+  border-radius: 32rpx;
+  background: radial-gradient(circle at 30% 30%, var(--cp-card-hi), var(--bg-card) 60%, var(--bg-primary));
+  box-shadow:
+    0 20rpx 40rpx -14rpx rgba(139, 115, 85, 0.17),
+    0 10rpx 20rpx -8rpx rgba(139, 115, 85, 0.11),
+    7rpx 7rpx 15rpx var(--cp-sd),
+    -7rpx -7rpx 15rpx var(--cp-sl),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+}
+
+.cmp-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.cmp-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 32rpx;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--cp-ink);
+  text-shadow: 2rpx 2rpx 3rpx var(--cp-sl-2);
+}
+
+.cmp-time {
+  flex: none;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 战役经过：左侧朱砂竖条 + 小标签，与「解放城市」凹槽形成两种层级 */
+.cmp-intro {
+  margin-top: 18rpx;
+  padding-left: 20rpx;
+  border-left: 6rpx solid rgba(181, 113, 58, 0.42);
+}
+
+.cmp-intro-label {
+  font-size: var(--fs-20);
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.cmp-intro-text {
+  margin-top: 4rpx;
+  font-size: 28rpx;
+  line-height: 1.88;
+  color: var(--cp-ink-soft);
+  text-align: justify;
+}
+
+/* 解放城市：内凹备注槽，与正文区分层级 */
+.cmp-cities {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 18rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 20rpx;
+  background: var(--cp-bg);
+  box-shadow:
+    inset 4rpx 4rpx 9rpx var(--cp-sd),
+    inset -4rpx -4rpx 9rpx var(--cp-sl-2);
+}
+
+.cmp-cities-label {
+  flex: none;
+  padding-top: 2rpx;
+  font-size: var(--fs-20);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.cmp-cities-text {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.75;
+  color: var(--cp-ink-soft);
+}
+
+/* 底部留白：页面级覆盖全局的 80rpx —— 回到顶部按钮浮在右下
+   （88rpx 高 + 距底 28px），留 150rpx 才能保证最后一张卡不被压住 */
+.bottom-spacer {
+  height: calc(150rpx + env(safe-area-inset-bottom));
+}
+
+/* ================= 回到顶部 ================= */
+.to-top {
+  position: fixed;
+  right: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 28px);
+  z-index: 88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--cp-card);
+  box-shadow:
+    -6rpx -6rpx 14rpx var(--cp-sl),
+    8rpx 8rpx 18rpx var(--cp-sd-2),
+    inset 2rpx 2rpx 5rpx rgba(255, 255, 255, 0.9);
+  animation: lbToTopIn 0.22s ease-out;
+}
+
+@keyframes lbToTopIn {
+  from { opacity: 0; transform: translateY(12rpx) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

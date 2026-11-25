@@ -1,0 +1,868 @@
+/* ============================================================
+   历代帝王 · 方案 C 连续时间轴 + 半屏人物抽屉
+   ------------------------------------------------------------
+   颜色与字号延用全站纸本风：
+     纸底 #f4ede1 · 卡面 #fbf7ef · 墨 #3d2e1f · 次 #75654f
+     弱 #75654f / #a4917a · 赭石 #b5713a · 亮金 #c98a4e / #e5b77f
+   高度必须是整数 rpx，并与 emperors.js 里的 H_*_RPX 一一对应，
+   否则窗口化渲染的 padTop / 吸顶定位会逐行漂移：
+     .sec 84rpx(42px) · .node 88rpx(44px) · .branch-head 68rpx(34px)
+     政权网格：行数×64rpx + 行距×12rpx + 上下内边距 20rpx
+   ============================================================ */
+.ep-page {
+  --ep-bg: #f4ede1;
+  --ep-card: #fbf7ef;
+  --ep-ink: #3d2e1f;
+  --ep-ink-2: #4a3826;
+  --ep-ink-soft: var(--text-muted);
+  --ep-muted: #75654f;
+  --ep-muted-2: #a4917a;
+  --ep-gold: #b5713a;
+  --ep-gold-light: #c98a4e;
+  --ep-gold-bright: #e5b77f;
+
+  min-height: 100vh;
+  background: var(--ep-bg);
+  color: var(--ep-ink);
+  font-family: var(--font-serif);
+}
+
+.page-scroll {
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ---------------- 深色头（固定） ---------------- */
+.ep-head {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  box-sizing: border-box;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+  padding-bottom: 24rpx;
+  border-radius: 0 0 20rpx 20rpx;
+  background:
+    radial-gradient(120% 90% at 84% 0%, rgba(207, 138, 75, 0.28), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  box-shadow: 0 10rpx 24rpx -14rpx rgba(30, 20, 12, 0.7);
+  overflow: hidden;
+}
+
+.ep-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+}
+
+.h-fold {
+  position: relative;
+  z-index: 1;
+  padding: 14rpx 0 2rpx;
+  transition: opacity 0.18s ease;
+}
+
+/* 滚动后标题与副行收起，只留 6 段刻度（与效果图 C 第二帧一致） */
+.ep-head.is-compact .h-fold {
+  height: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.h-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+
+.h-sub {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.52);
+}
+
+.h-num {
+  color: var(--ep-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.era-strip {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  margin-top: 8rpx;
+  border-top: 1rpx solid rgba(229, 183, 127, 0.16);
+}
+
+.era {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 0 4rpx;
+  border-top: 4rpx solid transparent;
+  margin-top: -1rpx;
+}
+
+.era-name {
+  font-size: 22rpx;
+  letter-spacing: 0;
+  /* 深色头上对比度仅 3.60:1，提到 .58 后实测约 5.6:1（WCAG AA 4.5:1） */
+  color: rgba(246, 236, 218, 0.58);
+}
+
+.era-on {
+  border-top-color: var(--ep-gold-light);
+}
+
+.era-on .era-name {
+  color: var(--ep-gold-bright);
+  font-weight: 600;
+}
+
+/* ---------------- 34px 吸顶条 ---------------- */
+.sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 92;
+  height: 68rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 0 40rpx;
+  background: rgba(244, 237, 225, 0.97);
+  border-bottom: 1rpx solid rgba(61, 46, 31, 0.08);
+  opacity: 0;
+  transform: translateY(-10rpx);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.sticky.sticky-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sticky-name {
+  font-size: var(--fs-30);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--ep-ink-2);
+}
+
+.sticky-yr {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.sticky-cnt {
+  margin-left: auto;
+  font-size: var(--fs-20);
+  color: var(--ep-muted-2);
+}
+
+/* ---------------- 段头：42px ---------------- */
+.sec {
+  height: 84rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  padding: 0 40rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid rgba(61, 46, 31, 0.06);
+}
+
+.sec-name {
+  font-size: 34rpx;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--ep-ink-2);
+}
+
+.sec-yr {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sec-cnt {
+  margin-left: auto;
+  font-size: var(--fs-20);
+  color: var(--ep-muted-2);
+}
+
+/* ---------------- 帝王行：44px 定高 ---------------- */
+.node {
+  position: relative;
+  height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 40rpx 0 200rpx;
+}
+
+/* 主轴：一行为一段，行行相接就是一条不断的时间轴 */
+.node::before {
+  content: '';
+  position: absolute;
+  left: 168rpx;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1rpx solid rgba(181, 113, 58, 0.28);
+}
+
+.n-dot {
+  position: absolute;
+  left: 168rpx;
+  width: 14rpx;
+  height: 14rpx;
+  margin-left: -7rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--ep-gold-light);
+  border-radius: 50%;
+  background: var(--ep-bg);
+}
+
+.n-yr {
+  position: absolute;
+  left: 40rpx;
+  width: 120rpx;
+  text-align: right;
+  font-size: 22rpx;
+  color: var(--ep-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.n-nm {
+  flex: 1;
+  min-width: 0;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ep-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.n-dur {
+  flex: none;
+  margin-left: 12rpx;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.node-hover {
+  background: rgba(181, 113, 58, 0.06);
+}
+
+.node-on {
+  background: rgba(181, 113, 58, 0.1);
+}
+
+.node-on .n-nm {
+  color: #8a4f22;
+  font-weight: 700;
+}
+
+.node-on .n-dot {
+  background: var(--ep-gold-light);
+}
+
+/* 分支行（南朝 / 北朝、展开后的十六国政权）：虚线支轴，不画主轴 */
+.node-sub {
+  padding-left: 228rpx;
+}
+
+.node-sub::before {
+  left: 196rpx;
+  border-left: 1rpx dashed rgba(181, 113, 58, 0.36);
+}
+
+.node-sub .n-yr {
+  width: 148rpx;
+}
+
+.node-sub .n-dot {
+  left: 196rpx;
+  width: 12rpx;
+  height: 12rpx;
+  margin-left: -6rpx;
+  border-radius: 2rpx;
+}
+
+/* 分支头：34px */
+.branch-head {
+  position: relative;
+  height: 68rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 0 40rpx 0 200rpx;
+}
+
+.branch-head::before {
+  content: '';
+  position: absolute;
+  left: 196rpx;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1rpx dashed rgba(181, 113, 58, 0.36);
+}
+
+.branch-head::after {
+  content: '';
+  position: absolute;
+  left: 168rpx;
+  top: 50%;
+  width: 28rpx;
+  height: 0;
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.36);
+}
+
+.branch-name {
+  font-size: var(--fs-26);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ep-ink-soft);
+}
+
+.branch-yr {
+  font-size: var(--fs-20);
+  color: var(--ep-muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.branch-cnt {
+  margin-left: auto;
+  font-size: 20rpx;
+  color: var(--ep-muted-2);
+}
+
+/* 并存支轴：北宋 ⇄ 辽、南宋 ⇄ 西夏。按效果图的画法：
+   支轴在 196rpx 处竖向下来、从主轴 168rpx 横向分出、方点压轴、政权名后跟「并存」徽标。
+   支轴下面是该政权的帝王行（.node-sub，88rpx），支轴竖线由每行的 ::before 接续。 */
+.peer-branch {
+  position: relative;
+  height: 72rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 0 40rpx 0 232rpx;
+}
+
+/* 支轴竖线：与南朝 / 北朝段内分支同一位置（196rpx），虚线 */
+.peer-branch::before {
+  content: '';
+  position: absolute;
+  left: 196rpx;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1rpx dashed rgba(181, 113, 58, 0.36);
+}
+
+/* 横向分出：主轴 168rpx → 支轴 196rpx，共 28rpx */
+.peer-branch::after {
+  content: '';
+  position: absolute;
+  left: 168rpx;
+  top: 50%;
+  width: 28rpx;
+  height: 0;
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.36);
+}
+
+/* 方点：12rpx 空心直角方点，压住支轴（与 .node-sub 的方点同规格） */
+.pb-dot {
+  position: absolute;
+  left: 196rpx;
+  top: 50%;
+  width: 12rpx;
+  height: 12rpx;
+  margin: -6rpx 0 0 -6rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--ep-gold-light);
+  border-radius: 2rpx;
+  background: var(--ep-bg);
+}
+
+.pb-name {
+  font-size: var(--fs-26);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ep-ink-soft);
+}
+
+/* 「并存」徽标：细描边小徽章，跟在政权名后面 */
+.pb-badge {
+  padding: 0 8rpx;
+  height: 26rpx;
+  line-height: 26rpx;
+  box-sizing: border-box;
+  font-size: 18rpx;
+  color: #8a5a2b;
+  border: 1rpx solid rgba(181, 113, 58, 0.42);
+  border-radius: 5rpx;
+}
+
+.pb-yr {
+  font-size: var(--fs-20);
+  color: var(--ep-muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-cnt {
+  margin-left: auto;
+  font-size: 20rpx;
+  color: var(--ep-muted-2);
+}
+
+/* ---------------- 政权索引（十六国 / 五代十国） ---------------- */
+/* 分组：组头 52rpx + 说明行 30rpx 行高 + 6rpx 下边距 = 36rpx，
+   与 JS 里的 H_RG_HEAD_RPX / H_RG_NOTE_RPX 严格对应，偏移量才不漂 */
+.rg-group {
+  display: block;
+}
+
+.rg-group-head {
+  height: 52rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 0 40rpx;
+}
+
+.rgg-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ep-ink-2);
+}
+
+.rgg-meta {
+  margin-left: auto;
+  font-size: 20rpx;
+  color: var(--ep-muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.rgg-note {
+  display: block;
+  height: 30rpx;
+  line-height: 30rpx;
+  box-sizing: content-box;
+  padding: 0 40rpx 6rpx;
+  font-size: 20rpx;
+  color: var(--ep-muted-2);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.regime-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  padding: 6rpx 40rpx 14rpx;
+}
+
+.regime-chip {
+  width: calc((100% - 36rpx) / 4);
+  height: 64rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  border: 1rpx solid rgba(61, 46, 31, 0.14);
+  border-radius: 8rpx;
+  background: rgba(255, 252, 246, 0.62);
+}
+
+.regime-chip-hover {
+  background: rgba(181, 113, 58, 0.08);
+}
+
+.regime-chip-on {
+  border-color: rgba(181, 113, 58, 0.55);
+  background: rgba(181, 113, 58, 0.1);
+}
+
+.rg-name {
+  max-width: 118rpx;
+  font-size: var(--fs-24);
+  color: var(--ep-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.regime-chip-on .rg-name {
+  color: #8a4f22;
+  font-weight: 700;
+}
+
+.rg-count {
+  flex: none;
+  font-size: 18rpx;
+  color: var(--ep-muted-2);
+}
+
+/* ---------------- 空态 ---------------- */
+.empty-state {
+  padding: 120rpx 0;
+  text-align: center;
+}
+
+.empty-text {
+  font-size: var(--fs-26);
+  letter-spacing: 0;
+  color: var(--ep-muted-2);
+}
+
+/* ---------------- 列表尾 ---------------- */
+.list-tail {
+  padding: 28rpx 0 8rpx;
+  text-align: center;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: var(--ep-muted-2);
+}
+
+.list-done {
+  margin-top: 14rpx;
+  text-align: center;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: var(--ep-muted-2);
+}
+
+.emp-foot {
+  margin: 34rpx 40rpx 0;
+  padding-top: 24rpx;
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.22);
+  font-size: var(--fs-20);
+  color: var(--ep-muted-2);
+  line-height: 1.7;
+}
+
+.bottom-spacer {
+  height: calc(60rpx + env(safe-area-inset-bottom));
+}
+
+.safe-area-bottom {
+  height: env(safe-area-inset-bottom);
+}
+
+/* ---------------- 半屏抽屉 ---------------- */
+.sheet-mask,
+.dir-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 190;
+  background: rgba(24, 17, 11, 0.42);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--ep-card);
+  border-radius: 40rpx 40rpx 0 0;
+  box-shadow: 0 -20rpx 56rpx -24rpx rgba(40, 28, 16, 0.42), 0 0 0 1rpx rgba(61, 46, 31, 0.06);
+  transition: transform 0.22s ease;
+}
+
+.sheet.is-dragging {
+  transition: none;
+}
+
+.sheet-grab {
+  padding: 16rpx 0 8rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.sheet-grab-bar {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #ddccb6;
+}
+
+.sheet-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.sheet-scroll {
+  height: 100%;
+}
+
+.sheet-main {
+  padding: 4rpx 40rpx 12rpx;
+}
+
+.sheet-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52rpx;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(251, 247, 239, 0), var(--bg-card) 78%);
+}
+
+.sheet-name {
+  font-size: 48rpx;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  color: var(--ep-ink);
+}
+
+.sheet-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  letter-spacing: 0;
+  color: var(--ep-muted);
+}
+
+.sheet-grid {
+  display: flex;
+  margin-top: 24rpx;
+  border-top: 1rpx solid rgba(61, 46, 31, 0.1);
+  border-bottom: 1rpx solid rgba(61, 46, 31, 0.1);
+}
+
+.sheet-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 18rpx 0 20rpx;
+}
+
+.sheet-cell + .sheet-cell {
+  border-left: 1rpx solid rgba(61, 46, 31, 0.08);
+  padding-left: 24rpx;
+}
+
+.cell-k {
+  display: block;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: var(--ep-muted-2);
+}
+
+.cell-v {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-26);
+  color: var(--ep-ink);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cell-v-sub {
+  font-size: var(--fs-22);
+  color: var(--ep-muted);
+}
+
+.cell-v-na {
+  color: #bda98d;
+}
+
+/* 年号可能多个（「贞观 → 永徽」），三格只占 1/3 屏宽，允许折两行；
+   再多就只给前三个 + 「等 N 个」，完整列表在人物档案里 */
+.cell-v-era {
+  white-space: normal;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.sheet-h {
+  margin-top: 26rpx;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: var(--ep-muted-2);
+}
+
+.sheet-intro {
+  margin-top: 10rpx;
+  font-size: var(--fs-26);
+  line-height: 1.8;
+  color: var(--ep-ink-soft);
+  text-align: justify;
+  white-space: pre-wrap;
+}
+
+.sheet-intro-na {
+  color: var(--ep-muted-2);
+}
+
+.sheet-src {
+  margin-top: 24rpx;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: #bda98d;
+}
+
+.sheet-foot {
+  padding: 20rpx 40rpx calc(24rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid rgba(61, 46, 31, 0.08);
+  background: var(--ep-card);
+}
+
+.sheet-btn {
+  height: 84rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--ep-gold-light), var(--ep-gold));
+  color: #fff8ee;
+  font-size: var(--fs-28);
+  font-weight: 600;
+  letter-spacing: 0;
+  box-shadow: 0 12rpx 28rpx -16rpx rgba(181, 113, 58, 0.95);
+}
+
+.sheet-btn-hover {
+  opacity: 0.9;
+}
+
+/* ---------------- 朝代直达（28 个入口） ---------------- */
+.dir-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  height: 66vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ep-card);
+  border-radius: 40rpx 40rpx 0 0;
+  box-shadow: 0 -20rpx 56rpx -24rpx rgba(40, 28, 16, 0.42);
+}
+
+.dir-grab {
+  padding: 16rpx 0 6rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.dir-grab-bar {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #ddccb6;
+}
+
+.dir-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  padding: 6rpx 40rpx 18rpx;
+  border-bottom: 1rpx solid rgba(61, 46, 31, 0.08);
+}
+
+.dir-title {
+  font-size: var(--fs-34);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ep-ink);
+}
+
+.dir-sub {
+  font-size: 22rpx;
+  color: var(--ep-muted-2);
+}
+
+.dir-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.dir-group {
+  padding: 18rpx 40rpx 0;
+}
+
+.dir-era {
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: var(--ep-muted-2);
+}
+
+.dir-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 10rpx;
+}
+
+.dir-item {
+  width: calc((100% - 12rpx) / 2);
+  height: 72rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid rgba(61, 46, 31, 0.12);
+  border-radius: 10rpx;
+  background: rgba(255, 252, 246, 0.7);
+}
+
+.dir-item-hover {
+  background: rgba(181, 113, 58, 0.08);
+}
+
+.dir-item-name {
+  font-size: var(--fs-26);
+  color: var(--ep-ink);
+}
+
+.dir-item-count {
+  margin-left: auto;
+  font-size: var(--fs-20);
+  color: var(--ep-muted-2);
+}
+
+.dir-bottom {
+  height: calc(40rpx + env(safe-area-inset-bottom));
+}

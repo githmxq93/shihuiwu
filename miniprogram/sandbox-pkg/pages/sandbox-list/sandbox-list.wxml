@@ -1,0 +1,127 @@
+<wxs module="axis" src="./axis.wxs" />
+<view class="sl-page" style="padding-top: {{navBarHeight}}px;">
+  <view class="sl-paper"></view>
+
+  <!-- 顶部导航与「中外对照」同源：同一个 nav-bar 组件，标题居中、同级字号 -->
+  <nav-bar title="沙盘推演" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <!-- ── 可收起头部：深色统计卡 + 搜索。
+       高度先由 JS 量成定值，收起时做 px→0 的高度过渡；列表与时间轴都不重渲染。 ── -->
+  <view class="sl-headmain {{headStage ? 'is-folded' : ''}}"
+        style="{{headMainH ? 'height:' + (headStage ? 0 : headMainH) + 'px;' : ''}}">
+    <view class="hero">
+      <view class="hero-mark">战</view>
+      <view class="hero-title">以年代为轴，读千年战事</view>
+      <view class="hero-sub">{{meta.spanText}} · {{meta.count}} 场战役</view>
+      <view class="hero-stats">
+        <view class="hs"><text class="hs-b">{{meta.count}}</text><text class="hs-t">战役</text></view>
+        <view class="hs"><text class="hs-b">{{meta.stages}}</text><text class="hs-t">阶段</text></view>
+        <view class="hs"><text class="hs-b">{{meta.span}}</text><text class="hs-t">年跨度</text></view>
+      </view>
+      <view class="hero-dist">
+        <view class="hd-seg" wx:for="{{dist}}" wx:key="y" style="opacity: {{item.op}};"></view>
+      </view>
+    </view>
+
+    <view class="filters">
+      <view class="frow">
+        <view class="sbox {{searchFocus ? 'focus' : ''}}">
+          <text class="sico">查</text>
+          <input class="sinput" value="{{query}}" placeholder="战役名 / 年代，如赤壁、前202"
+                 placeholder-class="sph" confirm-type="search"
+                 bindinput="onSearchInput" bindconfirm="onSearchConfirm"
+                 bindfocus="onSearchFocus" bindblur="onSearchBlur" />
+          <view class="sclear" wx:if="{{query}}" catchtap="onClearSearch">×</view>
+        </view>
+      </view>
+      <view class="tb-line">
+        <text class="tb-hint">{{hint}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 时间轴：纯 view 密度柱（不上 canvas，避免原生层压住内容）。
+       headStage=1 压缩成吸顶细条；headStage=2 收成 88rpx 摘要条，点一下立即展开。 ── -->
+  <view class="tl {{headStage === 1 ? 'compact' : ''}}{{headStage === 2 ? 'mini' : ''}}"
+        bindtap="onHeadTap">
+    <view class="tl-head">
+      <text class="tl-cap">时间轴</text>
+      <block wx:if="{{headStage === 2}}">
+        <text class="tl-mini">{{activeLabel}} · 第 {{activeIndex + 1}} / {{meta.count}} 场</text>
+        <text class="tl-fold">点击展开</text>
+      </block>
+      <view class="tl-right" wx:else>
+        <text class="tl-idx">第 {{activeIndex + 1}} / {{meta.count}} 场</text>
+        <text class="tl-now">{{activeLabel}}</text>
+      </view>
+    </view>
+    <view class="tl-zone">
+      <view class="tl-bars" catchtouchstart="onAxisStart" catchtouchmove="onAxisHold">
+        <view class="tl-b" wx:for="{{bars}}" wx:key="i"
+              style="left: {{item.l}}%; width: {{barW}}%; height: {{item.h}}rpx;"></view>
+        <!-- 游标：按下/拖动时由 WXS 直接改 left，不走 setData，保证逐帧跟手 -->
+        <view class="tl-thumb" id="tlThumb" style="left: {{thumbPct}}%;"></view>
+        <view class="tl-hit" data-left="{{trackLeft}}" data-width="{{trackWidth}}" data-total="{{meta.count}}"
+              bindtouchstart="{{axis.start}}" bindtouchmove="{{axis.move}}"
+              bindtouchend="onAxisEnd" catchtouchcancel="onAxisEnd"></view>
+      </view>
+    </view>
+    <view class="tl-ticks">
+      <text class="tk" wx:for="{{ticks}}" wx:key="pct" style="left: {{item.pct}}%;">{{item.label}}</text>
+    </view>
+    <view class="tl-legend">
+      <text class="lg lg-cn">按年代排序 · 柱高随阶段数</text>
+    </view>
+  </view>
+
+  <scroll-view class="sl-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}"
+               scroll-into-view="{{scrollInto}}" scroll-top="{{scrollTopTo}}" scroll-with-animation="{{scrollAnim}}"
+               bindscroll="onBodyScroll">
+    <view class="sl-list">
+      <view class="none" wx:if="{{empty}}">
+        <text class="none-t">没有命中的战役</text>
+        <text class="none-s">换一个战役名或年份再试，如「赤壁」「前202」「1619」。</text>
+      </view>
+
+      <view
+        class="sl-card {{item.id === activeId ? 'is-on' : ''}}"
+        wx:for="{{view}}"
+        wx:key="id"
+        id="c{{item.id}}"
+        data-id="{{item.id}}"
+        hover-class="sl-card-hover"
+        hover-stay-time="80"
+        bindtap="onTapItem"
+      >
+        <view class="sl-no">{{item.no}}</view>
+        <view class="sl-main">
+          <view class="sl-row">
+            <text class="sl-name">{{item.title}}</text>
+            <text class="sl-phase">{{item.stageCount}} 阶段</text>
+          </view>
+          <view class="sl-meta">
+            <text class="sl-years">{{item.years}}{{item.yearUnit}}</text>
+            <text class="sl-dot">·</text>
+            <text class="sl-period">{{item.period}}</text>
+          </view>
+          <view class="sl-hook">{{item.hook}}</view>
+        </view>
+        <view class="sl-chev"></view>
+      </view>
+    </view>
+
+    <view class="sl-foot">{{viewCount}} 场 · 点击进入推演</view>
+    <view class="sl-safe"></view>
+  </scroll-view>
+
+  <!-- 拖动预览：手指在轴上时浮出当前场次，松手立即消失并跳到该卡片 -->
+  <view class="pv" wx:if="{{dragOn}}">
+    <view class="pv-hd">
+      <text class="pv-year">{{activeLabel}}</text>
+      <text class="pv-idx">第 {{activeIndex + 1}} / {{meta.count}} 场</text>
+    </view>
+    <view class="pv-title">{{activeTitle}}</view>
+    <view class="pv-meta">{{activeYears}} · {{activePeriod}}</view>
+    <text class="pv-foot">松手跳到该场</text>
+  </view>
+</view>

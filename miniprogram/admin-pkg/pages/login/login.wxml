@@ -1,0 +1,86 @@
+<view class="page-wrapper">
+  <!-- 后台登录页此前无返回入口（navigationStyle: custom），从「我的」跳入后无法退出 -->
+  <nav-bar title="管理后台登录" />
+  <view class="login-bg"></view>
+  <view class="login-card">
+    <view class="login-header">
+      <view class="login-icon"><text class="login-icon-text">管</text></view>
+      <text class="login-title">管理后台</text>
+      <text class="login-desc">{{mode === 'setup' ? '首次使用，请设置你的后台账号' : '请输入后台账号和密码'}}</text>
+    </view>
+
+    <view class="login-form">
+      <view class="input-group">
+        <text class="input-label">后台账号</text>
+        <view class="input-wrap {{focusField === 'user' ? 'input-focus' : ''}}">
+          <input
+            class="login-input"
+            placeholder="6位以上，含字母和数字"
+            placeholder-class="login-ph"
+            value="{{adminUsername}}"
+            bindinput="onUserInput"
+            bindfocus="onFocusUser"
+            bindblur="onBlur"
+            adjust-position="{{true}}"
+          />
+        </view>
+      </view>
+
+      <view class="input-group">
+        <text class="input-label">{{mode === 'setup' ? '设置密码' : '密码'}}</text>
+        <view class="input-wrap {{focusField === 'pwd' ? 'input-focus' : ''}}">
+          <input
+            class="login-input"
+            password="{{!showPwd}}"
+            placeholder="至少 6 位"
+            placeholder-class="login-ph"
+            value="{{password}}"
+            bindinput="onPwdInput"
+            bindfocus="onFocusPwd"
+            bindblur="onBlur"
+            adjust-position="{{true}}"
+            confirm-type="done"
+            bindconfirm="onSubmit"
+          />
+          <view class="toggle-pwd" bindtap="onTogglePwd">
+            <view class="eye {{showPwd ? 'eye-on' : ''}}">
+              <view class="eye-slash" wx:if="{{showPwd}}"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="input-group" wx:if="{{mode === 'setup'}}">
+        <text class="input-label">确认密码</text>
+        <view class="input-wrap {{focusField === 'pwd2' ? 'input-focus' : ''}}">
+          <input
+            class="login-input"
+            password="{{true}}"
+            placeholder="再次输入密码"
+            placeholder-class="login-ph"
+            value="{{password2}}"
+            bindinput="onPwd2Input"
+            bindfocus="onFocusPwd2"
+            bindblur="onBlur"
+            adjust-position="{{true}}"
+          />
+        </view>
+      </view>
+
+      <view class="error-msg" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+
+      <view class="login-btn {{canSubmit ? 'btn-active' : ''}}" bindtap="onSubmit">
+        <text wx:if="{{!loading}}">{{mode === 'setup' ? '设置并登录' : '登 录'}}</text>
+        <text wx:else>{{mode === 'setup' ? '设置中...' : '验证中...'}}</text>
+      </view>
+
+      <view class="mode-switch" wx:if="{{hasUserToken}}" bindtap="onToggleMode">
+        <text class="mode-switch-text">{{mode === 'setup' ? '已有后台账号？去登录' : '还没有后台账号？立即设置'}}</text>
+      </view>
+    </view>
+
+    <view class="login-footer">
+      <text class="footer-hint">{{hasUserToken ? '已登录管理员账号，可直接设置/进入后台' : '请先在「我的」页登录管理员账号'}}</text>
+    </view>
+  </view>
+</view>

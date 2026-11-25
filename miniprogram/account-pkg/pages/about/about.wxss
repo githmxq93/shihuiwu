@@ -1,0 +1,176 @@
+/* ==================================================================
+   「关于世慧屋」独立页（account-pkg 分包）
+   版式来源：_design/profile/plan-about.html（1px = 2rpx）。
+   色板：纸底 #f4ede1 / 卡 #fbf7ef / 正文 #3d2e1f / 次要 #75654f（4.84:1）/
+        箭头 #7a6552（4.9:1）/ 金 #b5713a / 深底 #332820→#17120e。
+   [约束] letter-spacing 一律 0；字号只用偶数 rpx；正文对比度 ≥4.5:1。
+   ================================================================== */
+
+page {
+  background-color: var(--bg-primary);
+}
+
+.ab-page {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.ab-body {
+  height: 100vh;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- 深色品牌头 ---------- */
+.ab-head {
+  position: relative;
+  overflow: hidden;
+  padding: 16rpx 32rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 0 0 20rpx 20rpx;
+  background:
+    radial-gradient(120% 120% at 88% 0%, rgba(207, 138, 75, 0.22), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+}
+
+.ab-logo {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid rgba(233, 199, 155, 0.55);
+  background: radial-gradient(120% 120% at 30% 20%, rgba(207, 138, 75, 0.35), rgba(23, 18, 14, 0.2));
+}
+
+.ab-logo-txt {
+  font-family: 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC', 'SimSun', Georgia, serif;
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: #e9c79b;
+}
+
+.ab-name {
+  margin-top: 20rpx;
+  font-family: 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC', 'SimSun', Georgia, serif;
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+
+.ab-sub {
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  line-height: 1.4;
+  color: #cfc3b2;
+}
+
+.ab-ver {
+  margin-top: 16rpx;
+  padding: 0 16rpx;
+  font-size: var(--fs-20);
+  line-height: 1.8;
+  border-radius: 10rpx;
+  color: #e9c79b;
+  border: 1rpx solid rgba(233, 199, 155, 0.36);
+  background: rgba(233, 199, 155, 0.10);
+}
+
+/* ---------- 内容区 ---------- */
+.ab-main {
+  padding: 28rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.ab-group-label {
+  padding: 0 8rpx 16rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.ab-card {
+  margin-bottom: 28rpx;
+  overflow: hidden;
+  background: var(--bg-card);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12rpx 36rpx -32rpx rgba(74, 56, 38, 0.55);
+}
+
+.ab-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100rpx;
+  padding: 0 28rpx;
+  box-sizing: border-box;
+}
+
+.ab-row-hover {
+  background-color: var(--bg-elevated);
+}
+
+/* 分隔线：2rpx（1rpx 在部分安卓会被舍入成 0） */
+.ab-row-line::after {
+  content: '';
+  position: absolute;
+  left: 28rpx;
+  right: 28rpx;
+  bottom: 0;
+  height: 2rpx;
+  background-color: rgba(107, 90, 69, 0.10);
+}
+
+.ab-row-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-28);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ab-row-value {
+  flex-shrink: 0;
+  margin-left: 20rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ab-row-arrow {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  font-size: var(--fs-30);
+  line-height: 1;
+  color: #7a6552;
+}
+
+/* 备案号「复制」小签 */
+.ab-copy {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  padding: 0 12rpx;
+  font-size: var(--fs-20);
+  line-height: 1.7;
+  border-radius: 8rpx;
+  color: var(--accent-gold-ink);
+  border: 1rpx solid rgba(181, 113, 58, 0.34);
+  background: rgba(181, 113, 58, 0.08);
+}
+
+.ab-footer {
+  display: block;
+  margin-top: 12rpx;
+  padding-bottom: 20rpx;
+  text-align: center;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--text-muted);
+}

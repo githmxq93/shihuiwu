@@ -1,0 +1,468 @@
+<!-- 底部五标签 dock：与详情页 / 足迹页共用 templates/dock/dock.wxml + dock.wxss（唯一来源） -->
+<import src="../../../templates/dock/dock.wxml" />
+
+<view class="ln-page">
+  <!-- ===== 深色常驻头部（2026-11-08 统一顶部样式） =====
+       与详情页年表 / 关系页同款（同色系、同圆角、同阴影、同姓名排版）：
+       导航栏转深色，下面这条深色窄条 sticky 常驻，正文在其下滚动。
+       本页为页面级滚动、.ln-page 没有 overflow，最近的可滚动祖先就是页面本身，
+       sticky 能正常吸住；sticky 仍在文档流里占位，正文不会被遮，旧 .nav-spacer 已删除，
+       内层 padding-top = navBarHeight 直接承担固定导航的让位。 -->
+  <nav-bar safeAreaTop="{{safeAreaTop}}" dark="{{true}}" />
+  <view class="ln-head-wrap">
+    <view class="ln-head" style="padding-top: {{navBarHeight}}px;">
+      <view class="ln-head-row">
+        <view class="ln-head-nm">
+          <view class="ln-head-nameline">
+            <text class="ln-head-name">{{center ? center.name : '家族世系'}}</text>
+            <text class="ln-head-era" wx:if="{{center && center.dynasty}}">{{center.dynasty}}</text>
+          </view>
+          <text class="ln-head-sub">{{center ? (mode === 'axis' ? '家族世系 · ' + (upCols.length + 1 + downCols.length) + ' 代' : (mode === 'kinship' ? '旁系与姻亲 · ' + sections.length + ' 类' : '暂无亲属世系记载')) : '家族世系'}}</text>
+        </view>
+        <text class="ln-head-tag">世系</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 面包屑：「返回 X」比干巴巴一个箭头更明确点了会去哪 -->
+  <view class="ln-trail" wx:if="{{trail.length}}">
+    <view class="ln-trail-back" hover-class="ln-hover" bindtap="onBackOne">
+      <text class="ln-trail-arrow">‹</text>
+      <text class="ln-trail-label">返回</text>
+      <text class="ln-trail-name">{{trail[trail.length - 1].name}}</text>
+    </view>
+    <view class="ln-trail-root" hover-class="ln-hover" bindtap="onBackRoot">
+      <text class="ln-trail-root-text">回到 {{trail[0].name}}</text>
+    </view>
+  </view>
+
+  <!-- 加载态 -->
+  <view class="ln-skel" wx:if="{{loading}}">
+    <view class="ln-skel-center"></view>
+    <view class="ln-skel-row">
+      <view class="ln-skel-node"></view>
+      <view class="ln-skel-node"></view>
+    </view>
+    <view class="ln-skel-row">
+      <view class="ln-skel-node"></view>
+      <view class="ln-skel-node"></view>
+    </view>
+  </view>
+
+  <!-- 错误态：不得渲染空树（AC-10） -->
+  <view class="ln-error" wx:elif="{{error}}">
+    <text class="ln-error-title">世系没能加载出来</text>
+    <text class="ln-error-desc">{{error}}</text>
+    <view class="ln-error-btn" hover-class="ln-hover" bindtap="onRetry">
+      <text class="ln-error-btn-text">重试</text>
+    </view>
+  </view>
+
+  <!-- ================= A 档：直系主轴 ================= -->
+  <block wx:elif="{{mode === 'axis'}}">
+    <view class="ln-tree {{busy ? 'ln-busy' : ''}}">
+      <!-- 分支口径开关：库里「生父+嗣父」「生母+嫡母+继母」极常见，一代铺开能到 8 张卡。
+           默认「父系 + 母系」全显示（2026-11-08 用户改），点一下切成只看父系。纯端上筛选，不重取接口。 -->
+      <view class="ln-side-mode" id="guide-ln-side" wx:if="{{matHiddenTotal > 0}}" hover-class="ln-hover"
+            bindtap="onToggleSideMode">
+        <view class="ln-side-mode-track {{sideMode === 'paternal' ? '' : 'ln-side-mode-track-on'}}">
+          <view class="ln-side-mode-knob"></view>
+        </view>
+        <text class="ln-side-mode-label">{{sideMode === 'paternal' ? '只看父系' : '父系 + 母系'}}</text>
+        <text class="ln-side-mode-count" wx:if="{{sideMode === 'paternal'}}">母系 {{matHiddenTotal}} 位已收起</text>
+        <text class="ln-side-mode-count" wx:else>点此只看父系</text>
+      </view>
+
+      <!-- 上代：最远代在上 -->
+      <!-- 引导锚点只给第一代（index 0），避免循环里出现重复 id -->
+      <view class="ln-col" id="{{index === 0 ? 'guide-ln-col' : ''}}" wx:for="{{upCols}}" wx:for-item="col" wx:key="gen">
+        <view class="ln-seg" wx:if="{{col.showRail}}"></view>
+        <!-- 代次头：竖线上每个圆点都带 +/−（加号展开、减号收起），整行可点，两态随时来回 -->
+        <view class="ln-col-head" hover-class="ln-hover" bindtap="onToggleCol"
+              data-gen="{{col.gen}}" data-which="up">
+          <view class="ln-dot ln-dot-toggle">
+            <text class="ln-dot-sign">{{col.expanded ? '−' : '+'}}</text>
+          </view>
+          <text class="ln-col-label">{{col.label}}</text>
+          <!-- 人数按「当前口径实际显示多少」算：只看父系时 8 人变 5 人，
+               若仍显示 total，用户会以为筛丢了人；非主位父辈（继父/嗣父/嫡母…）
+               已收进「其他父母」单独计数，这里同样要扣掉 -->
+          <text class="ln-col-count" wx:if="{{col.total - col.matHidden - col.extraTotal > 1}}">{{col.total - col.matHidden - col.extraTotal}} 人</text>
+        </view>
+
+        <!-- 数据存疑：祖先代「父亲」>2 位，疑似同名误并。未展开时先只给警示卡，点开才铺开 -->
+        <view class="ln-suspect" wx:if="{{col.suspect && !col.expanded}}" hover-class="ln-hover"
+              bindtap="onToggleCol" data-gen="{{col.gen}}" data-which="up">
+          <text class="ln-suspect-warn">数据存疑</text>
+          <text class="ln-suspect-text">{{col.suspectText}}</text>
+          <text class="ln-suspect-arrow">点此展开 ›</text>
+        </view>
+
+        <view class="ln-row">
+      <view class="ln-node {{item.placeholder ? 'ln-node-gap' : ''}}"
+            wx:for="{{col.displayNodes}}" wx:key="key"
+            data-id="{{item.id}}" data-name="{{item.name}}"
+            bindtap="onTapNode" bindlongpress="onNodeLongPress"
+            hover-class="{{item.placeholder ? '' : 'ln-hover'}}">
+            <view class="ln-gap-body" wx:if="{{item.placeholder}}">
+              <text class="ln-gap-title">{{item.gapTitle}}</text>
+              <text class="ln-gap-hint">{{item.gapHint}}</text>
+            </view>
+            <block wx:else>
+              <view class="ln-node-avatar">
+                <image class="ln-node-img" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"
+                       lazy-load data-key="{{item.key}}" binderror="onAvatarError" />
+                <text class="ln-node-initial" wx:else>{{item.initial}}</text>
+              </view>
+              <view class="ln-node-body">
+                <view class="ln-node-title">
+                  <text class="ln-node-name">{{item.name}}</text>
+                  <text class="ln-node-badge" wx:if="{{item.sameNameCount > 1}}">同名 {{item.sameNameCount}}</text>
+                </view>
+                <text class="ln-node-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <!-- 其他父母：主世系一排只留「一位父亲 + 一位母亲」，其余父辈（继父 / 嗣父 /
+             养父 / 嫡母 / 庶母 / 生父…）收在这里，副标题仍写各自真实关系词，
+             不再出现一排好几张「父亲」。只做展示分组，不删边、不合并人物。 -->
+        <view class="ln-fold ln-fold-extra" wx:if="{{col.extraTotal > 0}}" hover-class="ln-hover"
+              bindtap="onToggleExtraParents" data-gen="{{col.gen}}" data-which="up">
+          <text class="ln-fold-text">其他父母 {{col.extraTotal}} 位</text>
+          <text class="ln-fold-arrow">{{col.extraOpen ? '‹' : '›'}}</text>
+        </view>
+        <view class="ln-row ln-row-extra" wx:if="{{col.extraTotal > 0 && col.extraOpen}}">
+          <view class="ln-node ln-node-extra" wx:for="{{col.extraNodes}}" wx:key="key"
+                data-id="{{item.id}}" data-name="{{item.name}}"
+                bindtap="onTapNode" bindlongpress="onNodeLongPress" hover-class="ln-hover">
+            <view class="ln-node-avatar">
+              <image class="ln-node-img" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"
+                     lazy-load data-key="{{item.key}}" binderror="onAvatarError" />
+              <text class="ln-node-initial" wx:else>{{item.initial}}</text>
+            </view>
+            <view class="ln-node-body">
+              <view class="ln-node-title">
+                <text class="ln-node-name">{{item.name}}</text>
+                <text class="ln-node-badge" wx:if="{{item.sameNameCount > 1}}">同名 {{item.sameNameCount}}</text>
+              </view>
+              <text class="ln-node-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 折叠 / 展开行：三态各一条，点了都能切回另一态。
+             collapsedAll 排在最前：整组收起时 hidden 恰好等于 shownTotal，
+             若让「另有 N 位」先命中，「展开 N 人」就永远不出现。 -->
+        <view class="ln-fold" wx:if="{{col.collapsedAll}}" hover-class="ln-hover"
+              bindtap="onToggleCol" data-gen="{{col.gen}}" data-which="up">
+          <text class="ln-fold-text">展开 {{col.total - col.matHidden - col.extraTotal}} 人</text>
+          <text class="ln-fold-arrow">›</text>
+        </view>
+        <view class="ln-fold" wx:elif="{{col.hidden > 0}}" hover-class="ln-hover"
+              bindtap="onMoreCol" data-gen="{{col.gen}}" data-which="up">
+          <text class="ln-fold-text">另有 {{col.hidden}} 位</text>
+          <text class="ln-fold-arrow">›</text>
+        </view>
+        <view class="ln-fold ln-fold-collapse" wx:elif="{{col.collapsible}}" hover-class="ln-hover"
+              bindtap="onToggleCol" data-gen="{{col.gen}}" data-which="up">
+          <text class="ln-fold-text">收起</text>
+          <text class="ln-fold-arrow">‹</text>
+        </view>
+
+        <!-- 这一代的母系分支被「只看父系」筛掉了多少：不写出来，用户会以为库里没有 -->
+        <view class="ln-mat-hint" wx:if="{{sideMode === 'paternal' && col.matHidden > 0}}"
+              hover-class="ln-hover" bindtap="onToggleSideMode">
+          <text class="ln-mat-hint-text">本代母系 {{col.matHidden}} 位已收起</text>
+          <text class="ln-mat-hint-arrow">显示 ›</text>
+        </view>
+      </view>
+
+      <!-- 本人：配偶与兄弟都挂在这一代，因为它们与本人同辈 -->
+      <view class="ln-col ln-col-self" wx:if="{{selfCol}}">
+        <view class="ln-seg" wx:if="{{selfCol.showRail}}"></view>
+        <view class="ln-col-head">
+          <view class="ln-dot ln-dot-self"></view>
+          <text class="ln-col-label ln-col-label-self">本人</text>
+        </view>
+
+        <view class="ln-row">
+          <view class="ln-node ln-node-self" wx:for="{{selfCol.nodes}}" wx:key="key"
+                data-id="{{item.id}}" data-name="{{item.name}}"
+                bindtap="onTapNode" bindlongpress="onNodeLongPress">
+            <view class="ln-node-avatar ln-node-avatar-self">
+              <image class="ln-node-img" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"
+                     lazy-load data-key="{{item.key}}" binderror="onAvatarError" />
+              <text class="ln-node-initial" wx:else>{{item.initial}}</text>
+            </view>
+            <view class="ln-node-body">
+              <text class="ln-node-name ln-node-name-self">{{item.name}}</text>
+              <text class="ln-node-sub" wx:if="{{item.lifespan}}">{{item.lifespan}}</text>
+              <text class="ln-node-sub" wx:elif="{{item.dynasty}}">{{item.dynasty}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 配偶：与本人同辈，必须挂在本人这一代下面，不能放到整棵树最上方 -->
+        <view class="ln-side" wx:if="{{spouses.length}}">
+          <!-- 红标 1：配偶这一行恒带 +/−，即便只有 1 位也能收起 -->
+          <view class="ln-side-head" hover-class="ln-hover" bindtap="onToggleSpouses">
+            <text class="ln-side-label">配偶 · {{spouses.length}} 位</text>
+            <text class="ln-side-toggle">{{spousesExpanded ? '−' : '+'}}</text>
+          </view>
+          <view class="ln-side-row">
+            <view class="ln-side-card" wx:for="{{spousesDisplay}}" wx:key="key"
+                  data-id="{{item.id}}" data-name="{{item.name}}"
+                  bindtap="onTapNode" bindlongpress="onNodeLongPress" hover-class="ln-hover">
+              <text class="ln-side-name">{{item.name}}</text>
+              <text class="ln-side-meta">{{item.sub || '配偶'}}</text>
+            </view>
+          </view>
+          <view class="ln-fold" wx:if="{{spousesHidden > 0 && !spousesExpanded}}"
+                hover-class="ln-hover" bindtap="onToggleSpouses">
+            <text class="ln-fold-text">另有 {{spousesHidden}} 位</text>
+            <text class="ln-fold-arrow">›</text>
+          </view>
+          <view class="ln-fold ln-fold-collapse" wx:elif="{{spousesExpanded && spousesHidden > 0}}"
+                hover-class="ln-hover" bindtap="onToggleSpouses">
+            <text class="ln-fold-text">收起</text>
+            <text class="ln-fold-arrow">‹</text>
+          </view>
+        </view>
+
+        <!-- 红标 2：兄弟这一行恒带 +/−（折叠态也显示「+」，不再只是一条无符号的折叠行） -->
+        <view class="ln-side" wx:if="{{siblings.total > 0}}">
+          <view class="ln-side-head" hover-class="ln-hover" bindtap="onToggleSiblings">
+            <text class="ln-side-label">兄弟 · {{siblings.nodes.length || siblings.total}} 位</text>
+            <text class="ln-side-toggle">{{siblingsExpanded ? '−' : '+'}}</text>
+          </view>
+          <view class="ln-side-row" wx:if="{{siblingsExpanded}}">
+            <view class="ln-side-card" wx:for="{{siblings.nodes}}" wx:key="key"
+                  data-id="{{item.id}}" data-name="{{item.name}}"
+                  bindtap="onTapNode" bindlongpress="onNodeLongPress" hover-class="ln-hover">
+              <text class="ln-side-name">{{item.name}}</text>
+              <text class="ln-side-meta">{{item.sub || '兄弟'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 下代；上代一代都没有时，引导锚点落到下一代的第一行 -->
+      <view class="ln-col" id="{{index === 0 && upCols.length === 0 ? 'guide-ln-col' : ''}}" wx:for="{{downCols}}" wx:for-item="col" wx:key="gen">
+        <view class="ln-seg" wx:if="{{col.showRail}}"></view>
+        <!-- 代次头：竖线上每个圆点都带 +/−（加号展开、减号收起），整行可点，两态随时来回 -->
+        <view class="ln-col-head" hover-class="ln-hover" bindtap="onToggleCol"
+              data-gen="{{col.gen}}" data-which="down">
+          <view class="ln-dot ln-dot-toggle">
+            <text class="ln-dot-sign">{{col.expanded ? '−' : '+'}}</text>
+          </view>
+          <text class="ln-col-label">{{col.label}}</text>
+          <text class="ln-col-count" wx:if="{{col.total > 1}}">{{col.total}} 人</text>
+        </view>
+
+        <!-- 数据存疑：祖先代「父亲」>2 位，疑似同名误并。未展开时先只给警示卡，点开才铺开 -->
+        <view class="ln-suspect" wx:if="{{col.suspect && !col.expanded}}" hover-class="ln-hover"
+              bindtap="onToggleCol" data-gen="{{col.gen}}" data-which="down">
+          <text class="ln-suspect-warn">数据存疑</text>
+          <text class="ln-suspect-text">{{col.suspectText}}</text>
+          <text class="ln-suspect-arrow">点此展开 ›</text>
+        </view>
+
+        <view class="ln-row">
+      <view class="ln-node {{item.placeholder ? 'ln-node-gap' : ''}}"
+            wx:for="{{col.displayNodes}}" wx:key="key"
+            data-id="{{item.id}}" data-name="{{item.name}}"
+            bindtap="onTapNode" bindlongpress="onNodeLongPress"
+            hover-class="{{item.placeholder ? '' : 'ln-hover'}}">
+            <view class="ln-gap-body" wx:if="{{item.placeholder}}">
+              <text class="ln-gap-title">{{item.gapTitle}}</text>
+              <text class="ln-gap-hint">{{item.gapHint}}</text>
+            </view>
+            <block wx:else>
+              <view class="ln-node-avatar">
+                <image class="ln-node-img" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"
+                       lazy-load data-key="{{item.key}}" binderror="onAvatarError" />
+                <text class="ln-node-initial" wx:else>{{item.initial}}</text>
+              </view>
+              <view class="ln-node-body">
+                <view class="ln-node-title">
+                  <text class="ln-node-name">{{item.name}}</text>
+                  <text class="ln-node-badge" wx:if="{{item.sameNameCount > 1}}">同名 {{item.sameNameCount}}</text>
+                </view>
+                <text class="ln-node-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <!-- 折叠 / 展开行：三态各一条，点了都能切回另一态。
+             collapsedAll 排在最前：整组收起时 hidden 恰好等于 total，
+             若让「另有 N 位」先命中，「展开 N 人」就永远不出现。 -->
+        <view class="ln-fold" wx:if="{{col.collapsedAll}}" hover-class="ln-hover"
+              bindtap="onToggleCol" data-gen="{{col.gen}}" data-which="down">
+          <text class="ln-fold-text">展开 {{col.total}} 人</text>
+          <text class="ln-fold-arrow">›</text>
+        </view>
+        <view class="ln-fold" wx:elif="{{col.hidden > 0}}" hover-class="ln-hover"
+              bindtap="onMoreCol" data-gen="{{col.gen}}" data-which="down">
+          <text class="ln-fold-text">另有 {{col.hidden}} 位</text>
+          <text class="ln-fold-arrow">›</text>
+        </view>
+        <view class="ln-fold ln-fold-collapse" wx:elif="{{col.collapsible}}" hover-class="ln-hover"
+              bindtap="onToggleCol" data-gen="{{col.gen}}" data-which="down">
+          <text class="ln-fold-text">收起</text>
+          <text class="ln-fold-arrow">‹</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 继续向上 / 向下（AC-16：两句不得混用） -->
+    <view class="ln-more" wx:if="{{meta.hasMoreUp && depth < depthCap}}" hover-class="ln-hover" bindtap="onDeeper">
+      <text class="ln-more-title">已到本次查看深度</text>
+      <text class="ln-more-desc">再往上仍有记载，点此继续</text>
+    </view>
+    <view class="ln-more" wx:if="{{meta.hasMoreDown && depth < depthCap}}" hover-class="ln-hover" bindtap="onDeeper">
+      <text class="ln-more-title">已到本次查看深度</text>
+      <text class="ln-more-desc">再往下仍有记载，点此继续</text>
+    </view>
+    <view class="ln-more ln-more-static" wx:if="{{(meta.hasMoreUp || meta.hasMoreDown) && depth >= depthCap}}">
+      <text class="ln-more-title">已到本库收录边界</text>
+      <text class="ln-more-desc">再往外，史料无载或尚未采录</text>
+    </view>
+
+    <!-- 加深过代际就必须有回收入口：深度原本只增不减，和「展开后收不回去」是同一个单向毛病 -->
+    <view class="ln-more ln-more-back" wx:if="{{depth > depthMin}}" hover-class="ln-hover" bindtap="onShallower">
+      <text class="ln-more-title">已展开到第 {{depth}} 代</text>
+      <text class="ln-more-desc">点此收回一代{{depth - 1 > depthMin ? '' : '（回到首屏 ' + depthMin + ' 代）'}}</text>
+    </view>
+
+    <view class="ln-foot">
+      <text class="ln-foot-link" bindtap="onOpenFeedback">数据有误？提交勘误（请注明人物姓名）</text>
+    </view>
+  </block>
+
+  <!-- ================= B 档：旁系与姻亲（零脊线） ================= -->
+  <block wx:elif="{{mode === 'kinship'}}">
+    <view class="ln-b-head">
+      <text class="ln-b-title">{{center.name}}</text>
+      <text class="ln-b-sub">{{center.dynasty}}{{center.lifespan ? ' · ' + center.lifespan : ''}}</text>
+      <text class="ln-b-note">本库未收录其直系上下代，但有旁系与姻亲记载。</text>
+    </view>
+
+    <!-- 直系有载但超出本页深度（AC-18：不得说「已到本库收录边界」） -->
+    <view class="ln-more" wx:if="{{meta.baseline.axisBeyondDepth && depth < depthCap}}"
+          hover-class="ln-hover" bindtap="onDeeper">
+      <text class="ln-more-title">更上一代有记载</text>
+      <text class="ln-more-desc">超出本次查看深度，点此继续</text>
+    </view>
+
+    <view class="ln-more ln-more-back" wx:if="{{depth > depthMin}}" hover-class="ln-hover" bindtap="onShallower">
+      <text class="ln-more-title">已展开到第 {{depth}} 代</text>
+      <text class="ln-more-desc">点此收回一代</text>
+    </view>
+
+    <view class="ln-sec" wx:for="{{sections}}" wx:for-item="sec" wx:key="section">
+      <view class="ln-sec-head">
+        <text class="ln-sec-label">{{sec.label}}</text>
+        <text class="ln-sec-count">{{sec.total}} 人</text>
+      </view>
+      <view class="ln-attach-row">
+          <view class="ln-attach-card" wx:for="{{sec.nodes}}" wx:key="key"
+                data-id="{{item.id}}" data-name="{{item.name}}"
+                bindtap="onTapNode" bindlongpress="onNodeLongPress" hover-class="ln-hover">
+          <text class="ln-attach-name">{{item.name}}</text>
+          <text class="ln-attach-meta">{{item.sub || '亲属'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="ln-foot">
+      <text class="ln-foot-link" bindtap="onOpenFeedback">数据有误？提交勘误（请注明人物姓名）</text>
+    </view>
+  </block>
+
+  <!-- ================= C 档：状态卡（零框零线） ================= -->
+  <block wx:else>
+    <view class="ln-summary">
+      <text class="ln-summary-title">暂无亲属世系记载</text>
+
+      <!-- C2：一条边都没有（全库 48.5%） vs C1：有交往记录但无亲属 -->
+      <text class="ln-summary-desc" wx:if="{{meta.baseline.nonKinCount > 0}}">
+        {{center.name}}的父辈与子嗣暂未见载于本库，不代表历史上并无其人。
+      </text>
+      <text class="ln-summary-desc" wx:else>
+        本库尚未收录{{center.name}}的亲属与交往记录。
+      </text>
+
+      <view class="ln-divider"></view>
+
+      <text class="ln-baseline">本库 {{meta.baseline.totalFigures}} 位人物中，约三成留有祖辈记载。</text>
+
+      <view class="ln-divider"></view>
+
+      <!-- 出口 1：有交往记录才带条数；0 条时降级为无副文（不写「0 条」） -->
+      <view class="ln-exit" hover-class="ln-hover" bindtap="onOpenGraph">
+        <view class="ln-exit-body">
+          <text class="ln-exit-title">查看关系图谱</text>
+          <text class="ln-exit-sub" wx:if="{{meta.baseline.nonKinCount > 0}}">
+            有 {{meta.baseline.nonKinCount}} 条师友与撰述往来
+          </text>
+        </view>
+        <text class="ln-exit-arrow">›</text>
+      </view>
+
+      <view class="ln-exit" hover-class="ln-hover" bindtap="onOpenSameEra">
+        <view class="ln-exit-body">
+          <text class="ln-exit-title">看同时代的人物</text>
+        </view>
+        <text class="ln-exit-arrow">›</text>
+      </view>
+
+      <view class="ln-divider"></view>
+
+      <text class="ln-foot-link ln-foot-link-center" bindtap="onOpenFeedback">数据有误？提交勘误（请注明人物姓名）</text>
+    </view>
+  </block>
+
+  <!-- ================= 长按节点：底部上滑详情浮层 ================= -->
+  <!-- 不动「点按=换中心」主交互；长按预览（头像/关系·生卒/朝代/简介）后再决定去向 -->
+  <view class="ln-sheet-mask" wx:if="{{sheet}}" bindtap="onSheetClose">
+    <view class="ln-sheet" catchtap="onSheetStop">
+      <view class="ln-sheet-handle"></view>
+      <view class="ln-sheet-head">
+        <view class="ln-sheet-avatar">
+          <image class="ln-sheet-img" wx:if="{{sheet.avatarUrl}}" src="{{sheet.avatarUrl}}" mode="aspectFill" lazy-load />
+          <text class="ln-sheet-initial" wx:else>{{sheet.initial}}</text>
+        </view>
+        <view class="ln-sheet-id">
+          <text class="ln-sheet-name">{{sheet.name}}</text>
+          <text class="ln-sheet-sub" wx:if="{{sheet.sub}}">{{sheet.sub}}</text>
+        </view>
+      </view>
+      <view class="ln-sheet-dynasty" wx:if="{{sheet.dynasty}}">
+        <text class="ln-sheet-dynasty-tag">{{sheet.dynasty}}</text>
+      </view>
+      <text class="ln-sheet-bio" wx:if="{{sheet.bio}}">{{sheet.bio}}</text>
+      <view class="ln-sheet-actions">
+        <view class="ln-sheet-btn ln-sheet-btn-detail" hover-class="ln-hover" bindtap="onSheetDetail">
+          <text class="ln-sheet-btn-text">查看完整详情</text>
+        </view>
+        <view class="ln-sheet-btn ln-sheet-btn-center" hover-class="ln-hover" bindtap="onSheetCenter">
+          <text class="ln-sheet-btn-text">以此为树心</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 使用引导（文案唯一来源：config/guide-steps.js::lineage） =====
+       scrollto：页面级滚动（无 scroll-view），容器取视口，按「当前滚动量 + 锚点矩形」算 scrollTop；
+       两步的目标都是条件渲染，组件侧 optional 会在目标不存在时直接跳过。 -->
+  <guide-layer
+    id="guideLayer"
+    bind:scrollto="onGuideScrollTo"
+  />
+
+  <!-- 底部五标签：固定点亮「世系」，其余标签由 onDockTap 负责跨页跳转 -->
+  <template is="dock" data="{{active: 'lineage'}}" />
+</view>

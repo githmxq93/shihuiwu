@@ -1,0 +1,99 @@
+/* 自定义 tabBar —— 图标为内联 SVG（base64），不加载任何本地图片文件 */
+/* 视觉：暖纸底 + 液态水滴指示器（水滴由 index.wxs 直接改样式，不走 setData） */
+.ctb {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  /* 必须用字面值：自定义 tabBar 由框架单独渲染，不在 page 节点内，
+     app.wxss 里挂在 page{} 上的 CSS 变量继承不到这里（var 解析失败 = 无背景）。
+     2026-11-14 回归修复：还原为 token 化之前的原值。 */
+  background: #FBF7EF;
+  border-top: 1rpx solid rgba(61, 46, 31, 0.10);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -8rpx 32rpx rgba(61, 46, 31, 0.08);
+  /* 隔离层叠上下文：水滴 z-index:1 永远在导航文字之下 */
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* 文章浮层打开时整体移出屏幕（transition 不加：要与浮层首帧同步收起） */
+.ctb.ctb-hidden {
+  transform: translateY(120%);
+  pointer-events: none;
+}
+
+/* 半透明粉玻璃水滴：默认位置/宽度由 data.dropStyle 给出，拖动时由 WXS 改写 */
+.ctb-drop {
+  position: absolute;
+  /* 垂直对齐到导航项中心：导航项高 100rpx，故圆心取 50rpx。
+     不能用 top:50% —— .ctb 还含 safe-area 内边距，会把水滴顶偏 */
+  top: 50rpx;
+  left: 0;
+  width: 84rpx;
+  height: 84rpx;
+  box-sizing: border-box;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  pointer-events: none;
+  /* 定位前不可见：水滴落点由 WXS 算（JS 的 setData 已延后到页面首帧之后），
+     默认可见会先闪在 left:0 再瞬移。WXS 定位时写 opacity:1 */
+  opacity: 0;
+  /* 玻璃质感只靠「极淡 rgba 底色 + 径向渐变 + 内阴影」三层 —— 参考稿 底部.txt
+     的 glass 观感本就来自身这三层；blur 在本元素 0.05~0.1 的极低透明度下几乎
+     不可见，却会让本元素（位于 fixed 底栏内、且被 will-change 提升为常驻合成层）
+     每帧重新对整页背景取样模糊：切页/重绘时强制整页重新栅格化，表现为白屏。
+     小程序端 backdrop-filter 属"需先确认替代方案"的能力，故不启用。 */
+  background-color: rgba(181, 113, 58, 0.05);
+  background-image: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5) 0%, rgba(181, 113, 58, 0.1) 40%, rgba(181, 113, 58, 0.02) 80%);
+  box-shadow:
+    inset 0 0 12rpx 2rpx rgba(255, 255, 255, 0.8),
+    inset 0 0 6rpx 2rpx rgba(181, 113, 58, 0.3),
+    0 8rpx 24rpx rgba(181, 113, 58, 0.1);
+  /* 只提升 transform：width/left 是布局属性，写进 will-change 会让合成层失效、
+     拖动时每帧强制重排，收益为负 */
+  will-change: transform;
+}
+
+.ctb-item {
+  flex: 1;
+  height: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  /* 同上：tabBar 处于 page 之外，变量不可见，必须写字面值 */
+  color: #75654f;
+  transition: color 0.25s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ctb-icon {
+  width: 46rpx;
+  height: 46rpx;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+.ctb-label {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  letter-spacing: 0;
+  /* 颜色继承自 .ctb-item：WXS 改 item 的颜色即可同步文字 */
+  color: inherit;
+  /* 白色微光，保证文字浮在水滴之上依然清晰 */
+  text-shadow: 0 2rpx 4rpx rgba(255, 255, 255, 0.8);
+}
+.ctb-item-active .ctb-label { font-weight: 600; }
+.ctb-icon-home { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNzU2NTRmIiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMy4yIDEwLjggMTIgMy40bDguOCA3LjQiLz48cGF0aCBkPSJNNS44IDkuNFYyMC42aDEyLjRWOS40Ii8+PHBhdGggZD0iTTEwLjEgMjAuNnYtNS4yaDMuOHY1LjIiLz48L3N2Zz4="); }
+.ctb-item-active .ctb-icon-home { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGY1MzI2IiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMy4yIDEwLjggMTIgMy40bDguOCA3LjQiLz48cGF0aCBkPSJNNS44IDkuNFYyMC42aDEyLjRWOS40Ii8+PHBhdGggZD0iTTEwLjEgMjAuNnYtNS4yaDMuOHY1LjIiLz48L3N2Zz4="); }
+.ctb-icon-topic { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNzU2NTRmIiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzLjQiIHk9IjMuNCIgd2lkdGg9IjcuMiIgaGVpZ2h0PSI3LjIiIHJ4PSIxLjYiLz48cmVjdCB4PSIxMy40IiB5PSIzLjQiIHdpZHRoPSI3LjIiIGhlaWdodD0iNy4yIiByeD0iMS42Ii8+PHJlY3QgeD0iMy40IiB5PSIxMy40IiB3aWR0aD0iNy4yIiBoZWlnaHQ9IjcuMiIgcng9IjEuNiIvPjxyZWN0IHg9IjEzLjQiIHk9IjEzLjQiIHdpZHRoPSI3LjIiIGhlaWdodD0iNy4yIiByeD0iMS42Ii8+PC9zdmc+"); }
+.ctb-item-active .ctb-icon-topic { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGY1MzI2IiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzLjQiIHk9IjMuNCIgd2lkdGg9IjcuMiIgaGVpZ2h0PSI3LjIiIHJ4PSIxLjYiLz48cmVjdCB4PSIxMy40IiB5PSIzLjQiIHdpZHRoPSI3LjIiIGhlaWdodD0iNy4yIiByeD0iMS42Ii8+PHJlY3QgeD0iMy40IiB5PSIxMy40IiB3aWR0aD0iNy4yIiBoZWlnaHQ9IjcuMiIgcng9IjEuNiIvPjxyZWN0IHg9IjEzLjQiIHk9IjEzLjQiIHdpZHRoPSI3LjIiIGhlaWdodD0iNy4yIiByeD0iMS42Ii8+PC9zdmc+"); }
+.ctb-icon-query { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNzU2NTRmIiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMC44IiBjeT0iMTAuOCIgcj0iNi42Ii8+PHBhdGggZD0iTTE1LjYgMTUuNiAyMC44IDIwLjgiLz48L3N2Zz4="); }
+.ctb-item-active .ctb-icon-query { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGY1MzI2IiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMC44IiBjeT0iMTAuOCIgcj0iNi42Ii8+PHBhdGggZD0iTTE1LjYgMTUuNiAyMC44IDIwLjgiLz48L3N2Zz4="); }
+.ctb-icon-profile { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNzU2NTRmIiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjguMiIgcj0iMy45Ii8+PHBhdGggZD0iTTQuNiAyMC42YzEuNS0zLjUgNC4xLTUuMyA3LjQtNS4zczUuOSAxLjggNy40IDUuMyIvPjwvc3ZnPg=="); }
+.ctb-item-active .ctb-icon-profile { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGY1MzI2IiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjguMiIgcj0iMy45Ii8+PHBhdGggZD0iTTQuNiAyMC42YzEuNS0zLjUgNC4xLTUuMyA3LjQtNS4zczUuOSAxLjggNy40IDUuMyIvPjwvc3ZnPg=="); }

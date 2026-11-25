@@ -1,0 +1,536 @@
+page {
+  background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-primary) 30%, var(--bg-primary) 100%);
+  min-height: 100vh;
+}
+
+/* ====== 页面骨架：flex 列布局（导航流式占位，列表区自适应） ====== */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ====== 导航栏 ====== */
+/* [注意] 不用 position:fixed —— 原做法要靠给 scroll-view 加 padding-top 避让，
+   而小程序 scroll-view 的 padding 不可靠，会出现"首条内容被导航栏压住"（问题 66）。
+   [注意] padding-top 由 WXML 注入真实状态栏高度，不再写死 88rpx（高状态栏机型会被压）。 */
+.nav-bar {
+  flex-shrink: 0;
+  background: var(--bg-nav);
+  /* backdrop-filter 已移除（2026-10-15 真机白屏专项收尾）：--bg-nav 本身已是渐隐条带，
+     模糊视觉增益极小，却会让真机合成器为整页建立 backdrop root 并离屏取样。 */
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+}
+
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 8rpx 16rpx;
+}
+
+.back-arrow {
+  font-size: var(--fs-40);
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+
+.back-text {
+  font-size: var(--fs-28);
+  color: var(--accent-gold-ink);
+}
+
+.nav-title {
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.nav-placeholder {
+  width: 100rpx;
+}
+
+/* ====== 三个管理 Tab ====== */
+.tab-bar {
+  flex-shrink: 0;
+  display: flex;
+  background: var(--bg-elevated);
+  border-bottom: 1rpx solid var(--border-subtle);
+}
+
+.tab-item {
+  flex: 1;
+  position: relative;
+  text-align: center;
+  padding: 22rpx 0;
+  font-size: 28rpx;
+  color: var(--text-muted);
+}
+
+.tab-item.is-active {
+  color: var(--accent-gold-ink);
+  font-weight: 700;
+}
+
+/* 选中下划线：用伪元素（小程序 WXSS 支持 ::after） */
+.tab-item.is-active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 56rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--accent-gold);
+  transform: translateX(-50%);
+}
+
+/* ====== 工具栏（搜索 / 新增 / 角色筛选） ====== */
+.tool-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 24rpx 12rpx;
+}
+
+.search-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 64rpx;
+  padding: 0 24rpx;
+  background: var(--bg-deep);
+  border-radius: 32rpx;
+}
+
+.search-icon {
+  font-size: var(--fs-26);
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  height: 100%;
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+}
+
+.search-clear {
+  flex-shrink: 0;
+  padding: 0 8rpx;
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+.add-btn {
+  flex-shrink: 0;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 28rpx;
+  border-radius: 32rpx;
+  background: var(--accent-gold);
+  color: #fff;
+  font-size: var(--fs-26);
+  font-weight: 600;
+}
+
+.add-btn:active {
+  opacity: 0.85;
+}
+
+.role-filter {
+  flex-shrink: 0;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 22rpx;
+  border-radius: 32rpx;
+  background: var(--bg-deep);
+  color: var(--text-secondary);
+  font-size: var(--fs-24);
+}
+
+/* ====== 状态筛选 chips ====== */
+.chip-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  padding: 0 24rpx 8rpx;
+}
+
+.chip {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  padding: 10rpx 26rpx;
+  border-radius: var(--radius-lg);
+  background: var(--bg-deep);
+}
+
+.chip.is-active {
+  color: #fff;
+  font-weight: 700;
+  background: var(--accent-gold);
+}
+
+/* ====== 统计 ====== */
+.stat-bar {
+  flex-shrink: 0;
+  padding: 4rpx 24rpx 8rpx;
+}
+
+.stat-text {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+}
+
+/* ====== 列表区 ====== */
+.body {
+  flex: 1;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding: 8rpx 24rpx 32rpx;
+}
+
+.user-card {
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: 20rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.uc-head {
+  display: flex;
+  gap: 20rpx;
+}
+
+.uc-avatar {
+  flex-shrink: 0;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(181, 113, 58, 0.08);
+  border: 2rpx solid rgba(181, 113, 58, 0.12);
+}
+
+.uc-avatar-icon {
+  font-size: var(--fs-36);
+  opacity: 0.45;
+}
+
+.uc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.uc-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.uc-nick {
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.uc-line {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.badge {
+  font-size: var(--fs-20);
+  padding: 2rpx 14rpx;
+  border-radius: 12rpx;
+  line-height: 1.5;
+}
+
+.badge-role {
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.1);
+}
+
+.badge-status {
+  color: var(--text-secondary);
+  background: var(--bg-deep);
+}
+
+.badge-admin {
+  color: #fff;
+  background: var(--accent-vermillion);
+}
+
+/* 权限管理：分配角色那一行 */
+.uc-role-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid var(--border-subtle);
+}
+
+.uc-role-label {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+}
+
+.role-pick {
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+  padding: 8rpx 22rpx;
+  border-radius: 12rpx;
+  background: rgba(181, 113, 58, 0.08);
+}
+
+/* 操作按钮 */
+.uc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid var(--border-subtle);
+}
+
+.act {
+  font-size: var(--fs-24);
+  padding: 10rpx 24rpx;
+  border-radius: 12rpx;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  background: var(--bg-deep);
+}
+
+.act:active {
+  opacity: 0.75;
+}
+
+.act-ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.act-warn {
+  color: var(--accent-gold-light);
+  background: rgba(201, 139, 79, 0.12);
+}
+
+.act-danger {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.act-danger-hard {
+  color: #fff;
+  background: var(--accent-vermillion);
+}
+
+/* ====== 状态 ====== */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-text {
+  font-size: var(--fs-28);
+  color: var(--text-muted);
+}
+
+.loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 24rpx 0;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+
+.bottom-spacer {
+  height: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+/* ====== 弹窗（与其它后台页同款） ====== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(61, 46, 31, 0.45);
+}
+
+.modal-content {
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: 24rpx 24rpx 0 0;
+}
+
+/* 重置密码弹窗内容少，不需要占满高度 */
+.modal-content-sm {
+  max-height: none;
+}
+
+.modal-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid var(--border-subtle);
+}
+
+.modal-title {
+  font-size: var(--fs-32);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.modal-close {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  text-align: center;
+  font-size: var(--fs-30);
+  color: var(--text-muted);
+  border-radius: 50%;
+  background: rgba(181, 113, 58, 0.06);
+}
+
+.modal-close:active {
+  background: rgba(181, 113, 58, 0.12);
+}
+
+.modal-body {
+  flex: 1;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding: 24rpx 32rpx;
+}
+
+.modal-body-fixed {
+  padding: 24rpx 32rpx;
+}
+
+.modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid var(--border-subtle);
+}
+
+.form-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: var(--radius);
+  font-size: var(--fs-30);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--accent-gold);
+}
+
+.form-btn:active {
+  opacity: 0.9;
+}
+
+.form-btn.is-disabled {
+  opacity: 0.6;
+}
+
+.form-btn-cancel {
+  color: var(--text-secondary);
+  background: var(--bg-deep);
+}
+
+.form-btn-warn {
+  background: var(--accent-vermillion);
+}
+
+.form-group {
+  margin-bottom: 24rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 72rpx;
+  padding: 0 20rpx;
+  background: var(--bg-deep);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: 12rpx;
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.form-picker {
+  display: flex;
+  align-items: center;
+  line-height: 72rpx;
+}
+
+.form-textarea {
+  width: 100%;
+  height: 140rpx;
+  padding: 16rpx 20rpx;
+  background: var(--bg-deep);
+  border: 1rpx solid var(--border-subtle);
+  border-radius: 12rpx;
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.warn-box {
+  margin-bottom: 20rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: var(--fs-22);
+  line-height: 1.6;
+  color: var(--accent-vermillion);
+  background: rgba(166, 59, 42, 0.07);
+  border: 1rpx solid rgba(166, 59, 42, 0.18);
+}

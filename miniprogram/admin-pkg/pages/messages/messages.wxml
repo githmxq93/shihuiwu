@@ -1,0 +1,314 @@
+<import src="../../../templates/admin-nav/admin-nav.wxml" />
+<view class="page-wrapper">
+  <!-- 导航：padding-top 用真实状态栏高度（safeAreaTop）注入，
+       [注意] 不能写死 88rpx(=44px)——状态栏更高的机型（刘海/灵动岛）会顶上去被压住 -->
+  <template is="admin-nav" data="{{title: '消息管理', safeAreaTop: safeAreaTop, emptyRightClass: 'nav-right'}}" />
+
+  <!-- 模块 Tab（5 个，横向可滚） -->
+  <scroll-view class="tab-scroll" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
+    <view class="tab-row">
+      <view class="tab-item {{activeTab === item.key ? 'is-active' : ''}}"
+            wx:for="{{tabs}}" wx:key="key" data-key="{{item.key}}" bindtap="onSwitchTab">
+        <text class="tab-text">{{item.label}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <scroll-view class="content-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}"
+    bounces="{{false}}" refresher-enabled="{{true}}" refreshertriggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore" lower-threshold="80">
+
+    <!-- ==================== 1. 站内公告 ==================== -->
+    <view class="tab-pane" wx:if="{{activeTab === 'announce'}}">
+      <view class="pane-tool">
+        <text class="pane-count">共 {{total}} 条公告</text>
+        <view class="pane-add" bindtap="onAddAnn">＋ 新建公告</view>
+      </view>
+
+      <view class="list">
+        <view class="item-card" wx:for="{{announcements}}" wx:key="id">
+          <view class="item-head">
+            <text class="item-title">{{item.title}}</text>
+            <text class="badge {{item.status === 'published' ? 'badge-ok' : 'badge-draft'}}">{{item._statusLabel}}</text>
+          </view>
+          <view class="item-meta">
+            <text class="meta-chip">{{item._typeLabel}}</text>
+            <text class="meta-time">{{item._time}}</text>
+          </view>
+          <text class="item-body" wx:if="{{item.content}}">{{item.content}}</text>
+          <view class="item-actions">
+            <view class="act act-edit" data-index="{{index}}" bindtap="onEditAnn">编辑</view>
+            <view class="act act-del" data-id="{{item.id}}" bindtap="onDeleteAnn">删除</view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:if="{{!loading && announcements.length === 0}}">
+        <text class="empty-text">暂无公告</text>
+      </view>
+    </view>
+
+    <!-- ==================== 2. 站内信 / 私信 ==================== -->
+    <view class="tab-pane" wx:if="{{activeTab === 'messages'}}">
+      <view class="form-card">
+        <text class="form-card-title">发送站内信</text>
+
+        <view class="form-group">
+          <text class="form-label required">收件人</text>
+          <picker mode="selector" range="{{userOptions}}" value="{{userIndex}}" bindchange="onUserChange">
+            <view class="form-input form-picker">{{userOptions[userIndex] || '请选择收件人'}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">标题</text>
+          <input class="form-input" placeholder="消息标题（可留空）" value="{{msgForm.title}}" data-field="title" bindinput="onMsgInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label required">内容</text>
+          <textarea class="form-textarea" placeholder="消息内容" value="{{msgForm.content}}" data-field="content" bindinput="onMsgInput" />
+        </view>
+        <view class="form-btn {{sendingMsg ? 'is-disabled' : ''}}" bindtap="onSendMsg">{{sendingMsg ? '发送中…' : '发送'}}</view>
+
+        <!-- 群发（默认折叠，避免误触） -->
+        <view class="fold-toggle" bindtap="onToggleBroadcast">
+          <text>{{broadcastOpen ? '▾ 收起群发' : '▸ 群发消息（发给全部用户）'}}</text>
+        </view>
+        <block wx:if="{{broadcastOpen}}">
+          <view class="warn-box">群发会向**全部用户**各写一条站内信，无法撤回，请再次确认。</view>
+          <view class="form-group">
+            <text class="form-label">群发标题</text>
+            <input class="form-input" placeholder="消息标题（可留空）" value="{{broadcastForm.title}}" data-field="title" bindinput="onBroadcastInput" />
+          </view>
+          <view class="form-group">
+            <text class="form-label required">群发内容</text>
+            <textarea class="form-textarea" placeholder="群发内容" value="{{broadcastForm.content}}" data-field="content" bindinput="onBroadcastInput" />
+          </view>
+          <view class="form-btn form-btn-warn" bindtap="onBroadcast">确认群发</view>
+        </block>
+      </view>
+
+      <view class="pane-tool">
+        <text class="pane-count">共 {{total}} 条站内信记录</text>
+      </view>
+      <view class="list">
+        <view class="item-card" wx:for="{{msgList}}" wx:key="id" wx:for-item="msg">
+          <view class="item-head">
+            <text class="item-title">{{msg.title || '（无标题）'}}</text>
+            <text class="badge badge-draft">{{msg._typeLabel}}</text>
+          </view>
+          <view class="item-meta">
+            <text class="meta-time">来自 {{msg.fromName || '系统'}} · 收件人 ID {{msg.toUserId}}</text>
+            <text class="meta-time">{{msg._time}}</text>
+          </view>
+          <text class="item-body" wx:if="{{msg.content}}">{{msg.content}}</text>
+          <view class="item-actions">
+            <view class="act act-del" data-id="{{msg.id}}" bindtap="onDeleteMsg">删除</view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:if="{{!loading && msgList.length === 0}}">
+        <text class="empty-text">暂无站内信记录</text>
+      </view>
+    </view>
+
+    <!-- ==================== 3. 消息模板 ==================== -->
+    <view class="tab-pane" wx:if="{{activeTab === 'templates'}}">
+      <view class="pane-tool">
+        <text class="pane-count">共 {{templates.length}} 个模板</text>
+        <view class="pane-add" bindtap="onAddTmpl">＋ 新建模板</view>
+      </view>
+
+      <view class="list">
+        <view class="item-card" wx:for="{{templates}}" wx:key="id" wx:for-item="tpl">
+          <view class="item-head">
+            <text class="item-title">{{tpl.name}}</text>
+            <text class="badge badge-draft">{{tpl._channelLabel}}</text>
+          </view>
+          <view class="item-meta">
+            <text class="meta-chip">{{tpl.code}}</text>
+          </view>
+          <text class="item-body" wx:if="{{tpl.subject}}">主题：{{tpl.subject}}</text>
+          <text class="item-body" wx:if="{{tpl.content}}">{{tpl.content}}</text>
+          <view class="item-actions">
+            <view class="act act-edit" data-index="{{index}}" bindtap="onEditTmpl">编辑</view>
+            <view class="act act-del" data-id="{{tpl.id}}" bindtap="onDeleteTmpl">删除</view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:if="{{!loading && templates.length === 0}}">
+        <text class="empty-text">暂无消息模板</text>
+      </view>
+    </view>
+
+    <!-- ==================== 4. 触发推送 ==================== -->
+    <view class="tab-pane" wx:if="{{activeTab === 'trigger'}}">
+      <view class="form-card">
+        <text class="form-card-title">按模板触发推送</text>
+        <view class="hint-box">推送正文取所选模板的内容；模板里的 ${变量名} 会被下方填写的变量替换。目标用户不选则发给全部用户。</view>
+
+        <view class="form-group">
+          <text class="form-label required">消息模板</text>
+          <picker mode="selector" range="{{templateOptions}}" value="{{triggerTmplIndex}}" bindchange="onTriggerTmplChange">
+            <view class="form-input form-picker">{{templateOptions[triggerTmplIndex] || '请选择模板'}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">发送范围</text>
+          <picker mode="selector" range="{{triggerScopeLabels}}" value="{{triggerScopeIndex}}" bindchange="onTriggerScopeChange">
+            <view class="form-input form-picker">{{triggerScopeLabels[triggerScopeIndex]}}</view>
+          </picker>
+        </view>
+        <view class="form-group" wx:if="{{triggerScopeIndex === 1}}">
+          <text class="form-label required">目标用户</text>
+          <picker mode="selector" range="{{userOptions}}" value="{{triggerUserIndex}}" bindchange="onTriggerUserChange">
+            <view class="form-input form-picker">{{userOptions[triggerUserIndex] || '请选择用户'}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">模板变量（每行一个，格式 变量名=值）</text>
+          <textarea class="form-textarea" placeholder="userName=张三&#10;siteName=世慧屋" value="{{triggerVars}}" bindinput="onTriggerVarsInput" />
+        </view>
+        <view class="form-btn {{triggering ? 'is-disabled' : ''}}" bindtap="onTrigger">{{triggering ? '推送中…' : '发送推送'}}</view>
+        <view class="result-text" wx:if="{{triggerHint}}">{{triggerHint}}</view>
+      </view>
+    </view>
+
+    <!-- ==================== 5. 反馈管理 ==================== -->
+    <view class="tab-pane" wx:if="{{activeTab === 'feedback'}}">
+      <view class="fb-toolbar">
+        <view class="fb-chips">
+          <view class="fb-chip {{fbFilter === item.key ? 'is-active' : ''}}"
+                wx:for="{{fbFilters}}" wx:key="key" data-key="{{item.key}}" bindtap="onFbFilterChange">{{item.label}}</view>
+        </view>
+        <input class="fb-search" placeholder="搜索内容 / 联系方式 / 昵称" value="{{fbSearch}}" bindinput="onFbSearchInput" />
+      </view>
+
+      <view class="pane-tool">
+        <text class="pane-count">共 {{total}} 条反馈</text>
+      </view>
+
+      <view class="list">
+        <view class="item-card" wx:for="{{feedbacks}}" wx:key="id" wx:for-item="fb">
+          <view class="item-head">
+            <text class="item-title">{{fb.userName || '匿名用户'}}</text>
+            <text class="badge {{fb.status === 'resolved' ? 'badge-ok' : (fb.status === 'replied' ? 'badge-info' : 'badge-warn')}}">{{fb._statusLabel}}</text>
+          </view>
+          <view class="item-meta">
+            <text class="meta-chip">{{fb._typeLabel}}</text>
+            <text class="meta-time">{{fb._time}} · #{{fb.id}}</text>
+            <text class="meta-time" wx:if="{{fb.contact}}">联系方式：{{fb.contact}}</text>
+            <text class="meta-time" wx:if="{{fb.figureId}}">人物 #{{fb.figureId}}</text>
+          </view>
+          <text class="item-body" wx:if="{{fb.content}}">{{fb.content}}</text>
+
+          <image wx:if="{{fb._imageUrl}}" class="fb-img" src="{{fb._imageUrl}}" mode="aspectFill" lazy-load="{{true}}"
+                 data-url="{{fb._imageUrl}}" bindtap="onPreviewFbImage" />
+
+          <view class="fb-reply-box" wx:if="{{fb.reply}}">
+            <text class="fb-reply-label">回复</text>
+            <text class="fb-reply-text">{{fb.reply}}</text>
+          </view>
+
+          <!-- 回复输入（行内展开） -->
+          <view class="fb-reply-input" wx:if="{{replyingId === fb.id}}">
+            <textarea class="form-textarea" placeholder="输入回复内容…" value="{{replyText}}" bindinput="onReplyInput" />
+            <view class="item-actions">
+              <view class="act act-edit" data-id="{{fb.id}}" bindtap="onReplySubmit">提交回复</view>
+              <view class="act" bindtap="onReplyCancel">取消</view>
+            </view>
+          </view>
+
+          <view class="item-actions" wx:if="{{replyingId !== fb.id}}">
+            <view class="act act-edit" data-id="{{fb.id}}" bindtap="onReplyStart">回复</view>
+            <view class="act act-ok" wx:if="{{fb.status !== 'resolved'}}" data-id="{{fb.id}}" bindtap="onResolveFb">标记已处理</view>
+            <view class="act act-del" data-id="{{fb.id}}" bindtap="onDeleteFb">删除</view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:if="{{!loading && feedbacks.length === 0}}">
+        <text class="empty-text">暂无反馈</text>
+      </view>
+    </view>
+
+    <view class="loading-more" wx:if="{{loading}}">加载中…</view>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- ==================== 公告表单弹层 ==================== -->
+  <view class="modal-overlay" wx:if="{{showAnnForm}}" bindtap="onCloseAnnForm">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{annMode === 'add' ? '新建公告' : '编辑公告'}}</text>
+        <text class="modal-close" bindtap="onCloseAnnForm">✕</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+        <view class="form-group">
+          <text class="form-label required">公告标题</text>
+          <input class="form-input" placeholder="请输入公告标题" value="{{annForm.title}}" data-field="title" bindinput="onAnnInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">展示类型</text>
+          <picker mode="selector" range="{{annTypeLabels}}" value="{{annTypeIndex}}" bindchange="onAnnTypeChange">
+            <view class="form-input form-picker">{{annTypeLabels[annTypeIndex]}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">状态</text>
+          <picker mode="selector" range="{{annStatusLabels}}" value="{{annStatusIndex}}" bindchange="onAnnStatusChange">
+            <view class="form-input form-picker">{{annStatusLabels[annStatusIndex]}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">公告正文</text>
+          <textarea class="form-textarea form-textarea-lg" placeholder="公告内容" value="{{annForm.content}}" data-field="content" bindinput="onAnnInput" />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <view class="form-btn form-btn-cancel" bindtap="onCloseAnnForm">取消</view>
+        <view class="form-btn {{savingAnn ? 'is-disabled' : ''}}" bindtap="onSaveAnn">{{savingAnn ? '保存中…' : '保存'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ==================== 模板表单弹层 ==================== -->
+  <view class="modal-overlay" wx:if="{{showTmplForm}}" bindtap="onCloseTmplForm">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{tmplMode === 'add' ? '新建模板' : '编辑模板'}}</text>
+        <text class="modal-close" bindtap="onCloseTmplForm">✕</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}">
+        <view class="form-group">
+          <text class="form-label required">模板编码</text>
+          <input class="form-input" placeholder="如 register_success" value="{{tmplForm.code}}" data-field="code" bindinput="onTmplInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label required">模板名称</text>
+          <input class="form-input" placeholder="如 注册成功通知" value="{{tmplForm.name}}" data-field="name" bindinput="onTmplInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">发送渠道</text>
+          <picker mode="selector" range="{{channelLabels}}" value="{{channelIndex}}" bindchange="onChannelChange">
+            <view class="form-input form-picker">{{channelLabels[channelIndex]}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">邮件主题 / 标题</text>
+          <input class="form-input" placeholder="如 欢迎加入 世慧屋" value="{{tmplForm.subject}}" data-field="subject" bindinput="onTmplInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">可用变量（逗号分隔）</text>
+          <input class="form-input" placeholder="如 siteName,userName" value="{{tmplForm.variables}}" data-field="variables" bindinput="onTmplInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">模板正文（占位符形如 ${变量名}）</text>
+          <textarea class="form-textarea form-textarea-lg" placeholder="您好，欢迎注册！" value="{{tmplForm.content}}" data-field="content" bindinput="onTmplInput" />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <view class="form-btn form-btn-cancel" bindtap="onCloseTmplForm">取消</view>
+        <view class="form-btn {{savingTmpl ? 'is-disabled' : ''}}" bindtap="onSaveTmpl">{{savingTmpl ? '保存中…' : '保存'}}</view>
+      </view>
+    </view>
+  </view>
+</view>

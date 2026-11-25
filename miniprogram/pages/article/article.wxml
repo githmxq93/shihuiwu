@@ -1,0 +1,147 @@
+<import src="../../templates/article-reader/article-reader.wxml" />
+
+<view class="page">
+  <!-- 阅读进度条：贴在导航栏下沿（原来 fixed;top:0 被状态栏盖住，y=47~49px 全在刘海区） -->
+  <view class="progress" style="width: {{progressPercent}}%; top: {{navHeight}}px;"></view>
+
+  <!-- 顶部导航：未滚动时透明，滚动后实心并淡入标题 -->
+  <view class="navbar {{navSolid ? 'navbar-solid' : ''}}" style="padding-top: {{safeAreaTop}}px;">
+    <view class="nav-btn" hover-class="nav-btn-hover" bindtap="onBack">
+      <view class="nav-back-arrow"></view>
+    </view>
+    <text class="nav-title">{{navSolid ? article.title : ''}}</text>
+    <view class="nav-right">
+      <view class="nav-btn" hover-class="nav-btn-hover" bindtap="onShareTip">
+        <view class="nav-share-icon"></view>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view
+    class="scroller"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    bounces="{{false}}"
+    show-scrollbar="{{false}}"
+    style="padding-top: {{navHeight}}px;"
+    bindscroll="onScroll"
+    scroll-top="{{scrollTop}}"
+  >
+    <view class="skeleton-wrap" wx:if="{{loading}}">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-card">
+        <view class="skeleton-line skeleton-line-title"></view>
+        <view class="skeleton-line"></view>
+        <view class="skeleton-line skeleton-line-short"></view>
+      </view>
+      <view class="skeleton-hint">正在加载…</view>
+    </view>
+
+    <!-- 失败态三分支：链接缺参 / 文章已下架 / 网络故障。原来三者都只说「请检查网络」，删掉的文章重试一万次也没用 -->
+    <view wx:elif="{{loadFailed}}" class="error-box">
+      <text class="error-title">
+        {{failKind === 'missing' ? '这篇文章不存在或已下架' : (failKind === 'param' ? '链接参数不完整' : '网络连接失败')}}
+      </text>
+      <text class="error-text">
+        {{failKind === 'missing' ? '它可能已被作者删除，或换到了别的地址。' : (failKind === 'param' ? '请回到专题列表重新进入这篇。' : '请检查网络后重试。')}}
+      </text>
+      <view wx:if="{{failKind === 'network'}}" class="error-btn" hover-class="error-btn-hover" bindtap="onRetry">重新加载</view>
+      <view class="error-btn error-btn-ghost" hover-class="error-btn-hover" bindtap="onGoHome">返回首页</view>
+    </view>
+
+    <view wx:else class="article">
+      <!-- 阅读主体：与专题页浮层共用 templates/article-reader（结构 + 样式唯一来源） -->
+      <template
+        is="articleReader"
+        data="{{title: article.title, era: article.era, wordCount: wordCount, readMin: readMin, blocks: blocks, hasBody: hasBody, fullText: fullText, isExcerpt: isExcerpt, figures: figures, citations: citations, keywords: keywords}}"
+      />
+
+      <!-- 点赞 / 收藏（整页独有能力：浮层是速览，不承载互动） -->
+      <view class="actions">
+        <view class="action-btn {{liked ? 'action-btn-liked' : ''}}" hover-class="action-btn-hover" bindtap="onToggleLike">
+          <view class="icon-heart {{liked ? 'icon-heart-on' : ''}}"></view>
+          <text class="action-text">{{likes > 0 ? likes : '点赞'}}</text>
+        </view>
+        <view class="action-btn {{faved ? 'action-btn-stared' : ''}}" hover-class="action-btn-hover" bindtap="onToggleFav">
+          <view class="icon-star {{faved ? 'icon-star-on' : ''}}"></view>
+          <text class="action-text">{{faved ? '已收藏' : '收藏'}}</text>
+        </view>
+      </view>
+
+      <!-- 相关阅读 -->
+      <view class="ar-section related-read" wx:if="{{related.length > 0}}">
+        <view class="ar-sec-head">
+          <text class="ar-sec-title">相关阅读</text>
+          <text class="ar-sec-sub">RELATED</text>
+        </view>
+        <view
+          class="rr-item"
+          hover-class="rr-item-hover"
+          wx:for="{{related}}"
+          wx:key="id"
+          wx:for-item="r"
+          data-id="{{r.id}}"
+          bindtap="onTapArticleLink"
+        >
+          <view class="rr-num {{index === 0 ? 'rr-num-top' : ''}}">{{r.no}}</view>
+          <view class="rr-body">
+            <view class="rr-title">{{r.title}}</view>
+            <view class="rr-meta">
+              <text class="rr-cat">{{r.topicLabel || '专题文章'}}</text>
+              <view class="rr-dot"></view>
+              <text>{{r.dateLabel}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 版权 -->
+      <view class="copyright">
+        <text>本文由 <text class="copyright-strong">世慧屋</text> 编辑整理，内容基于公开史料编写，仅供参考与学习。</text>
+        <text>转载请保留出处；如涉版权问题请联系我们处理。</text>
+      </view>
+
+      <view class="article-end-space"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部翻篇条：与浮层同一套口径（上一篇 / 返回 / 下一篇）。
+       返回仍走 navigateBack，回到进来时的那一页；
+       翻篇范围也统一为本专题篇目（不再按全站发布时间跨专题），无目标时按钮置灰、点击给原因。 -->
+  <view class="ar-foot page-foot" wx:if="{{!loading && !loadFailed}}">
+    <view
+      class="ar-foot-side ar-foot-prev {{prev ? '' : 'is-dim'}}"
+      bindtap="onTapFootPrev"
+    >‹ 上一篇</view>
+    <view class="ar-foot-home" catchtap="onBack">返回</view>
+    <view
+      class="ar-foot-side ar-foot-next {{next ? '' : 'is-dim'}}"
+      bindtap="onTapFootNext"
+    >下一篇 ›</view>
+  </view>
+
+  <!-- 回到顶部 -->
+  <view class="to-top {{showToTop ? 'to-top-show' : ''}}" hover-class="to-top-hover" bindtap="onBackToTop">
+    <text class="to-top-icon">↑</text>
+  </view>
+
+  <!-- 同名人物选择：库里同名极普遍，「严武」有 4 位，不能替读者随便挑一个 -->
+  <view class="pick-mask" wx:if="{{pickVisible}}" bindtap="onClosePick">
+    <view class="pick-sheet" catchtap="noop">
+      <view class="pick-head">
+        <text class="pick-title">「{{pickName}}」有 {{pickList.length}} 位同名人物</text>
+        <text class="pick-sub">请选择你要查看的那一位</text>
+      </view>
+      <view class="pick-list">
+        <view class="pick-item" wx:for="{{pickList}}" wx:key="id" data-id="{{item.id}}" bindtap="onPickFigure">
+          <view class="pick-avatar"><text class="pick-avatar-text">{{item.initial}}</text></view>
+          <view class="pick-body">
+            <view class="pick-name">{{item.name}}</view>
+            <view class="pick-meta">{{item.meta}}</view>
+          </view>
+          <text class="pick-arrow">›</text>
+        </view>
+      </view>
+      <view class="pick-cancel" hover-class="pick-cancel-hover" bindtap="onClosePick">取消</view>
+    </view>
+  </view>
+</view>

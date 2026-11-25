@@ -1,0 +1,2251 @@
+/* 底部五标签 dock：与世系页 / 足迹页共用 templates/dock/dock.wxss（唯一来源，勿在本文件另写一份） */
+@import "../../../templates/dock/dock.wxss";
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-primary) 30%, var(--bg-secondary) 100%);
+  /* 只裁横向：正文改为页面级滚动后，纵向绝不能 hidden —— 否则整页滚不动
+     （2026-10-22 由 overflow:hidden 改，见 detail.wxml 顶部注释）
+     [2026-11-08] 这里保持 hidden，不能动：横向裁剪会把本元素变成「不滚动的滚动容器」。
+     年表 / 关系页的吸顶头（.b2-mini-wrap）因此被放在 .page **之前**作为同级节点
+     （见 detail.wxml 顶部），最近的可滚动祖先才是页面本身，sticky 才能吸住。 */
+  overflow-x: hidden;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+}
+
+.content-scroll {
+  position: relative;
+  z-index: 1;
+  /* min-height 而非 height：页面级滚动容器要随内容撑开，height:100vh 会把内容裁成一屏 */
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 200rpx 32rpx 40rpx;
+  position: relative;
+}
+
+.id-badge {
+  position: absolute;
+  top: 200rpx;
+  right: 32rpx;
+  padding: 6rpx 24rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.25);
+  border-radius: 20rpx;
+  background: rgba(181, 113, 58, 0.06);
+}
+
+.id-badge-text {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.avatar-row {
+  margin-bottom: 24rpx;
+}
+
+.avatar-circle {
+  width: 130rpx;
+  height: 130rpx;
+  border-radius: 50%;
+  background: rgba(181, 113, 58, 0.06);
+  border: 3rpx solid rgba(181, 113, 58, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 50rpx rgba(181, 113, 58, 0.08), 0 0 100rpx rgba(181, 113, 58, 0.03);
+}
+
+.avatar-emoji {
+  font-size: 64rpx;
+  color: var(--text-primary);
+}
+
+/* avatar 为站内相对路径（/uploads/…）时的图片形态 */
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.name-row {
+  margin-bottom: 8rpx;
+}
+
+.name-cn {
+  font-size: 56rpx;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  text-shadow: 0 0 30rpx rgba(181, 113, 58, 0.1);
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, 'PingFang SC', serif;
+}
+
+.name-en {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  margin-bottom: 12rpx;
+  letter-spacing: 0;
+}
+
+/* 帝王序号胶囊（如「明朝第十二位皇帝」）：与 Web 详情页同一视觉口径 */
+.emperor-row {
+  margin-bottom: 12rpx;
+}
+
+.emperor-pill {
+  display: inline-block;
+  padding: 6rpx 24rpx;
+  border-radius: 20rpx;
+  background: rgba(181, 113, 58, 0.1);
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.dynasty-text {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  margin-bottom: 24rpx;
+  letter-spacing: 0;
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12rpx;
+}
+
+.tag-item {
+  padding: 6rpx 22rpx;
+  background: rgba(181, 113, 58, 0.08);
+  border: 1rpx solid rgba(181, 113, 58, 0.18);
+  border-radius: 20rpx;
+}
+
+/* 收藏按钮（人物详情）：走用户中心收藏夹，需登录态 */
+.fav-bar {
+  margin-top: 28rpx;
+  display: flex;
+  justify-content: center;
+}
+.fav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 14rpx 40rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.3);
+  border-radius: 40rpx;
+  background: rgba(181, 113, 58, 0.06);
+  color: var(--text-secondary);
+}
+.fav-btn-hover {
+  background: rgba(181, 113, 58, 0.12);
+}
+.fav-btn-on {
+  color: var(--accent-gold-ink);
+  border-color: rgba(138, 106, 46, 0.5);
+  background: rgba(138, 106, 46, 0.08);
+}
+.fav-text {
+  font-size: var(--fs-26);
+  letter-spacing: 0;
+}
+/* 五角星：一个主三角 + 两个旋转副本拼成，颜色跟随按钮文字色（currentColor） */
+.icon-star {
+  position: relative;
+  width: 0;
+  height: 0;
+  border-left: 13rpx solid transparent;
+  border-right: 13rpx solid transparent;
+  border-bottom: 22rpx solid currentColor;
+}
+.icon-star::before,
+.icon-star::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 13rpx solid transparent;
+  border-right: 13rpx solid transparent;
+  border-bottom: 22rpx solid currentColor;
+}
+.icon-star::before {
+  transform: rotate(72deg);
+}
+.icon-star::after {
+  transform: rotate(-72deg);
+}
+.icon-star-on {
+  opacity: 1;
+}
+
+.tag-text {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+}
+
+.section-card {
+  margin: 0 24rpx 24rpx;
+  padding: 32rpx;
+  background: var(--bg-card);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.08);
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+  position: relative;
+}
+
+.section-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 32rpx;
+  right: 32rpx;
+  height: 2rpx;
+  background: linear-gradient(90deg, transparent, rgba(181, 113, 58, 0.1), transparent);
+  border-radius: 2rpx;
+}
+
+.section-header {
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.08);
+  display: flex;
+  align-items: center;
+}
+
+.section-header::before {
+  content: '';
+  width: 4rpx;
+  height: 24rpx;
+  background: var(--accent-gold);
+  border-radius: 2rpx;
+  margin-right: 12rpx;
+  opacity: 0.6;
+}
+
+.section-title {
+  font-size: var(--fs-30);
+  font-weight: 700;
+  color: var(--accent-gold-light);
+  letter-spacing: 0;
+}
+
+/* 生平正文：短篇直出全高；长篇折叠态见下方 .bio-folded（保留 10 行）。 */
+.bio-content {
+  overflow: hidden;
+}
+
+/* 长文折叠态：保留 10 行正文（与图一那种一屏内放得下的篇幅相当），不是只截两三行。
+   用 -webkit-line-clamp 比 max-height 稳：行高取整不会切出半行，也不会因估算差几像素漏字。 */
+.bio-folded .bio-inner {
+  display: -webkit-box;
+  -webkit-line-clamp: 10;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bio-text {
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  line-height: 1.9;
+  letter-spacing: 0;
+}
+
+/* ---- 年表：按阶段分卡（2026-11-08）----
+   每张卡 = 头行（阶段序号小徽标 + 阶段名 + 右对齐年份区间）+ 卡体逐个事件；
+   单个事件两栏：左年份（与头行左对齐）、右标题 / 描述 / 地点。
+   无 phase 的人物只渲染一张「大事年表」卡：没有序号徽标，区间能算出才显示。 */
+.tl-card {
+  margin: 0 24rpx 20rpx;
+  padding: 26rpx 28rpx 6rpx;
+  background: var(--bg-card);
+  border: 1rpx solid rgba(181, 113, 58, 0.1);
+  border-radius: 20rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.tl-hd {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.1);
+}
+
+.tl-hd-no {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  flex: none;
+  border-radius: 50%;
+  font-size: var(--fs-20);
+  line-height: 1;
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.12);
+  border: 1rpx solid rgba(181, 113, 58, 0.35);
+}
+
+.tl-hd-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-28);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+.tl-hd-range {
+  flex: none;
+  /* 无阶段名（无 phase 人物）时把区间顶到右侧 */
+  margin-left: auto;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+
+.tl-ev {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 16rpx 0;
+}
+
+.tl-ev + .tl-ev {
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.08);
+}
+
+/* 左栏年份固定宽：与头行左边缘对齐，右边一列才不会因年份长短而参差 */
+.tl-ev-y {
+  flex: none;
+  width: 140rpx;
+  padding-top: 3rpx;
+}
+
+.tl-year {
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  line-height: 1.5;
+}
+
+/* 明确无年份（含未详/不详）：弱化，别和真实年份抢视觉 */
+.tl-year.is-unknown {
+  color: var(--text-secondary);
+  opacity: 0.65;
+}
+
+/* 只有朝代/时期（明代、东汉末年、现代）：边界徽标，不当成年份 */
+.tl-year.is-period {
+  display: inline-block;
+  padding: 0 8rpx;
+  border: 1rpx solid var(--accent-gold);
+  border-radius: 4rpx;
+  color: var(--text-secondary);
+  font-size: var(--fs-20);
+  opacity: 0.9;
+}
+
+.tl-ev-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.tl-ev-title {
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.tl-ev-desc {
+  font-size: var(--fs-24);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* ===== 朝代区间带（2026-11-15） =====
+   只标朝代的连续条目在数据层已按朝代聚合（figure-display.markPeriodBands），
+   模板用「带首 + 带内行」平铺渲染，这里靠边框拼出整块带子的观感：
+   · 带首：虚线框的上半部分（上/左/右三边 + 上方圆角），底色略重；
+   · 带内行：浅底 + 左侧 3rpx 金色竖条，右侧虚线收边，行间用极浅虚线分隔；
+   · 带尾：补下边框与右下圆角，再接回普通条目时去掉重复的顶部分隔线。
+   字号一律偶数 rpx、letter-spacing 归零；正文色用 --text-secondary（纸底 ≥4.5:1）。 */
+.tl-band-hd {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  margin: 20rpx 0 0;
+  padding: 14rpx 16rpx 10rpx;
+  border: 1rpx dashed rgba(181, 113, 58, 0.3);
+  border-bottom: 0;
+  /* 左侧金色竖条与带内行连成一根，带子才有整体感 */
+  border-left: 3rpx solid var(--accent-gold);
+  border-radius: 10rpx 10rpx 0 0;
+  background: rgba(181, 113, 58, 0.06);
+}
+
+.tl-band-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+.tl-band-range {
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: var(--accent-gold-ink);
+}
+
+/* 「朝代区间」是口径说明，不是数值：加细框弱化，避免被读成区间标签本身 */
+.tl-band-note {
+  padding: 0 6rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.28);
+  border-radius: 4rpx;
+  font-size: var(--fs-22);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+.tl-band-count {
+  margin-left: auto;
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+.tl-ev.is-band {
+  padding: 14rpx 16rpx 14rpx 22rpx;
+  background: rgba(181, 113, 58, 0.045);
+  border-left: 3rpx solid var(--accent-gold);
+  border-right: 1rpx dashed rgba(181, 113, 58, 0.2);
+}
+
+.tl-ev.is-band + .tl-ev.is-band {
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.1);
+}
+
+.tl-ev.is-band-last {
+  border-bottom: 1rpx dashed rgba(181, 113, 58, 0.2);
+  border-radius: 0 0 10rpx 0;
+}
+
+/* 带尾之后接普通条目：带子已经收边，去掉 .tl-ev + .tl-ev 的重复分隔线 */
+.tl-ev.is-band-last + .tl-ev {
+  border-top: 0;
+}
+
+/* 末尾「无法定年」分隔：两侧细线夹一行说明，与上方可定年条目明确分开 */
+.tl-undated-hd {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin: 24rpx 0 4rpx;
+}
+
+.tl-undated-hd::before,
+.tl-undated-hd::after {
+  content: "";
+  flex: 1;
+  height: 1rpx;
+  background: rgba(61, 46, 31, 0.12);
+}
+
+.tl-undated-txt {
+  flex: none;
+  font-size: var(--fs-22);
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+.tab-bar {
+  /* 9 个标签超出屏宽 → 标签栏横向滚动。
+     scroll-view 需要 white-space:nowrap 且内容用 inline-flex 撑开，否则不会溢出滚动。 */
+  white-space: nowrap;
+  width: 100%;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.08);
+  margin-bottom: 24rpx;
+}
+
+.tab-bar-inner {
+  display: inline-flex;
+  gap: 0;
+}
+
+.tab-item {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 20rpx 24rpx;
+  position: relative;
+}
+
+.tab-label {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+  transition: color 0.3s;
+  letter-spacing: 0;
+}
+
+.tab-active .tab-label {
+  color: var(--accent-gold-light);
+  font-weight: 700;
+}
+
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  right: 15%;
+  height: 3rpx;
+  background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+  border-radius: 2rpx;
+}
+
+.works-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.work-card {
+  padding: 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  transition: all 0.25s ease;
+}
+
+.work-card:active {
+  background: var(--bg-card-hover);
+  border-color: rgba(181, 113, 58, 0.35);
+}
+
+.work-title {
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  font-weight: 700;
+}
+
+.work-year {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+.work-desc {
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: 4rpx;
+}
+
+/* 作品与成果：类别标签（手稿/版本/项目/专利/展览/演出/课程…） */
+.work-category {
+  align-self: flex-start;
+  padding: 2rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: 18rpx;
+  color: var(--accent-gold-ink);
+  background: rgba(181, 113, 58, 0.1);
+  border: 1rpx solid rgba(181, 113, 58, 0.28);
+}
+
+/* ===== 基础档案 ===== */
+.profile-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-row {
+  display: flex;
+  align-items: baseline;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.08);
+}
+
+.profile-row:last-child {
+  border-bottom: none;
+}
+
+.profile-label {
+  flex: 0 0 130rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.profile-value {
+  flex: 1;
+  font-size: var(--fs-26);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  /* 原来用 word-break: break-all —— 任何位置都能断，代价是「1521 — 1590」这种
+     数字串会被劈成「15 / 21 — 1590」。档案行合并出生卒、别称后长值变多，
+     改成优先在空格与顿号处断，只在实在放不下时才断词（同样不会溢出）。 */
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.profile-value-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ===== 组织机构 / 纪念与遗产 / 时代背景（共用分组卡片） ===== */
+.group-block {
+  margin-bottom: 28rpx;
+}
+
+.group-block:last-child {
+  margin-bottom: 0;
+}
+
+.group-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding-left: 16rpx;
+  border-left: 4rpx solid var(--accent-gold);
+  margin-bottom: 16rpx;
+}
+
+.group-title {
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+}
+
+.group-count {
+  padding: 0 12rpx;
+  border-radius: 12rpx;
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+  background: rgba(181, 113, 58, 0.08);
+}
+
+.org-item,
+.legacy-item {
+  padding: 20rpx 24rpx;
+  margin-bottom: 12rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: var(--radius);
+}
+
+.org-item:last-child,
+.legacy-item:last-child {
+  margin-bottom: 0;
+}
+
+.org-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.org-name,
+.legacy-title {
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.org-year {
+  flex-shrink: 0;
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+}
+
+.org-desc,
+.legacy-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===== 条目可选扩展字段「标签：值」小字行（作品 / 组织机构 / 纪念与遗产共用） ===== */
+.meta-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed rgba(181, 113, 58, 0.16);
+}
+
+.meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.meta-label {
+  flex-shrink: 0;
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+.meta-value {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-20);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* ===== 成就与荣誉（按 category 分组的卡片，视觉与 org-item / legacy-item 一致） ===== */
+.ach-item {
+  padding: 20rpx 24rpx;
+  margin-bottom: 12rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: var(--radius);
+}
+
+.ach-item:last-child {
+  margin-bottom: 0;
+}
+
+.ach-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.ach-title {
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ach-year {
+  flex-shrink: 0;
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+}
+
+.ach-org {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+}
+
+.ach-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.era-item {
+  display: flex;
+  gap: 18rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 12rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: var(--radius);
+}
+
+.era-item:last-child {
+  margin-bottom: 0;
+}
+
+.era-year {
+  flex-shrink: 0;
+  min-width: 110rpx;
+  font-size: var(--fs-24);
+  font-weight: 700;
+  color: var(--accent-gold-ink);
+}
+
+.era-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.era-title {
+  display: block;
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.era-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.event-location {
+  font-size: var(--fs-20);
+  color: var(--accent-gold-ink);
+  margin-top: 4rpx;
+}
+
+.relation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.relation-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx;
+  background: var(--bg-card);
+  border: 1rpx solid #dccdb2;
+  border-radius: var(--radius);
+  transition: all 0.25s ease;
+}
+
+.relation-item:active {
+  background: var(--bg-card-hover);
+  border-color: rgba(181, 113, 58, 0.35);
+}
+
+.relation-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(181, 113, 58, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1rpx solid rgba(181, 113, 58, 0.1);
+}
+
+.relation-emoji {
+  font-size: var(--fs-32);
+  color: var(--text-primary);
+}
+
+/* 关系人 avatar 为图片时的形态 */
+.relation-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.relation-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.relation-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.relation-name {
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.relation-category-tag {
+  padding: 2rpx 14rpx;
+  border: 1rpx solid;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.relation-category-text {
+  font-size: var(--fs-20);
+  font-weight: 500;
+}
+
+.relation-sub-row {
+  margin-top: 2rpx;
+}
+
+.relation-type {
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+  font-weight: 500;
+}
+
+.relation-desc {
+  font-size: var(--fs-22);
+  color: var(--text-muted);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relation-arrow {
+  font-size: var(--fs-36);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding-left: 8rpx;
+  opacity: 0.4;
+  transition: all 0.25s ease;
+}
+
+.relation-item:active .relation-arrow {
+  opacity: 0.8;
+  transform: translateX(4rpx);
+}
+
+.empty-relations {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.empty-relations .retry-btn {
+  display: inline-block;
+  margin-top: 20rpx;
+  padding: 14rpx 48rpx;
+  background: var(--accent-gold);
+  color: var(--text-inverse);
+  font-size: var(--fs-26);
+  border-radius: 40rpx;
+}
+
+.relations-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 8rpx 40rpx;
+  gap: 24rpx;
+}
+
+/* 关系骨架（2026-11-09 切换提速）：切页第一帧就有占位，不出现「点了没反应」的空白 */
+.rel-skel {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 16rpx 4rpx;
+}
+.rel-skel-av {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+.rel-skel-body {
+  flex: 1;
+  margin-left: 20rpx;
+}
+.rel-skel-line {
+  height: 20rpx;
+  border-radius: 8rpx;
+  background: var(--bg-card);
+  margin-bottom: 12rpx;
+}
+.rel-skel-line:last-child { margin-bottom: 0; }
+
+.spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 4rpx solid rgba(181, 113, 58, 0.08);
+  border-top-color: var(--accent-gold-ink);
+  border-right-color: rgba(181, 113, 58, 0.2);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: var(--fs-28);
+  color: var(--text-secondary);
+  letter-spacing: 0;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.empty-text {
+  font-size: var(--fs-26);
+  color: var(--text-muted);
+}
+
+/* 时间线空态标题：与「暂无生平时间线」区分，明确说明是「未收录」而非「无此人」 */
+.empty-title {
+  display: block;
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12rpx;
+}
+
+/* 底部留白：回顶按钮改为 fixed 后仍常驻视口右下（76rpx 直径 + 40rpx 下边距 ≈ 116rpx），
+   原来只留 48rpx，滚到底时它会正好压住最后一条关系的箭头/文字。
+   留到 140rpx，最后一块内容能完整滚到按钮上方。 */
+.bottom-spacer {
+  /* 底部五标签 dock（约 116rpx）+ 回顶按钮留白，避免最后一块内容被遮 */
+  height: calc(260rpx + env(safe-area-inset-bottom));
+}
+
+/* ====== 整页失败态（网络不通 / 确无此人 / 缺参数，三态分述） ====== */
+.load-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 240rpx 64rpx 80rpx;
+}
+
+.load-state-glyph {
+  font-size: 76rpx;
+  line-height: 1;
+  color: var(--accent-gold-ink);
+  opacity: 0.5;
+  margin-bottom: 28rpx;
+}
+
+.load-state-title {
+  font-size: var(--fs-32);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+.load-state-desc {
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.load-state-btn {
+  margin-top: 36rpx;
+  padding: 16rpx 60rpx;
+  border-radius: 40rpx;
+  background: var(--accent-gold);
+  color: var(--text-inverse);
+  font-size: 28rpx;
+}
+.load-state-link{
+  margin-top: 24rpx;
+  padding: 12rpx 0;
+  font-size: var(--fs-24);
+  color: var(--accent-gold-ink);
+}
+
+/* ====== 关系列表分页 / 空态出口 ====== */
+.rel-more {
+  margin-top: 10rpx;
+  padding: 22rpx 0;
+  text-align: center;
+  border: 1rpx dashed rgba(181, 113, 58, 0.28);
+  border-radius: 14rpx;
+}
+
+.rel-more-text {
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+  letter-spacing: 0;
+}
+.empty-hint{
+  display: block;
+  margin-top: 12rpx;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
+  margin-top: 26rpx;
+}
+
+.empty-btn {
+  padding: 14rpx 40rpx;
+  border-radius: 36rpx;
+  background: rgba(181, 113, 58, 0.1);
+  border: 1rpx solid rgba(181, 113, 58, 0.22);
+  font-size: var(--fs-26);
+  color: var(--accent-gold-ink);
+}
+
+.empty-btn.ghost {
+  background: transparent;
+  border-color: rgba(181, 113, 58, 0.14);
+  opacity: 0.8;
+}
+
+/* ====== 回到顶部（方案 B v2：absolute → fixed）======
+   .page 是 min-height:100vh 且随内容撑开，absolute 的 bottom 实际落在整篇文档末尾，
+   只有滚到底才看得见按钮（旧注释里「高度恒 100vh」早已失效）。
+   本页祖先链无 transform/filter，fixed 不会退化；阈值改由 onPageScroll 按屏高计算。 */
+.to-top {
+  position: fixed;
+  right: 28rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
+  z-index: 5;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251, 247, 239, 0.95);
+  border: 1rpx solid rgba(181, 113, 58, 0.22);
+  box-shadow: 0 6rpx 20rpx rgba(90, 70, 40, 0.14);
+}
+
+.to-top:active {
+  background: var(--bg-card-hover);
+}
+
+.to-top-arrow {
+  font-size: var(--fs-32);
+  line-height: 1;
+  color: var(--accent-gold-ink);
+}
+
+/* ====== 相关文章 ====== */
+.rel-article-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12rpx;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.04);
+  transition: all 0.2s;
+}
+
+.rel-article-item:last-child {
+  border-bottom: none;
+}
+
+.rel-article-item:active {
+  background: rgba(181, 113, 58, 0.03);
+}
+
+.rel-article-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.rel-article-title {
+  font-size: var(--fs-28);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.rel-article-summary {
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.rel-article-footer {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.rel-article-topic {
+  font-size: var(--fs-20);
+  color: var(--accent-gold-light);
+  background: rgba(181, 113, 58, 0.06);
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+}
+
+.rel-article-era {
+  font-size: var(--fs-20);
+  color: var(--text-muted);
+}
+
+.rel-article-arrow {
+  font-size: var(--fs-32);
+  color: var(--text-muted);
+  opacity: 0.3;
+  flex-shrink: 0;
+  line-height: 1;
+  padding-top: 6rpx;
+}
+
+/* ====== 骨架屏 ====== */
+.skeleton { padding: 220rpx 32rpx 32rpx; }
+.skeleton-header { display: flex; align-items: center; margin-bottom: 40rpx; }
+.skeleton-avatar { width: 120rpx; height: 120rpx; border-radius: 50%; background: var(--bg-card); }
+.skeleton-info { flex: 1; margin-left: 24rpx; }
+.skeleton-line { border-radius: 8rpx; background: var(--bg-card); }
+.skeleton-body { margin-bottom: 40rpx; }
+.skeleton-tabs { display: flex; margin-top: 40rpx; }
+.skeleton-tab { border-radius: 32rpx; background: var(--bg-card); }
+@keyframes skeletonShimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+.skeleton-shimmer { animation: skeletonShimmer 1.5s ease-in-out infinite; }
+
+/* ===== 一生足迹入口（详情页 → 足迹页 ?id=） ===== */
+.footprint-entry {
+  display: flex;
+  align-items: center;
+  margin: 0 24rpx 24rpx;
+  padding: 24rpx 28rpx;
+  background: linear-gradient(90deg, rgba(181, 113, 58, 0.12), rgba(181, 113, 58, 0.03));
+  border: 1rpx solid rgba(181, 113, 58, 0.28);
+  border-left: 6rpx solid var(--accent-gold);
+  border-radius: 20rpx;
+}
+.footprint-entry:active {
+  background: linear-gradient(90deg, rgba(181, 113, 58, 0.2), rgba(181, 113, 58, 0.06));
+}
+.fp-entry-icon {
+  flex: none;
+  margin-right: 18rpx;
+  font-size: var(--fs-34);
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+.fp-entry-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fp-entry-title {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.fp-entry-sub {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.fp-entry-arrow {
+  flex: none;
+  margin-left: 12rpx;
+  font-size: var(--fs-30);
+  color: var(--accent-gold-ink);
+}
+
+/* ---------- 世系入口 ----------
+   与足迹入口刻意不同：足迹是金渐变 + 左侧粗金边（稀有、强引导，仅 1.8% 人物有），
+   世系是全量入口，用中性描边卡，避免"每个页面都在喊"。
+   副标题不承诺有数据——全库 48.5% 的人零关系边，全量入口不能先答应再失约。 */
+.lineage-entry {
+  display: flex;
+  align-items: center;
+  margin: 0 24rpx 24rpx;
+  padding: 24rpx 28rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-radius: 20rpx;
+}
+.lineage-entry:active {
+  background: var(--bg-card-hover);
+}
+.ln-entry-icon {
+  flex: none;
+  margin-right: 18rpx;
+  font-size: var(--fs-32);
+  color: var(--accent-gold-ink);
+  line-height: 1;
+}
+.ln-entry-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ln-entry-title {
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.ln-entry-sub {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.ln-entry-arrow {
+  flex: none;
+  margin-left: 12rpx;
+  font-size: var(--fs-30);
+  color: var(--text-muted);
+}
+
+/* ============================================================================
+   方案 B v2（2026-11-05）：印章身份卡 / 古籍引文卡 / 分段导航 / 档案表格
+   —— 只做增量覆盖，9 个 tab 的内容分支与 SEO 网格样式一律不动。
+   旧 .header-section / .fav-bar / .footprint-entry / .lineage-entry 等保留为兼容样式，
+   不影响其它页面（本文件仅作用于 detail 页）。
+   ============================================================================ */
+
+/* ---- 首屏：深色印章身份卡（整合版）----
+   padding-top 由 WXML 内联的 navBarHeight（状态栏 + 44px）注入，避开固定导航。
+   [2026-11-08] 由浅色纸质卡改为深色封面；本卡**随页面级滚动收起**，
+   不做定高常驻 —— 滚动后顶部只剩 nav-bar 里的姓名，与其他页行为一致。 */
+.b2-hero {
+  position: relative;
+  padding: 24rpx 32rpx 0;
+  background:
+    radial-gradient(120% 90% at 82% 0%, rgba(207, 138, 75, 0.32), transparent 58%),
+    radial-gradient(90% 70% at 10% 100%, rgba(166, 59, 42, 0.18), transparent 60%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+  box-shadow: 0 10rpx 24rpx -14rpx rgba(30, 20, 12, 0.7);
+  overflow: hidden;
+}
+/* 织物纹理 + 顶部柔光：纯 CSS，不用 backdrop-filter（低端机有风险） */
+.b2-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+}
+.b2-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  background: radial-gradient(70% 60% at 50% 0%, rgba(255, 240, 210, 0.08), transparent 70%);
+}
+/* 纹理层是绝对定位的伪元素，正文统一抬高一层，避免文字被柔光/纹理盖住 */
+.b2-hero > view {
+  position: relative;
+  z-index: 1;
+}
+.b2-head {
+  display: flex;
+  align-items: center;
+  gap: 26rpx;
+  padding-top: 20rpx;
+}
+/* 立体印章头像：金属描边 + 双层玻璃 + 投影（深色底上不显脏） */
+.b2-seal {
+  width: 144rpx;
+  height: 144rpx;
+  flex: 0 0 144rpx;
+  border-radius: 50%;
+  padding: 6rpx;
+  background: linear-gradient(145deg, rgba(255, 240, 210, 0.55), rgba(181, 113, 58, 0.18) 55%, rgba(0, 0, 0, 0.4));
+  box-shadow: 0 20rpx 34rpx -16rpx rgba(0, 0, 0, 0.85), 0 0 32rpx rgba(207, 138, 75, 0.22);
+  transform: rotate(-1.5deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.b2-seal-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(150deg, #e3c49c 0%, #b9834f 48%, #6f4423 100%);
+}
+.b2-seal-text {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 64rpx;
+  font-weight: 600;
+  color: #fff8ea;
+  text-shadow: 0 3rpx 1rpx rgba(60, 30, 10, 0.55), 0 0 24rpx rgba(255, 220, 170, 0.4);
+  background:
+    radial-gradient(110% 85% at 30% 16%, #fff6e6 0%, rgba(255, 246, 230, 0) 48%),
+    linear-gradient(150deg, #e3c49c 0%, #b9834f 48%, #6f4423 100%);
+  box-shadow: inset 0 2rpx 4rpx rgba(255, 255, 255, 0.55), inset 0 -14rpx 22rpx rgba(60, 32, 12, 0.55);
+}
+.b2-id { min-width: 0; flex: 1; }
+.b2-nameline {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+.b2-name {
+  font-family: var(--font-serif);
+  font-size: 58rpx;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.15;
+  color: #fff7e8;
+  text-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.45);
+}
+/* 朝代胶囊：深色底上改用金色描边，不抢姓名 */
+.b2-era {
+  font-size: 22rpx;
+  letter-spacing: 0;
+  color: #e5b77f;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1rpx solid rgba(229, 183, 127, 0.38);
+  border-radius: var(--radius-pill);
+  padding: 3rpx 16rpx;
+  white-space: nowrap;
+}
+/* 人物编号：右对齐的「藏品编号」小签，不抢姓名视觉，但每一档都在 */
+.b2-no {
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: center;
+  font-size: var(--fs-20);
+  line-height: 1.4;
+  letter-spacing: 0;
+  /* 深色头上对比度仅 3.60:1，提到 .58 后实测约 5.3:1（WCAG AA 4.5:1） */
+  color: rgba(246, 236, 218, 0.58);
+  font-variant-numeric: tabular-nums;
+}
+.b2-meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  color: #d9b287;
+  letter-spacing: 0;
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 拼音紧跟姓名（用户 2026-11-05 要求）：与姓名的间距收到 4rpx，
+   与下方 meta 拉开 8rpx，组内「名 → 音」先绑定、再读「国家 · 生卒」。 */
+.b2-name-en {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--fs-20);
+  color: rgba(246, 236, 218, 0.5);
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 帝王序号 / 人物标签：字号上调 1 档（20rpx → 22rpx），薄档里也能看清 */
+.b2-emperor {
+  display: inline-block;
+  margin-top: 8rpx;
+  font-size: var(--fs-22);
+  color: #e5b77f;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1rpx solid rgba(229, 183, 127, 0.28);
+  border-radius: 8rpx;
+  padding: 3rpx 12rpx;
+}
+/* 标签：头部最后一行文字（2026-11-08 移除了原标语，标签直接承接三数） */
+.b2-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+.b2-tag {
+  font-size: var(--fs-22);
+  padding: 4rpx 16rpx;
+  border: 1rpx solid rgba(246, 236, 218, 0.18);
+  border-radius: var(--radius-pill);
+  color: rgba(250, 240, 224, 0.82);
+  background: rgba(255, 255, 255, 0.06);
+  max-width: 320rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 三数：深色玻璃条，2px 描边 + 极淡底（不用 backdrop-filter，低端机安全）。
+   上方标语取消后，这里承接标签行，间距由 20rpx 提到 24rpx 补足呼吸感。 */
+.b2-stats {
+  display: flex;
+  margin-top: 24rpx;
+  border: 1rpx solid rgba(246, 236, 218, 0.14);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.12);
+}
+.b2-stat {
+  flex: 1;
+  padding: 14rpx 4rpx 12rpx;
+  text-align: center;
+  border-right: 1rpx solid rgba(246, 236, 218, 0.1);
+}
+.b2-stat:last-child { border-right: 0; }
+.b2-stat-v {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--fs-36);
+  line-height: 1.1;
+  color: #eec08a;
+}
+.b2-stat-l {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.62);
+}
+.b2-rule {
+  height: 1rpx;
+  margin: 24rpx 0 18rpx;
+  background: linear-gradient(90deg, transparent, rgba(246, 236, 218, 0.22), transparent);
+}
+.b2-actions {
+  display: flex;
+  gap: 16rpx;
+  padding-bottom: 28rpx;
+}
+.b2-act {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1rpx solid rgba(246, 236, 218, 0.18);
+  border-radius: var(--radius);
+  padding: 16rpx 0;
+  font-size: var(--fs-22);
+  color: rgba(246, 236, 218, 0.78);
+}
+.b2-act-hover { opacity: 0.7; }
+.b2-ico {
+  width: 36rpx;
+  height: 36rpx;
+  flex: 0 0 36rpx;
+  border-radius: 8rpx;
+  background: rgba(207, 138, 75, 0.22);
+  border: 1rpx solid rgba(207, 138, 75, 0.4);
+  color: #ffdcaa;
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.b2-act-on { color: #ffe3bd; }
+.b2-act-on .b2-ico { background: rgba(166, 59, 42, 0.55); color: #fff; }
+
+/* ---- 古籍引文式生平导语 ----
+   .bio-content / .bio-inner / .bio-text 结构保留，这里只覆盖字体与配色；
+   折叠态样式见顶部 .bio-folded。 */
+.b2-quote {
+  position: relative;
+  margin: 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-left: 6rpx solid var(--accent-gold);
+  border-radius: 8rpx 24rpx 24rpx 8rpx;
+  padding: 22rpx 26rpx 20rpx 30rpx;
+  box-shadow: var(--shadow-card);
+}
+/* 标题行：用户本轮修订 ——「生平介绍」左对齐，展开开关靠右 */
+.bio-hd {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding-bottom: 14rpx;
+  margin-bottom: 12rpx;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.1);
+}
+.bio-hd-bar {
+  width: 6rpx;
+  height: 28rpx;
+  flex: 0 0 6rpx;
+  border-radius: 4rpx;
+  background: var(--accent-gold);
+}
+.bio-hd-title {
+  font-family: var(--font-serif);
+  font-size: var(--fs-30);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+.bio-hd-more {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 4rpx 0 4rpx 12rpx;
+}
+.bio-hd-more-t { font-size: var(--fs-22); color: var(--accent-gold-ink); }
+/* 引号定位在正文块内，不再压到标题行 */
+.bio-body { position: relative; padding-left: 26rpx; }
+.b2-quote-mark {
+  position: absolute;
+  left: 0;
+  top: -6rpx;
+  font-family: var(--font-serif);
+  font-size: 46rpx;
+  line-height: 1;
+  color: rgba(181, 113, 58, 0.3);
+}
+.b2-quote .bio-text {
+  font-family: var(--font-serif);
+  font-size: var(--fs-26);
+  line-height: 1.95;
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+.b2-quote-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+.b2-quote-more { font-size: var(--fs-22); color: var(--accent-gold-ink); }
+
+/* 吸顶容器：年表 / 关系页的深色头部常驻在 nav-bar 下方（原型 .mini 在滚动容器外）。
+   [为什么放在 .page 之外] .page 有 overflow-x:hidden，它会变成「不滚动的滚动容器」，
+   sticky 放在里面永远吸不住；放在 .page 之前的同级位置，最近的可滚动祖先就是页面本身。
+   sticky 元素仍占文档流位置，正文自然排在它下面、不会被它盖住，也不需要 JS 补占位；
+   吸顶时它会覆盖滚到它下面的正文，这与原型的固定头部一致。
+   底色垫在圆角下面：内层 .b2-mini 底部是圆角，缺角处若露出页面正文，
+   滚动时就会看到内容从两个圆角缺口里漏出来，这里用页面底色挡住。 */
+.b2-mini-wrap {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-primary);
+}
+
+/* 档案页专用（2026-11-08 统一顶部样式）：大头部滚走后才渲染，改为 fixed 悬在导航栏下方。
+   fixed 不占文档流，显隐不让正文跳动；宽度拉满以覆盖正文，圆角缺口仍由外层底色挡住。 */
+.b2-mini-wrap--fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+}
+
+/* ===================== 年表 / 关系页 · 深色窄条标签头（原型 .mini） =====================
+   2026-11-08 补：这两个 tab 原来只有浅色 nav-bar，没有原型里那块深色头部，
+   所以无论吸顶姓名逻辑怎么改，顶部都不可能呈现「图二」。
+   配色与 .b2-hero 同一套；上边缘不留圆角，nav-bar 的 dark 态用同色系接上，
+   两段拼成一整块连续深色区（停顶时视觉等同原型 .mini）。 */
+.b2-mini {
+  position: relative;
+  padding: 20rpx 32rpx 24rpx;
+  background:
+    radial-gradient(120% 90% at 84% 0%, rgba(207, 138, 75, 0.28), transparent 58%),
+    linear-gradient(160deg, var(--head-grad-top) 0%, var(--head-grad-mid) 46%, var(--head-grad-bottom) 100%);
+  border-radius: 0 0 20rpx 20rpx;
+  box-shadow: 0 10rpx 24rpx -14rpx rgba(30, 20, 12, 0.7);
+  overflow: hidden;
+}
+/* 织物纹理：与 .b2-hero::before 同一条，文字层必须抬到 z-index:1 之上 */
+.b2-mini::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+}
+.b2-mini > view {
+  position: relative;
+  z-index: 1;
+}
+.b2-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.b2-mini-nm {
+  flex: 1;
+  min-width: 0;
+}
+.b2-mini-nameline {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+  flex-wrap: wrap;
+}
+.b2-mini-name {
+  font-family: var(--font-serif);
+  font-size: var(--fs-38);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: #fff7e8;
+}
+.b2-mini-era {
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: #e5b77f;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1rpx solid rgba(229, 183, 127, 0.38);
+  border-radius: var(--radius-pill);
+  padding: 2rpx 14rpx;
+  white-space: nowrap;
+}
+.b2-mini-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-20);
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.52);
+}
+.b2-mini-tag {
+  flex: none;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: rgba(246, 236, 218, 0.5);
+}
+
+/* ---- 详细资料卡片 + 吸顶分段导航 ---- */
+/* ===================== 档案页 · 档案与延伸（整合版） =====================
+   由原来「9 分段横滑标签 + 单段内容」改为「一张卡 + 7 个可折叠分段」。
+   分段顺序：基础档案 / 作品与成果 / 纪念与遗产 / 时代背景 / 相关文章
+             + 组织机构 / 成就与荣誉（按「保留不删」追加在最后）。 */
+.arc-view {
+  padding: 0 0 8rpx;
+}
+.arc-card {
+  margin: 0 24rpx 24rpx;
+  padding: 0 24rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-radius: 20rpx;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+.arc-card-pad { padding: 24rpx; }
+.arc-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 24rpx 0 18rpx;
+  border-bottom: 1rpx solid rgba(181, 113, 58, 0.1);
+}
+.arc-hd-t {
+  font-family: var(--font-serif);
+  font-size: var(--fs-32);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+.arc-hd-s { font-size: var(--fs-20); color: var(--text-muted); flex-shrink: 0; }
+/* 单个分段：只有一行标题栏（可折叠），展开后内容顺排 */
+.arc-sec { border-bottom: 1rpx solid rgba(181, 113, 58, 0.08); }
+.arc-sec:last-child { border-bottom: 0; }
+.arc-sh {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 26rpx 4rpx;
+}
+.arc-sh-hover { opacity: 0.72; }
+.arc-sh-t {
+  font-family: var(--font-serif);
+  font-size: 28rpx;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+.arc-sh-n { margin-left: auto; font-size: 22rpx; color: var(--text-muted); }
+.arc-sh-a {
+  font-size: var(--fs-26);
+  line-height: 1;
+  color: var(--accent-gold-ink);
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+}
+.arc-sec-on .arc-sh-a { transform: rotate(-90deg); }
+.arc-sb { padding: 0 4rpx 28rpx; }
+
+/* 关系页「图谱 / 列表」切换（2026-11-09 取代「| 人物关系 N 位」标题栏）
+   轨道沿用卡片纸色 + 细边 + 轻阴影，选中片用页面主色金棕渐变，与既有质感一致。 */
+.rel-switch {
+  display: flex;
+  gap: 8rpx;
+  margin: 8rpx 24rpx 18rpx;
+  padding: 6rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+}
+.rel-switch-btn {
+  flex: 1;
+  padding: 14rpx 0;
+  border-radius: var(--radius-pill);
+  text-align: center;
+  font-size: var(--fs-26);
+  letter-spacing: 0;
+  color: var(--text-muted);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.rel-switch-on {
+  background: linear-gradient(135deg, var(--accent-gold-light), var(--accent-gold));
+  color: var(--bg-card);
+  font-weight: 600;
+  box-shadow: 0 2rpx 8rpx rgba(181, 113, 58, 0.28);
+}
+
+/* ---- 基础档案：17 行全保留，默认只渲染有值行 ---- */
+.b2-sec { display: flex; align-items: center; gap: 14rpx; padding: 24rpx 4rpx 12rpx; }
+.b2-sec-bar { width: 6rpx; height: 28rpx; border-radius: 4rpx; background: var(--accent-gold); }
+.b2-sec-title {
+  font-family: var(--font-serif);
+  font-size: var(--fs-30);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+.b2-sec-count { margin-left: auto; font-size: var(--fs-20); color: var(--text-muted); }
+.b2-profile-grid { padding: 0 4rpx; }
+.b2-profile-grid .profile-row { padding: 16rpx 0; }
+.b2-prof-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  margin-top: 16rpx;
+  padding: 16rpx;
+  border: 1rpx dashed rgba(181, 113, 58, 0.35);
+  border-radius: 12rpx;
+  background: rgba(181, 113, 58, 0.06);
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+}
+.b2-prof-more-arrow { font-size: var(--fs-24); line-height: 1; }
+
+/* ---- 薄档收尾：细线卡 + 一句话 + 一个出口 ---- */
+.b2-empty {
+  position: relative;
+  margin: 28rpx 4rpx 0;
+  padding: 34rpx 24rpx;
+  border: 1rpx solid rgba(181, 113, 58, 0.18);
+  border-radius: var(--radius);
+  background: rgba(251, 247, 239, 0.6);
+  text-align: center;
+}
+.b2-empty::before {
+  content: '';
+  position: absolute;
+  top: -1rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72rpx;
+  height: 3rpx;
+  border-radius: 2rpx;
+  background: var(--accent-gold);
+}
+.b2-empty-t { display: block; font-family: var(--font-serif); font-size: var(--fs-26); color: var(--text-primary); }
+.b2-empty-h { display: block; margin-top: 10rpx; font-size: var(--fs-22); color: var(--text-muted); }
+.b2-empty-go {
+  display: inline-block;
+  margin-top: 24rpx;
+  padding: 12rpx 30rpx;
+  border: 1rpx solid rgba(166, 59, 42, 0.45);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-22);
+  color: var(--accent-vermillion);
+}
+
+/* ---- 骨架屏：与新首屏的印章方印 / 胶囊分段对齐，并避开固定导航 ---- */
+.skeleton .skeleton-avatar { border-radius: 12rpx; }
+.skeleton .skeleton-tabs .skeleton-tab { border-radius: 999rpx; }
+
+/* ---- 长文本截断（其它 tab 沿用原有结构，只补节奏与防溢出） ---- */
+.arc-card .work-desc,
+.arc-card .org-desc,
+.arc-card .ach-desc,
+.arc-card .legacy-desc,
+.arc-card .era-desc,
+.arc-card .relation-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* ===================== 底部五标签 dock =====================
+   已抽到 templates/dock/dock.wxss，三个页面共用（见本文件顶部 @import）。
+   页面内不要再复制 .dock / .dock-in / .dock-i / .dock-on 等样式，避免分叉。 */
+
+/* ==================== 双人生命线（2026-11-15） ==================== */
+/* 年表 tab 顶部入口（在时间轴列表之前）：只在精选 + 生卒双全时渲染 */
+.dual-entry {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  /* 2026-11-15 移到年表 tab 顶部：左右与 .tl-card 对齐（24rpx），
+     顶部只留 4rpx 避免与 tab 切换条贴死，底部 20rpx 与首张卡分开。 */
+  margin: 4rpx 24rpx 20rpx;
+  padding: 24rpx 24rpx;
+  background: linear-gradient(135deg, #fbf7ef 0%, #f4ead9 100%);
+  border: 1rpx solid rgba(181, 113, 58, 0.26);
+  border-radius: var(--radius-lg);
+  /* 上滑收起：高度、外边距、内边距一起过渡，收起后完全不占位（不留空白顶住首条时间轴） */
+  max-height: 360rpx;
+  overflow: hidden;
+  transition: max-height 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.2s ease,
+    transform 0.26s ease,
+    margin 0.26s ease,
+    padding 0.26s ease,
+    border-width 0.26s ease;
+}
+.dual-entry.is-hidden {
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  opacity: 0;
+  transform: translateY(-10rpx);
+  pointer-events: none;
+}
+.dual-entry-hover {
+  background: var(--bg-card-hover);
+}
+.dual-entry-main {
+  flex: 1;
+  min-width: 0;
+}
+.dual-entry-k {
+  display: block;
+  font-size: 20rpx;
+  color: var(--accent-gold-ink);
+}
+.dual-entry-t {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-30);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dual-entry-s {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.dual-entry-arrow {
+  flex-shrink: 0;
+  font-size: 40rpx;
+  color: var(--accent-gold-ink);
+}
+
+/* 半屏选人：遮罩 + 底部 sheet（z-index 高于底部 dock） */
+.dual-picker {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1200;
+}
+.dual-picker-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(20, 15, 10, 0.52);
+}
+.dual-picker-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 72vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: 28rpx 28rpx 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -12rpx 40rpx rgba(20, 15, 10, 0.28);
+}
+.dual-picker-hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 28rpx 30rpx 16rpx;
+}
+.dual-picker-hd-main {
+  flex: 1;
+  min-width: 0;
+}
+.dual-picker-t {
+  display: block;
+  font-size: var(--fs-32);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dual-picker-s {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--fs-22);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.dual-picker-x {
+  flex-shrink: 0;
+  font-size: 44rpx;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 0 6rpx;
+}
+.dual-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin: 0 30rpx 12rpx;
+  padding: 0 20rpx;
+  height: 72rpx;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-pill);
+}
+.dual-picker-search-ico {
+  font-size: 22rpx;
+  color: var(--accent-gold-ink);
+}
+.dual-picker-input {
+  flex: 1;
+  min-width: 0;
+  height: 72rpx;
+  font-size: var(--fs-26);
+  color: var(--text-primary);
+}
+.dual-picker-ph {
+  color: var(--text-muted);
+}
+.dual-picker-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 30rpx;
+}
+.dual-picker-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  padding: 80rpx 0;
+  font-size: var(--fs-24);
+  color: var(--text-muted);
+}
+.dual-picker-spin {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(181, 113, 58, 0.2);
+  border-top-color: var(--accent-gold);
+  animation: dual-spin 0.9s linear infinite;
+}
+@keyframes dual-spin {
+  to { transform: rotate(360deg); }
+}
+.dual-picker-group {
+  padding-top: 14rpx;
+}
+.dual-picker-gh {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  padding: 8rpx 0 6rpx;
+}
+.dual-picker-gt {
+  font-size: var(--fs-24);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dual-picker-gs {
+  font-size: 19rpx;
+  color: var(--text-muted);
+}
+.dual-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 12rpx;
+  border-bottom: 1rpx solid var(--border-subtle);
+}
+.dual-picker-item-on {
+  background: rgba(181, 113, 58, 0.07);
+  border-radius: 16rpx;
+}
+.dual-picker-av {
+  width: 60rpx;
+  height: 60rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--tile-deep);
+  color: var(--tile-deep-text);
+  font-size: var(--fs-26);
+  line-height: 60rpx;
+  text-align: center;
+}
+.dual-picker-info {
+  flex: 1;
+  min-width: 0;
+}
+.dual-picker-nmline {
+  display: flex;
+  align-items: baseline;
+  gap: 10rpx;
+}
+.dual-picker-nm {
+  font-size: var(--fs-28);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.dual-picker-dyn {
+  font-size: 19rpx;
+  color: var(--text-muted);
+}
+.dual-picker-yr {
+  display: block;
+  margin-top: 2rpx;
+  font-size: 20rpx;
+  color: var(--text-muted);
+}
+.dual-picker-meta {
+  flex-shrink: 0;
+  text-align: right;
+}
+.dual-picker-ov {
+  display: block;
+  font-size: var(--fs-22);
+  color: var(--accent-gold-ink);
+}
+.dual-picker-diff {
+  display: block;
+  margin-top: 2rpx;
+  font-size: 19rpx;
+  color: var(--text-muted);
+}
+.dual-picker-meta-partial {
+  flex-shrink: 0;
+  font-size: 19rpx;
+  color: var(--text-muted);
+}
+.dual-picker-check {
+  flex-shrink: 0;
+  width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  text-align: center;
+  border-radius: 50%;
+  border: 1rpx solid var(--border-color);
+  font-size: 22rpx;
+  color: transparent;
+}
+.dual-picker-check-on {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  color: #fff8ee;
+}
+.dual-picker-empty {
+  padding: 60rpx 0;
+  text-align: center;
+  font-size: var(--fs-24);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.dual-picker-ft {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 18rpx 30rpx 24rpx;
+  border-top: 1rpx solid var(--border-subtle);
+}
+.dual-picker-sel {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-22);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dual-picker-go {
+  flex-shrink: 0;
+  padding: 18rpx 44rpx;
+  border-radius: var(--radius-pill);
+  background: var(--tile-deep);
+}
+.dual-picker-go text {
+  font-size: var(--fs-26);
+  color: var(--tile-deep-text);
+}
+.dual-picker-go-off {
+  opacity: 0.4;
+}

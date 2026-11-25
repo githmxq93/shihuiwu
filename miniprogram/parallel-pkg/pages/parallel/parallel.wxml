@@ -1,0 +1,345 @@
+<view class="page">
+  <view class="bg-grain"></view>
+  <nav-bar title="{{mode === 'select' ? '中外对照' : yearLabel + '年 · 中外对照'}}" safeAreaTop="{{safeAreaTop}}" showBack="{{true}}" />
+
+  <scroll-view class="body" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}" bounces="{{false}}"
+               scroll-into-view="{{scrollInto}}" scroll-top="{{scrollTopVal}}" scroll-with-animation="{{true}}" bindscroll="onBodyScroll">
+    <view class="nav-spacer" id="body-top" style="height: {{navBarHeight}}px;"></view>
+
+    <!-- ===== 选择区（未选锚点） ===== -->
+    <block wx:if="{{mode === 'select'}}">
+      <view class="hero">
+        <view class="hero-eyebrow"><view class="eb-line"></view>SAME MOMENT · 同一时刻<view class="eb-line"></view></view>
+        <view class="hero-row">
+          <view class="hero-main">
+            <view class="hero-title">中外<text class="hero-accent">对照</text></view>
+            <view class="hero-sub">选定一个时间锚点，看同一时刻的中土与域外</view>
+          </view>
+          <view class="hero-seal"><text>对</text><text>照</text></view>
+        </view>
+        <view class="hero-rule"><view class="hr-dot"></view></view>
+      </view>
+
+      <view class="anchor-card">
+        <view class="ac-top">
+          <view class="ac-chip"><view class="ac-dot"></view>时间锚点</view>
+          <view class="ac-note">人物取生年 · 年份直接指定</view>
+        </view>
+
+        <view class="anchor-tabs" id="guide-pp-tabs">
+          <view class="at {{anchorTab==='person'?'on':''}}" data-tab="person" bindtap="onSwitchAnchorTab">
+            <text class="at-ico">人</text><text class="at-txt">选人物</text>
+          </view>
+          <view class="at {{anchorTab==='year'?'on':''}}" data-tab="year" bindtap="onSwitchAnchorTab">
+            <text class="at-ico">年</text><text class="at-txt">选年份</text>
+          </view>
+        </view>
+
+      <!-- 选人物 -->
+      <block wx:if="{{anchorTab==='person'}}">
+        <view class="search-box {{personFocused ? 'focused' : ''}}" id="guide-pp-search">
+          <view class="search-icon">
+            <view class="search-icon-circle"></view>
+            <view class="search-icon-handle"></view>
+          </view>
+          <input class="search-input" type="text" placeholder="搜索中国或域外人物，如 李白、哥伦布" placeholder-class="search-placeholder"
+                 value="{{personQuery}}" confirm-type="search" bindinput="onPersonInput" bindfocus="onPersonFocus" bindblur="onPersonBlur" bindconfirm="onPersonInput" />
+          <view class="search-clear" wx:if="{{personQuery}}" bindtap="onClearPerson">✕</view>
+
+          <view class="sug-dropdown" wx:if="{{showSuggests && suggests.length}}" catchtap="onSugPanelTap">
+            <view class="sug-head">检索结果 · 域外人物只落右列</view>
+            <view class="sug-item" wx:for="{{suggests}}" wx:key="key" data-index="{{index}}" hover-class="sug-item-hover" catchtap="onTapSuggest">
+              <text class="sug-kind {{item.kind === 'world' ? 'is-world' : ''}}">{{item.kind === 'world' ? '域外' : '中土'}}</text>
+              <text class="sug-name">{{item.name}}</text>
+              <text class="sug-dynasty" wx:if="{{item.dynLabel}}">{{item.dynLabel}}</text>
+              <text class="sug-arrow">›</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="ac-hint">输入后从联想里选人；不确定从谁开始，就看下面的热门人物。</view>
+      </block>
+      </view>
+
+      <!-- 选人物 · 热门人物（退回纸面，作为备选入口） -->
+      <block wx:if="{{anchorTab==='person'}}">
+        <view class="section-label"><view class="sl-bar"></view>热门人物<text class="sl-en">点选即用其生年</text></view>
+        <view class="hot-grid" id="guide-pp-hot">
+          <view class="hot-card" wx:for="{{hotPeople}}" wx:key="name" data-name="{{item.name}}" hover-class="hot-card-hover" bindtap="onTapHotPerson">
+            <view class="hot-idx">{{item.no}}</view>
+            <view class="hot-badge">{{item.badge}}</view>
+            <view class="hot-name">{{item.name}}</view>
+            <view class="hot-arrow">›</view>
+          </view>
+        </view>
+      </block>
+
+      <!-- 选年份 -->
+      <block wx:if="{{anchorTab==='year'}}">
+        <view class="year-box">
+          <view class="year-field">
+            <text class="year-prefix">纪年</text>
+            <input class="year-input" type="text" placeholder="输入年份，如 1101 / 前221" placeholder-class="year-placeholder"
+                   value="{{yearInput}}" bindinput="onYearInput" bindconfirm="onYearSubmit" />
+          </view>
+          <view class="year-go" bindtap="onYearSubmit">对照<text class="yg-arrow">›</text></view>
+        </view>
+        <view class="year-err" wx:if="{{yearInputErr}}"><text class="ye-mark">!</text>{{yearInputErr}}</view>
+
+        <view class="section-label"><view class="sl-bar"></view>快捷锚点<text class="sl-en">收录 前3000 — 2026</text></view>
+        <view class="pick-grid">
+          <view class="pick-card" wx:for="{{yearPicks}}" wx:key="y" data-y="{{item.y}}" hover-class="pick-card-hover" bindtap="onTapYearPick">
+            <view class="pick-dot"></view>
+            <view class="pick-year">{{item.label}}</view>
+            <view class="pick-tag">{{item.tag}}</view>
+          </view>
+        </view>
+      </block>
+
+      <view class="intro">
+        <view class="intro-mark">?</view>
+        <view class="intro-text">选一位历史人物，将自动以其出生之年为锚点，呈现该年的中土编年与同期世界；或直接输入一个年份，无需绑定人物。<text class="intro-tip">结果页长按任意卡片，可查看人物或事件简介。</text></view>
+      </view>
+    </block>
+
+    <!-- ===== 结果区 ===== -->
+    <block wx:else>
+      <view class="anchor-head" id="anchor-head" bindlongpress="onLongPressPerson">
+        <view class="ah-glow"></view>
+        <view class="ah-watermark">{{yearLabel}}</view>
+        <view class="ah-top">
+          <view class="ah-chip"><view class="ah-chip-dot"></view>时间锚点 · {{anchorType === 'person' ? '人物生年' : (anchorType === 'world-person' ? (yearBasis === 'reign' ? '域外人物在位' : '域外人物生年') : '指定年份')}}</view>
+          <view class="ah-reselect" id="guide-pp-reselect" bindtap="onReselect">换一个<text class="ah-arrow">›</text></view>
+        </view>
+        <view class="ah-main">
+          <view class="ah-title">{{anchorType === 'person' && selectedPerson ? selectedPerson.name : (anchorType === 'world-person' && worldPerson ? worldPerson.name : '公元' + yearLabel)}}</view>
+          <view class="ah-sub">{{yearFull}} · {{ganzhi}} · {{eraMain || '中土'}}</view>
+          <view class="ah-others" wx:if="{{eraOthers}}">并存纪年 · {{eraOthers}}</view>
+          <view class="ah-basis" wx:if="{{anchorType === 'world-person' && worldPerson}}">域外人物 · {{worldPerson.regionLabel}}{{worldPerson.title ? ' · ' + worldPerson.title : ''}}</view>
+          <view class="ah-basis" wx:if="{{yearBasis === 'death'}}">生年不详，已自动以卒年为锚点</view>
+          <view class="ah-basis" wx:if="{{yearBasis === 'reign'}}">生卒不详，已以在位区间为锚点</view>
+        </view>
+        <view class="ah-foot">
+          <view class="ah-seal"><text>{{ganzhi}}</text></view>
+          <view class="ah-metrics">
+            <view class="ah-metric"><text class="am-num">{{loading ? '…' : chinaTotal}}</text><text class="am-label">中土记载</text></view>
+            <view class="am-div"></view>
+            <view class="ah-metric"><text class="am-num">{{worldCount}}</text><text class="am-label">域外同期</text></view>
+            <view class="am-div"></view>
+            <view class="ah-metric"><text class="am-num">{{worldWindowShort}}</text><text class="am-label">{{worldWindowLabel}}</text></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 二级入口：这一年，谁在场（年份区小卡 · 方案 C）
+           数字取 /api/timeline/:year 的 counts.birth / counts.death / people；
+           措辞用「有记载」而非「在世」——库里没有「某年在世」的判定，只有该年有记录。 -->
+      <view class="who-entry" id="guide-pp-who" wx:if="{{!loading && whoNums.length}}" bindtap="onTapWhoPresent" hover-class="who-entry-hover">
+        <view class="we-top">
+          <view class="we-dot"></view>
+          <view class="we-title">这一年，<text class="we-em">谁在场</text></view>
+          <view class="we-go">›</view>
+        </view>
+        <view class="we-nums">
+          <view class="we-n {{item.tone}}" wx:for="{{whoNums}}" wx:key="key">
+            <text class="we-num">{{item.v}}</text>
+            <text class="we-lab">{{item.l}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="view-tabs" id="guide-pp-view">
+        <view class="vt {{view==='parallel'?'on':''}}" data-view="parallel" bindtap="onSwitchView"><text class="vt-ico">⇄</text><text>平行双流</text></view>
+        <view class="vt {{view==='map'?'on':''}}" data-view="map" bindtap="onSwitchView"><text class="vt-ico">◎</text><text>世界地图</text></view>
+      </view>
+
+      <!-- 平行双流 -->
+      <view class="dual" wx:if="{{view==='parallel'}}">
+        <view class="dual-col left">
+          <view class="col-head col-china">
+            <view class="ch-mark"></view>
+            <view class="ch-body">
+              <view class="ch-name">中土 · {{eraMain || '中华'}}</view>
+              <view class="ch-sub">CHINA · {{loading ? '加载中' : chinaTotal + ' 条记载'}}</view>
+            </view>
+          </view>
+
+          <block wx:if="{{loading}}">
+            <view class="sk-card" wx:for="{{skeletonRows}}" wx:key="*this">
+              <view class="sk-line w30"></view><view class="sk-line w85"></view><view class="sk-line w60"></view>
+            </view>
+          </block>
+          <block wx:if="{{!loading && loadFailed}}">
+            <view class="col-empty"><view class="empty-mark">!</view><view>中土编年加载失败</view></view>
+            <view class="retry" bindtap="onRetry">点击重试</view>
+          </block>
+          <block wx:if="{{!loading && !loadFailed}}">
+            <view wx:for="{{chinaEvents}}" wx:key="index" class="mini-card china-card" data-id="{{item.id}}" hover-class="mini-card-hover" bindtap="onTapChinaItem" bindlongpress="onLongPressEvent" data-kind="china" data-index="{{index}}">
+              <view class="mc-top">
+                <text class="mc-tag">{{item.type}}</text>
+                <text class="mc-no">{{index+1}}</text>
+              </view>
+              <view class="mc-title">{{item.kind === 'event' ? (item.eventTitle || item.name) : item.name}}</view>
+              <view class="mc-sub" wx:if="{{item.kind === 'event' && item.name}}">主角 · {{item.name}}</view>
+              <view class="mc-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+              <view class="mc-foot" wx:if="{{item.id}}"><text>查看人物详情</text><text class="mc-foot-arrow">›</text></view>
+            </view>
+            <view wx:if="{{chinaEvents.length}}" class="col-foot">
+              <view class="cf-line">共 {{chinaTotal}} 条 · 此处 {{chinaCount}} 条</view>
+              <view class="cf-link" bindtap="onTapChinaAll">查看该年全部<text class="cf-arrow">›</text></view>
+            </view>
+            <view wx:if="{{!chinaEvents.length}}" class="col-empty">
+              <view class="empty-mark">○</view>
+              <view>该年暂无中土编年记载</view>
+              <view class="empty-acts">
+                <view class="ea-btn ea-ghost" bindtap="onSwitchToYear">换个年份</view>
+                <view class="ea-btn" bindtap="onTapChinaAll">看大事年表</view>
+              </view>
+            </view>
+          </block>
+        </view>
+
+        <view class="dual-axis">
+          <view class="axis-node"><text>同</text></view>
+          <view class="axis-line"></view>
+          <view class="axis-end"></view>
+        </view>
+
+        <view class="dual-col right">
+          <view class="col-head col-world">
+            <view class="ch-mark"></view>
+            <view class="ch-body">
+              <view class="ch-name">域外 · 世界</view>
+              <view class="ch-sub">WORLD · {{worldCount}} 条同期 · {{worldFigureCount}} 位人物</view>
+            </view>
+          </view>
+
+          <!-- 域外同期人物：与锚点同时代的外国人物（牛顿 / 彼得大帝 / 路易十四 / 洛克 …） -->
+          <view class="fig-block" wx:if="{{worldFigures.length}}">
+            <view class="fig-block-head">
+              <view class="fb-mark"></view>
+              <view class="fb-title">同期人物</view>
+              <view class="fb-count">{{worldFigureCount}} 位 · 与锚点同代</view>
+            </view>
+            <view wx:for="{{worldFigures}}" wx:key="name" class="mini-card world-card world-fig {{item.isAnchor ? 'is-anchor' : ''}}" hover-class="mini-card-hover" bindtap="onTapWorldFigure" data-index="{{index}}">
+              <view class="mc-top">
+                <text class="mc-tag world-tag" wx:if="{{!item.isAnchor}}">{{item.regionLabel}}</text>
+                <text class="wf-anchor-tag" wx:else>域外人物 · 时间锚点</text>
+                <text class="mc-no" wx:if="{{!item.isAnchor}}">{{index+1}}</text>
+              </view>
+              <view class="mc-title">{{item.name}}<text class="mc-en" wx:if="{{item.en}}"> · {{item.en}}</text></view>
+              <view class="mc-sub">{{item.lifeText}}</view>
+              <view class="mc-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+            </view>
+          </view>
+
+          <view wx:for="{{worldEvents}}" wx:key="index" class="mini-card world-card" hover-class="mini-card-hover" bindtap="onTapWorldItem" bindlongpress="onLongPressEvent" data-kind="world" data-index="{{index}}">
+            <view class="mc-top">
+              <text class="mc-tag world-tag">{{item.regionLabel}}{{item.country ? ' · ' + item.country : ''}}</text>
+              <text class="mc-book-tag" wx:if="{{item.fromBook}}">年表</text>
+              <text class="mc-diff {{item.diff===0?'same':''}}">{{item.approx ? '待考' : (item.diff===0 ? '同年' : (item.diff>0?'+':'') + item.diff + '年')}}</text>
+            </view>
+            <view class="mc-title">{{item.title}}</view>
+            <view class="mc-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+            <view class="mc-impact" wx:if="{{item.impact}}"><text class="mi-label">影响</text><text class="mi-text">{{item.impact}}</text></view>
+          </view>
+          <view wx:if="{{worldEvents.length}}" class="col-foot">
+            <view class="cf-line">{{worldCount}} 条 · {{worldWindowNote}}内</view>
+          </view>
+          <view wx:if="{{!worldEvents.length}}" class="col-empty">
+            <view class="empty-mark">○</view>
+            <view>{{worldWindowNote}}内暂无世界同期记载</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 世界地图 -->
+      <view class="map-view" wx:if="{{view==='map'}}">
+        <view class="map-head">
+          <view class="map-head-main">
+            <view class="map-title">同期世界 · 地理分布</view>
+            <view class="map-sub">弧线连接中土与{{worldWindowNote}}内的域外文明</view>
+          </view>
+          <view class="map-legend">
+            <view class="lg"><view class="lg-dot lg-china"></view>中土</view>
+            <view class="lg"><view class="lg-dot lg-world"></view>域外</view>
+          </view>
+        </view>
+        <view class="map-canvas">
+          <canvas type="2d" id="arcCanvas" class="map-arc-canvas"></canvas>
+          <block wx:for="{{mapRegions}}" wx:key="key">
+            <!-- 锚点：按真实经纬度落在对应大陆，中土带脉冲光环 -->
+            <view class="map-pin pin-{{item.tone}} {{item.hasEv ? '' : 'pin-idle'}}"
+                  style="left:{{item.x}}%; top:{{item.y}}%;"
+                  data-key="{{item.key}}" bindtap="onTapRegion" bindlongpress="onLongPressEvent" data-kind="region"></view>
+            <!-- 标签：向外扇出避让，只有该年有同期记载才显示为实心胶囊 -->
+            <view class="map-tag tag-{{item.tone}} {{item.hasEv ? '' : 'tag-idle'}} {{expandedRegion && expandedRegion.key===item.key ? 'tag-active' : ''}}"
+                  style="left:{{item.lx}}%; top:{{item.ly}}%;"
+                  data-key="{{item.key}}" bindtap="onTapRegion" bindlongpress="onLongPressEvent" data-kind="region">
+              <text class="tag-label">{{item.label}}</text>
+              <text class="tag-num" wx:if="{{item.events.length}}">{{item.events.length}}</text>
+            </view>
+          </block>
+          <view class="map-note">文明点位示意 · 非行政区划图</view>
+        </view>
+        <view wx:if="{{expandedRegion}}" id="region-detail" class="region-detail">
+          <view class="rd-head">
+            <view class="rd-title-wrap">
+              <text class="rd-title">{{expandedRegion.label}}</text>
+              <text class="rd-count">{{expandedRegion.events.length}} 项同期记载</text>
+            </view>
+            <text class="rd-close" bindtap="onCloseRegion">收起 ✕</text>
+          </view>
+          <view wx:for="{{expandedRegion.events}}" wx:key="index" class="rd-item">
+            <view class="rd-item-top">
+              <text class="rd-item-title">{{item.title}}</text>
+              <text class="rd-item-year">{{item.diff===0 ? '同年' : (item.diff>0?'+':'') + item.diff + '年'}}</text>
+            </view>
+            <view class="rd-item-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+            <view class="rd-item-impact" wx:if="{{item.impact}}">影响 · {{item.impact}}</view>
+          </view>
+        </view>
+        <view class="map-tip"><view class="tip-dot"></view>点击圆点或标签查看同期事件，长按可看该文明背景</view>
+      </view>
+
+      <view class="share-row">
+        <view class="share-hint">长按任意卡片，查看人物或事件简介</view>
+        <button class="share-btn" open-type="share"><text class="sb-ico">↗</text>分享同代世界</button>
+        <view class="reselect-link" bindtap="onReselect">换个年份再看<text class="rl-arrow">›</text></view>
+      </view>
+    </block>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 回顶：双流视图 20 余张卡，滚到列尾后原来只能一路滑回去 -->
+  <view class="fab" wx:if="{{mode === 'result' && showTop}}" bindtap="onBackTop">
+    <view class="fab-arrow"></view>
+  </view>
+
+  <!-- 长按浮层：人物 / 事件 介绍卡 -->
+  <view class="pop-mask" wx:if="{{detailPop.show}}" bindtap="onClosePop">
+    <view class="pop-sheet" catchtap="noop">
+      <view class="pop-grip"></view>
+      <view class="pop-head">
+        <view class="pop-kind {{detailPop.kind === 'figure' ? 'k-figure' : 'k-event'}}"><view class="pk-dot"></view>{{detailPop.kind === 'figure' ? '人物' : '事件'}}</view>
+        <view class="pop-close" bindtap="onClosePop">✕</view>
+      </view>
+      <view class="pop-title">{{detailPop.title}}</view>
+      <view class="pop-sub" wx:if="{{detailPop.sub}}">{{detailPop.sub}}</view>
+      <view class="pop-divider"></view>
+      <view class="pop-loading" wx:if="{{detailPop.loading}}"><view class="pl-dot"></view>简介加载中…</view>
+      <view class="pop-body" wx:if="{{!detailPop.loading && detailPop.body}}">{{detailPop.body}}</view>
+      <view class="pop-impact" wx:if="{{!detailPop.loading && detailPop.impact}}">
+        <view class="pop-impact-label">影响</view>
+        <view class="pop-impact-text">{{detailPop.impact}}</view>
+      </view>
+      <view class="pop-btn" wx:if="{{detailPop.figureId}}" bindtap="onPopGotoFigure"><text>查看人物详情</text><text class="pb-arrow">›</text></view>
+      <view class="pop-foot-hint" wx:else>轻点空白处关闭</view>
+    </view>
+  </view>
+
+  <!-- 使用引导：步骤与文案见 config/guide-steps.js；
+       本页主体是 scroll-view，scrollto 由页面换算成 scroll-top 来滚 -->
+  <guide-layer id="guideLayer" bind:scrollto="onGuideScrollTo" />
+</view>
